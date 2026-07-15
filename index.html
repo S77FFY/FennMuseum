@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Royal Museum of the City of Fenn — 3D Grounds</title>
+<style>
+  :root{
+    --ink:#2b2e33; --parchment:#efe9dc; --royal:#a52f2c; --gold:#c2a35a; --slate:#8d9bb0;
+  }
+  html,body{margin:0;padding:0;overflow:hidden;height:100%;background:#0d0f12;font-family:Georgia,'Times New Roman',serif;}
+  #c{display:block;width:100%;height:100%;}
+  .hud{position:fixed;z-index:10;color:var(--ink);pointer-events:none;user-select:none;-webkit-user-select:none;}
+  #titlePlate{
+    top:14px;left:14px;background:linear-gradient(180deg,#f3eee2,#e7dfcd);
+    border:1px solid #b8ab8d;border-radius:3px;box-shadow:0 3px 10px rgba(0,0,0,.35);
+    padding:8px 14px 9px;line-height:1.15;
+  }
+  #titlePlate .the{font-size:9px;letter-spacing:.35em;text-transform:uppercase;color:#6d6350;}
+  #titlePlate .name{font-size:17px;letter-spacing:.06em;font-variant:small-caps;color:#25272b;}
+  #titlePlate .name .strike{text-decoration:line-through;text-decoration-color:var(--royal);text-decoration-thickness:2px;color:#8a2320;}
+  #zonePlate{
+    bottom:16px;left:50%;transform:translateX(-50%);text-align:center;
+    background:rgba(21,24,28,.62);color:#efe9dc;border:1px solid rgba(194,163,90,.55);
+    border-radius:2px;padding:5px 18px 6px;backdrop-filter:blur(3px);
+  }
+  #zoneName{font-variant:small-caps;letter-spacing:.14em;font-size:15px;}
+  #zoneSub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#c2a35a;margin-top:1px;}
+  #hint{
+    top:14px;right:14px;text-align:right;background:rgba(21,24,28,.55);color:#d9d2c2;
+    border:1px solid rgba(255,255,255,.12);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;
+    letter-spacing:.04em;
+  }
+  #hint b{color:#c2a35a;font-weight:normal;}
+  #intelPlate{
+    top:14px;right:14px;display:none;text-align:right;background:rgba(60,14,12,.72);color:#f0dcd4;
+    border:1px solid rgba(213,90,80,.6);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;
+  }
+  #startOverlay{
+    position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 40%, rgba(30,36,44,.82), rgba(10,12,15,.94));
+    cursor:pointer;
+  }
+  #startCard{
+    text-align:center;color:#efe9dc;max-width:520px;padding:34px 40px;
+    border:1px solid rgba(194,163,90,.5);background:rgba(18,21,26,.6);border-radius:3px;
+  }
+  #startCard .the{font-size:10px;letter-spacing:.5em;text-transform:uppercase;color:#c2a35a;}
+  #startCard h1{font-variant:small-caps;font-weight:normal;font-size:30px;margin:8px 0 2px;letter-spacing:.05em;}
+  #startCard h1 .strike{text-decoration:line-through;text-decoration-color:#c65550;color:#c98a86;}
+  #startCard .rule{width:120px;height:1px;background:#c2a35a;margin:14px auto;opacity:.7;}
+  #startCard p{font-size:13px;line-height:1.8;color:#cfc7b4;margin:0;}
+  #startCard .go{margin-top:18px;font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:#c2a35a;animation:pulse 2.2s infinite;}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  #verTag{margin-top:16px;font-size:10px;letter-spacing:.3em;color:#7d7663;text-transform:uppercase;}
+  .stick{position:fixed;z-index:12;border-radius:50%;display:none;touch-action:none;}
+  #stickBase{left:24px;bottom:24px;width:110px;height:110px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);}
+  #stickKnob{width:48px;height:48px;background:rgba(239,233,220,.35);border:1px solid rgba(239,233,220,.55);position:fixed;pointer-events:none;}
+  @media (pointer:coarse){ #hint .desktop{display:none} }
+  @media (pointer:fine){ #hint .touch{display:none} }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud" id="titlePlate">
+  <div class="the">The</div>
+  <div class="name">Royal Museum <span style="font-size:11px;color:#6d6350;">of the</span> <span class="strike">Grand</span> <span style="font-size:11px;color:#6d6350;">City of</span> Fenn</div>
+</div>
+
+<div class="hud" id="hint">
+  <span class="desktop"><b>W A S D</b> move &nbsp;·&nbsp; <b>mouse</b> look &nbsp;·&nbsp; <b>shift</b> run<br><b>H</b> heist intel &nbsp;·&nbsp; <b>esc</b> release cursor</span>
+  <span class="touch"><b>left stick</b> move &nbsp;·&nbsp; <b>drag right</b> look<br>tap the <b>location plate</b> for heist intel</span>
+</div>
+<div class="hud" id="intelPlate">
+  <b style="color:#e5867f">HEIST INTEL — ACTIVE</b><br>
+  markers pulled from the crew's annotated map<br>
+  <span class="desktop">press <b>H</b> to stow</span><span class="touch">tap the location plate to stow</span>
+</div>
+
+<div class="hud" id="zonePlate">
+  <div id="zoneName">Museum Grounds</div>
+  <div id="zoneSub">open to the general public</div>
+</div>
+
+<div id="startOverlay">
+  <div id="startCard">
+    <div class="the">The</div>
+    <h1>Royal Museum <span style="font-size:16px;color:#9a917d;">of the</span> <span class="strike">Grand</span> <span style="font-size:16px;color:#9a917d;">City of</span> Fenn</h1>
+    <div class="rule"></div>
+    <p>Walk the grounds ahead of the job. The East Extension, Leerson Hall, the Moonside Courtyard,
+       Tiskin Park and the King's Grotto — all rendered from the crew's marked-up visitor map.</p>
+    <div class="go">Click / tap to enter the grounds</div>
+    <div id="verTag">v1.0.0</div>
+  </div>
+</div>
+
+<div class="stick" id="stickBase"></div>
+<div class="stick" id="stickKnob"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =====================================================================
+   THE ROYAL MUSEUM OF THE (GRAND) CITY OF FENN — explorable 3D grounds
+   Single file · Three.js r128 · no other dependencies
+   North = -Z. Layout follows the annotated visitor map.
+   ===================================================================== */
+(function(){
+'use strict';
+
+const VERSION='v1.0.0';
+document.getElementById('verTag').textContent=VERSION+' \u00b7 S77FFY';
+document.title='The Royal Museum of the City of Fenn \u2014 3D Grounds '+VERSION;
+
+// ---------- palette (watercolour-ish, from the map & concept art) ----------
+const COL = {
+  sky:      0xdfe7ee,
+  fog:      0xcfd9e0,
+  grass:    0x9db38e,
+  grassDk:  0x8aa37c,
+  path:     0xc9cdd2,
+  pathEdge: 0xa9aeb6,
+  marble:   0xece8df,
+  marbleSh: 0xd8d3c7,
+  slate:    0x93a1b4,
+  stone:    0xcfc9bb,
+  stoneDk:  0xb2ab9a,
+  roof:     0x9aa7b8,
+  glass:    0xdfeaf2,
+  gold:     0xc2a35a,
+  royal:    0xa52f2c,
+  royalDk:  0x7e211f,
+  wood:     0x7c6248,
+  leaf:     0x7e9a6d,
+  leafDk:   0x6a8a5c,
+  trunk:    0x6f5d49,
+  water:    0x9fb9c6,
+  mountain: 0xaebccb,
+  statue:   0xa2453a,   // weathered red bronze, as on the map
+  rock:     0x9aa0a4,
+};
+
+// ---------- renderer / scene ----------
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(COL.sky);
+scene.fog = new THREE.Fog(COL.fog, 90, 480);
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1200);
+
+// ---------- lights ----------
+const hemi = new THREE.HemisphereLight(0xe8f0f7, 0x8a9a80, 0.85);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.05);
+sun.position.set(-120, 160, 90);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left=-190; sun.shadow.camera.right=190;
+sun.shadow.camera.top=190;  sun.shadow.camera.bottom=-190;
+sun.shadow.camera.far=520;  sun.shadow.bias=-0.0006;
+scene.add(sun);
+
+// ---------- material helpers ----------
+const M = {};
+function lam(c,extra){ return new THREE.MeshLambertMaterial(Object.assign({color:c},extra||{})); }
+function pho(c,extra){ return new THREE.MeshPhongMaterial(Object.assign({color:c,shininess:22},extra||{})); }
+M.grass   = lam(COL.grass);
+M.path    = lam(COL.path);
+M.pathEdge= lam(COL.pathEdge);
+M.marble  = lam(COL.marble);
+M.marbleSh= lam(COL.marbleSh);
+M.slate   = lam(COL.slate);
+M.stone   = lam(COL.stone);
+M.stoneDk = lam(COL.stoneDk);
+M.roof    = lam(COL.roof);
+M.gold    = pho(COL.gold,{shininess:60,specular:0x554411});
+M.royal   = lam(COL.royal);
+M.royalDk = lam(COL.royalDk);
+M.glass   = pho(COL.glass,{transparent:true,opacity:0.42,shininess:90,specular:0xffffff,side:THREE.DoubleSide});
+M.leaf    = lam(COL.leaf);
+M.leafDk  = lam(COL.leafDk);
+M.trunk   = lam(COL.trunk);
+M.water   = pho(COL.water,{transparent:true,opacity:0.8,shininess:80,specular:0xffffff});
+M.mountain= lam(COL.mountain,{fog:true});
+M.statue  = pho(COL.statue,{shininess:14,specular:0x331a15});
+M.rock    = lam(COL.rock);
+M.dark    = lam(0x3a4048);
+M.window  = lam(0x64768c);
+
+// ---------- collision ----------
+const colliders = []; // {minX,maxX,minZ,maxZ}
+function addColliderBox(cx, cz, w, d, pad){
+  pad = pad===undefined ? 0.6 : pad;
+  colliders.push({minX:cx-w/2-pad, maxX:cx+w/2+pad, minZ:cz-d/2-pad, maxZ:cz+d/2+pad});
+}
+// rotated wall segment -> sampled small AABBs
+function addColliderSegment(x1,z1,x2,z2,thick){
+  const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz), steps=Math.max(1,Math.ceil(len/1.6));
+  for(let i=0;i<=steps;i++){
+    const t=i/steps;
+    addColliderBox(x1+dx*t, z1+dz*t, thick, thick, 0.35);
+  }
+}
+
+// ---------- small builders ----------
+function box(w,h,d,mat,x,y,z,parent){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
+  (parent||scene).add(m); return m;
+}
+function cyl(rt,rb,h,seg,mat,x,y,z,parent){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
+  (parent||scene).add(m); return m;
+}
+function sph(r,mat,x,y,z,parent,ws,hs){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(r,ws||18,hs||14),mat);
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
+  (parent||scene).add(m); return m;
+}
+// glass dome with gold meridian ribs + rings — the museum's signature panes
+function glassDome(r, ribs, parent){
+  const g=new THREE.Group();
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(r,24,12,0,Math.PI*2,0,Math.PI/2),M.glass);
+  dome.castShadow=false; dome.receiveShadow=false; g.add(dome);
+  const tube=Math.max(0.05,r*0.02);
+  for(let i=0;i<ribs;i++){
+    const arc=new THREE.Mesh(new THREE.TorusGeometry(r,tube,6,24,Math.PI),M.gold);
+    arc.rotation.y=(i/ribs)*Math.PI;   // arcs span the upper half already
+    g.add(arc);
+  }
+  [0.35,0.7].forEach(f=>{
+    const rr=Math.cos(Math.asin(f))*r;
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(rr,tube,6,32),M.gold);
+    ring.rotation.x=Math.PI/2; ring.position.y=f*r; g.add(ring);
+  });
+  (parent||scene).add(g); return g;
+}
+// pitched triangular roof (prism)
+function prismRoof(w,h,d,mat){
+  const s=new THREE.Shape();
+  s.moveTo(-w/2,0); s.lineTo(w/2,0); s.lineTo(0,h); s.closePath();
+  const geo=new THREE.ExtrudeGeometry(s,{depth:d,bevelEnabled:false});
+  geo.translate(0,0,-d/2);
+  const m=new THREE.Mesh(geo,mat); m.castShadow=true; m.receiveShadow=true; return m;
+}
+// hipped roof — proper ridge geometry (ridge along the long axis, 45° hips)
+function hipRoof(w,h,d,mat){
+  let rotY=0;
+  if(w>d){ const t=w; w=d; d=t; rotY=Math.PI/2; }
+  const hw=w/2, hd=d/2, rh=Math.max(0.01,(d-w)/2);
+  const A=[-hw,0,-hd], B=[hw,0,-hd], C=[hw,0,hd], D=[-hw,0,hd];
+  const R1=[0,h,-rh], R2=[0,h,rh];
+  const tris=[A,D,R2, A,R2,R1, B,R1,R2, B,R2,C, A,R1,B, C,R2,D];
+  const pos=new Float32Array(tris.length*3);
+  tris.forEach((v,i)=>{pos[i*3]=v[0];pos[i*3+1]=v[1];pos[i*3+2]=v[2];});
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.computeVertexNormals();
+  const m=new THREE.Mesh(geo,mat);
+  m.rotation.y=rotY;
+  m.castShadow=true; m.receiveShadow=true; return m;
+}
+function flagPole(x,y,z,h,parent,flags){
+  const g=new THREE.Group(); g.position.set(x,y,z);
+  cyl(0.07,0.09,h,8,M.gold,0,h/2,0,g);
+  sph(0.16,M.gold,0,h+0.05,0,g,10,8);
+  const flag=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.2,6,1),M.royal);
+  flag.position.set(1.15,h-0.75,0); flag.castShadow=true;
+  flag.material=M.royal; flag.userData.baseX=1.15;
+  g.add(flag); flags.push(flag);
+  (parent||scene).add(g); return g;
+}
+function makeLabelSprite(text, sub){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=160;
+  const cx=cv.getContext('2d');
+  cx.fillStyle='rgba(60,14,12,0.82)'; roundRect(cx,6,20,500,120,10); cx.fill();
+  cx.strokeStyle='rgba(220,120,110,0.9)'; cx.lineWidth=3; roundRect(cx,6,20,500,120,10); cx.stroke();
+  cx.fillStyle='#f2ddd6'; cx.font='bold 52px Georgia'; cx.textAlign='center';
+  cx.fillText(text,256,80);
+  if(sub){ cx.fillStyle='#dfa89f'; cx.font='28px Georgia'; cx.fillText(sub,256,120); }
+  const tex=new THREE.CanvasTexture(cv);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+  sp.scale.set(14,4.4,1); return sp;
+}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+// =====================================================================
+// TERRAIN, PATHS, MOUNTAINS
+// =====================================================================
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1100,1100), M.grass);
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+// darker grass patches for watercolour blotting
+const patchGeo=new THREE.CircleGeometry(1,14);
+for(let i=0;i<60;i++){
+  const p=new THREE.Mesh(patchGeo, lam(i%2?COL.grassDk:0x93aa85));
+  p.rotation.x=-Math.PI/2; p.position.set((Math.random()-0.5)*420, 0.02+Math.random()*0.01, (Math.random()-0.5)*420);
+  const s=6+Math.random()*22; p.scale.set(s,s*(0.6+Math.random()*0.6),1);
+  p.receiveShadow=true; scene.add(p);
+}
+
+// path helper: flat rounded strip between points
+function path(x1,z1,x2,z2,w){
+  const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(len+w*0.4,w), M.path);
+  m.rotation.x=-Math.PI/2; m.rotation.z=-Math.atan2(dz,dx);
+  m.position.set((x1+x2)/2, 0.05, (z1+z2)/2); m.receiveShadow=true; scene.add(m);
+  const e=new THREE.Mesh(new THREE.PlaneGeometry(len+w*0.4,w+0.9), M.pathEdge);
+  e.rotation.copy(m.rotation); e.position.set(m.position.x,0.035,m.position.z); e.receiveShadow=true; scene.add(e);
+}
+function plaza(x,z,r,mat){
+  const m=new THREE.Mesh(new THREE.CircleGeometry(r,28), mat||M.path);
+  m.rotation.x=-Math.PI/2; m.position.set(x,0.055,z); m.receiveShadow=true; scene.add(m);
+}
+
+// mountain ring (pale, fog-eaten — like the concept painting)
+for(let i=0;i<26;i++){
+  const a=(i/26)*Math.PI*2 + Math.random()*0.15;
+  const r=430+Math.random()*120;
+  const h=90+Math.random()*130, w=90+Math.random()*90;
+  const mt=new THREE.Mesh(new THREE.ConeGeometry(w,h,5), M.mountain);
+  mt.position.set(Math.cos(a)*r, h/2-6, Math.sin(a)*r);
+  mt.rotation.y=Math.random()*Math.PI;
+  scene.add(mt);
+}
+// distant pine bands
+for(let i=0;i<40;i++){
+  const a=Math.random()*Math.PI*2, r=300+Math.random()*90;
+  const t=new THREE.Mesh(new THREE.ConeGeometry(5+Math.random()*4, 16+Math.random()*10, 6), lam(0x7c9484));
+  t.position.set(Math.cos(a)*r, 7, Math.sin(a)*r); scene.add(t);
+}
+
+// =====================================================================
+// EAST EXTENSION — the curved white museum with the glass domes (Image 2)
+// centred ~ (55, 25), portico faces south (+z)
+// =====================================================================
+const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
+(function buildEastExtension(){
+  // scalloped/curved footprint via extruded shape
+  const s=new THREE.Shape();
+  const W=24, D=17;                     // half extents
+  s.moveTo(-W,-D);
+  s.quadraticCurveTo(-W-6,0,-W,D);      // west lobe
+  s.quadraticCurveTo(-W*0.5,D+4,0,D+2); // south curve toward entrance
+  s.quadraticCurveTo(W*0.5,D+4,W,D);    // east
+  s.quadraticCurveTo(W+6,0,W,-D);       // east lobe
+  s.quadraticCurveTo(0,-D-5,-W,-D);     // north curve
+  const baseGeo=new THREE.ExtrudeGeometry(s,{depth:9,bevelEnabled:false});
+  baseGeo.rotateX(-Math.PI/2);          // extrusion now rises +Y; shape y maps to -z
+  const base=new THREE.Mesh(baseGeo,M.marble);
+  base.castShadow=true; base.receiveShadow=true; museum.add(base);
+
+  // cornice slab following same shape, slightly larger
+  const corn=new THREE.Mesh(new THREE.ExtrudeGeometry(s,{depth:1.1,bevelEnabled:false}),M.marbleSh);
+  corn.geometry.rotateX(-Math.PI/2);
+  corn.geometry.scale(1.045,1,1.045);
+  corn.position.y=9; corn.castShadow=true; corn.receiveShadow=true; museum.add(corn);
+
+  // pilaster ring (slate strips) around the curved base — note z = -shape.y
+  const pts=s.getPoints(64);
+  const centreW=new THREE.Vector3();
+  for(let i=0;i<pts.length;i+=2){
+    const p=pts[i];
+    const pil=box(0.5,8.4,0.5,M.slate, p.x, 4.6, -p.y, museum);
+    museum.getWorldPosition(centreW); centreW.y=pil.getWorldPosition(new THREE.Vector3()).y;
+    pil.lookAt(centreW);
+  }
+  // windows band (dark) around base
+  for(let i=1;i<pts.length;i+=2){
+    const p=pts[i];
+    const win=box(1.6,4.6,0.25,M.window, p.x*1.012, 4.8, -p.y*1.012, museum);
+    museum.getWorldPosition(centreW); centreW.y=win.getWorldPosition(new THREE.Vector3()).y;
+    win.lookAt(centreW); win.castShadow=false;
+  }
+
+  // central drum + big glass dome
+  const drum=cyl(8.2,8.6,7.5,20,M.marble, 0,10.1+3.75,-1, museum);
+  for(let i=0;i<14;i++){
+    const a=(i/14)*Math.PI*2;
+    box(0.45,7.2,0.45,M.slate, Math.cos(a)*8.5, 13.6, -1+Math.sin(a)*8.5, museum);
+  }
+  cyl(8.9,8.9,0.8,20,M.marbleSh,0,17.9,-1,museum);
+  glassDome(7.6,8,museum).position.set(0,18.3,-1);
+
+  // rear upper block + top glass dome
+  box(17,9,13,M.marble, 0,10.1+4.5,-10, museum);
+  box(18.2,1,14.2,M.marbleSh, 0,19.1,-10, museum);
+  glassDome(5.6,8,museum).position.set(0,19.6,-10);
+  // slit windows on upper block
+  for(let i=-3;i<=3;i++){ box(1.2,6,0.3,M.window, i*2.4, 14.4, -3.35, museum).castShadow=false; }
+
+  // twin towers with gold onion domes (front corners)
+  [-1,1].forEach(sx=>{
+    const tx=sx*15.5, tz=6.5;
+    cyl(3.5,3.8,6,8,M.marble, tx,10.1+3,tz,museum);
+    cyl(3.9,3.9,0.7,8,M.marbleSh, tx,16.5,tz,museum);
+    cyl(3.2,3.5,5.4,8,M.marble, tx,19.6,tz,museum);
+    // arched window per tier
+    box(2.2,3,0.3,M.window,tx,13.4,tz+3.4,museum).castShadow=false;
+    box(2.0,2.6,0.3,M.window,tx,19.8,tz+3.1,museum).castShadow=false;
+    cyl(3.6,3.6,0.6,8,M.marbleSh, tx,22.5,tz,museum);
+    const onion=sph(2.7,M.gold,tx,24.6,tz,museum,14,12); onion.scale.y=1.25;
+    cyl(0.14,0.3,2.6,8,M.gold,tx,27.6,tz,museum);
+    sph(0.3,M.gold,tx,29,tz,museum,8,8);
+  });
+
+  // corner barrel glass roofs (west & east lobes) — stretched glass domes
+  [-1,1].forEach(sx=>{
+    const b=glassDome(3.2,6,museum);
+    b.position.set(sx*20.5,10.1,-4);
+    b.scale.set(1,0.65,1.7);
+  });
+
+  // entrance portico + steps (south face)
+  const steps=new THREE.Group(); steps.position.set(0,0,21); museum.add(steps);
+  for(let i=0;i<5;i++){ box(13-i*1.2, 0.5, 6-i*1.1, M.marbleSh, 0, 0.25+i*0.5, 2.5-i*0.55, steps); }
+  for(let i=-2;i<=2;i++){ cyl(0.42,0.48,4.6,10,M.marble, i*2.2, 2.5+2.3, 0.4, steps); }
+  const pr=prismRoof(12.5,2.6,7,M.roof); pr.rotation.y=Math.PI/2; pr.position.set(0,7.6,0.4); steps.add(pr);
+  box(12.5,0.5,7,M.marbleSh,0,7.35,0.4,steps);
+
+  // red royal banners flanking entrance
+  [-1,1].forEach(sx=>{
+    const b=box(2.6,6.5,0.15,M.royal, sx*7.5, 6.4, 18.6, museum);
+    box(3,0.35,0.3,M.gold, sx*7.5, 9.85, 18.6, museum);
+    const tip=new THREE.Mesh(new THREE.ConeGeometry(1.32,1.4,4),M.royalDk);
+    tip.rotation.x=Math.PI; tip.rotation.y=Math.PI/4; tip.position.set(sx*7.5,2.6,18.6); museum.add(tip);
+  });
+})();
+addColliderBox(55,18,52,40);      // museum body
+addColliderBox(55,42,14,10);      // portico/steps
+
+// flags on museum roofline
+const flags=[];
+flagPole(55-21,11.2,26,5,scene,flags);   // west roof-deck corner
+flagPole(55+21,11.2,26,5,scene,flags);   // east roof-deck corner
+flagPole(55,20.1,8,6,scene,flags);       // atop the rear upper block
+
+// =====================================================================
+// LEERSON HALL — restored classical hall, west arm (map, Image 1 left)
+// =====================================================================
+const hall=new THREE.Group(); hall.position.set(-48,0,-2); scene.add(hall);
+(function buildLeersonHall(){
+  box(22,13,44,M.stone, 0,6.5,0, hall);
+  // rusticated base band
+  box(23,2.4,45,M.stoneDk, 0,1.2,0, hall);
+  // window rows on long faces
+  for(let r=0;r<2;r++){
+    for(let i=-4;i<=4;i++){
+      [-1,1].forEach(sx=>{
+        const w=box(0.3,3.1,1.7,M.window, sx*11.05, 4.4+r*4.6, i*4.4, hall); w.castShadow=false;
+        box(0.35,0.4,2.1,M.marbleSh, sx*11.05, 6.1+r*4.6, i*4.4, hall);
+      });
+    }
+  }
+  // short-face windows
+  for(let r=0;r<2;r++) for(let i=-1;i<=1;i++){
+    [-1,1].forEach(sz=>{ box(1.7,3.1,0.3,M.window, i*4.6, 4.4+r*4.6, sz*22.05, hall).castShadow=false; });
+  }
+  // cornice + hipped slate roof + chimneys
+  box(23.4,1,45.4,M.marbleSh, 0,13.5,0, hall);
+  const roof=hipRoof(24,6.5,46,M.roof); roof.position.set(0,14.02,0); hall.add(roof);
+  box(1.6,3.4,1.6,M.stoneDk,-6,16.6,-12,hall);
+  box(1.6,3.4,1.6,M.stoneDk, 6,16.6, 10,hall);
+  // south entrance: steps + pediment
+  for(let i=0;i<3;i++){ box(9-i, 0.45, 3-i*0.7, M.stoneDk, 0, 0.22+i*0.45, 23.4-i*0.4, hall); }
+  for(let i=-1;i<=1;i++){ cyl(0.36,0.42,4.2,10,M.stone, i*2.6, 3.4, 23.4, hall); }
+  const ped=prismRoof(8.6,1.9,3.4,M.roof); ped.rotation.y=Math.PI/2; ped.position.set(0,6.2,23.2); hall.add(ped);
+  flagPole(0,20.3,0,5.5,hall,flags);
+})();
+addColliderBox(-48,-2,23,45);
+
+// west annex + guard house (connecting Leerson Hall to the courtyard)
+box(10,7,16,M.stone,-48,3.5,-33); addColliderBox(-48,-33,10,16);
+const annexRoof=hipRoof(11,3.2,17,M.roof); annexRoof.position.set(-48,7.02,-33); scene.add(annexRoof);
+box(7,5.5,7,M.stone,-62,2.75,-36); addColliderBox(-62,-36,7,7);
+const ghRoof=hipRoof(8,2.6,8,M.roof); ghRoof.position.set(-62,5.52,-36); scene.add(ghRoof);
+
+// =====================================================================
+// MOONSIDE COURTYARD — quiet walled garden, NW of the hall
+// =====================================================================
+(function buildCourtyard(){
+  const cx=-24, cz=-52, hw=14, hd=11, wh=3.6;
+  // walls with a south gap
+  const segs=[
+    [cx-hw,cz-hd, cx+hw,cz-hd],       // north
+    [cx-hw,cz-hd, cx-hw,cz+hd],       // west
+    [cx+hw,cz-hd, cx+hw,cz+hd],       // east
+    [cx-hw,cz+hd, cx-4,cz+hd],        // south-left
+    [cx+4,cz+hd,  cx+hw,cz+hd],       // south-right
+  ];
+  segs.forEach(([x1,z1,x2,z2])=>{
+    const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz);
+    const w=box(len,wh,1.1,M.stone,(x1+x2)/2,wh/2,(z1+z2)/2);
+    w.rotation.y=-Math.atan2(dz,dx);
+    box(len+0.4,0.4,1.5,M.stoneDk,(x1+x2)/2,wh+0.2,(z1+z2)/2).rotation.y=w.rotation.y;
+    addColliderSegment(x1,z1,x2,z2,1.3);
+  });
+  plaza(cx,cz,10,M.pathEdge);
+  // benches + small trees inside
+  [[-6,-4],[6,-4],[-6,4],[6,4]].forEach(([ox,oz])=>{
+    box(2.6,0.25,0.9,M.wood,cx+ox,0.7,cz+oz);
+    box(0.25,0.7,0.9,M.wood,cx+ox-1,0.35,cz+oz);
+    box(0.25,0.7,0.9,M.wood,cx+ox+1,0.35,cz+oz);
+  });
+  tree(cx,cz-5,1.1); tree(cx-9,cz+1,0.8); tree(cx+9,cz+1,0.8);
+})();
+
+// =====================================================================
+// TISKIN PARK — pentagonal walled park + THE MONUMENT (Images 3 & 4)
+// centred NE at (58,-78)
+// =====================================================================
+const PARK={x:58,z:-78};
+function pentagonPoints(cx,cz,r,rot){
+  const pts=[];
+  for(let i=0;i<5;i++){
+    const a=rot+(i/5)*Math.PI*2;
+    pts.push([cx+Math.cos(a)*r, cz+Math.sin(a)*r]);
+  }
+  return pts;
+}
+(function buildTiskinPark(){
+  const rot=-Math.PI/2; // vertex to the north like the overhead shot
+  // stone ring paths (two pentagons drawn flat)
+  [30,17].forEach((r,ri)=>{
+    const pts=pentagonPoints(PARK.x,PARK.z,r,rot);
+    for(let i=0;i<5;i++){
+      const [x1,z1]=pts[i], [x2,z2]=pts[(i+1)%5];
+      path(x1,z1,x2,z2, ri?4.5:5.5);
+    }
+  });
+  // low pentagon walls with entrance gaps (south side open on both rings)
+  [[33,2],[20,2]].forEach(([r,skip])=>{
+    const pts=pentagonPoints(PARK.x,PARK.z,r,rot);
+    for(let i=0;i<5;i++){
+      if(i===skip) continue; // gap
+      const [x1,z1]=pts[i], [x2,z2]=pts[(i+1)%5];
+      const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz);
+      const w=box(len-3,2.2,1,M.stone,(x1+x2)/2,1.1,(z1+z2)/2);
+      w.rotation.y=-Math.atan2(dz,dx);
+      box(len-3,0.35,1.4,M.stoneDk,(x1+x2)/2,2.3,(z1+z2)/2).rotation.y=w.rotation.y;
+      // sampled colliders, leaving the gap side open
+      const t0=1.5/len, t1=1-1.5/len;
+      addColliderSegment(x1+dx*t0,z1+dz*t0, x1+dx*t1,z1+dz*t1, 1.2);
+    }
+  });
+  // spoke paths in to the monument
+  const inner=pentagonPoints(PARK.x,PARK.z,17,rot);
+  inner.forEach(([x,z])=>path(x,z,PARK.x,PARK.z,3.5));
+  plaza(PARK.x,PARK.z,10,M.pathEdge);
+  // hedges dotted between rings
+  for(let i=0;i<10;i++){
+    const a=rot+(i/10)*Math.PI*2+0.31;
+    const r=24;
+    const h=sph(1.6,M.leafDk,PARK.x+Math.cos(a)*r,1.2,PARK.z+Math.sin(a)*r); h.scale.y=0.75;
+  }
+})();
+
+// ---- THE TISKIN MONUMENT — winged king, sword raised, kite shield ----
+(function buildMonument(){
+  const g=new THREE.Group(); g.position.set(PARK.x,0,PARK.z); scene.add(g);
+  // pentagonal stepped pedestal
+  cyl(7.5,8,1.1,5,M.stoneDk,0,0.55,0,g);
+  cyl(6,6.5,1.1,5,M.stone,0,1.65,0,g);
+  cyl(4.4,4.9,1.3,5,M.stoneDk,0,2.85,0,g);
+  cyl(2.6,3.0,2.2,5,M.stone,0,4.6,0,g);
+  addColliderBox(PARK.x,PARK.z,15,15);
+
+  const fig=new THREE.Group(); fig.position.y=5.7; g.add(fig);
+  const S=M.statue;
+  // legs — weight on left, right foot forward on a rock (Image 3)
+  cyl(0.55,0.7,3.4,10,S,-0.75,1.7,0,fig);                       // standing leg
+  const rThigh=cyl(0.55,0.62,2.0,10,S,0.8,2.6,0.5,fig); rThigh.rotation.x=-0.7;
+  const rShin=cyl(0.45,0.5,1.9,10,S,0.85,1.15,1.35,fig); rShin.rotation.x=0.15;
+  box(0.9,0.5,1.5,S,0.85,0.3,1.8,fig);                           // right boot
+  box(0.9,0.5,1.4,S,-0.75,0.25,0.15,fig);                        // left boot
+  cyl(0.9,1.1,0.7,10,S,0.85,0.35,1.9,fig);                       // rock under foot
+  // faulds / skirt
+  const skirt=cyl(1.15,1.6,1.4,10,S,0,3.6,0.1,fig);
+  // torso cuirass
+  const torso=cyl(1.25,1.05,2.6,10,S,0,5.4,0.1,fig); torso.scale.z=0.8;
+  box(2.1,0.5,1.3,S,0,6.55,0.1,fig);                             // gorget/chest plate
+  // pauldrons
+  sph(0.72,S,-1.35,6.5,0.1,fig); sph(0.72,S,1.35,6.5,0.1,fig);
+  // right arm raised with sword
+  const rUp=cyl(0.38,0.44,1.6,8,S,1.75,7.3,0.1,fig); rUp.rotation.z=-0.9;
+  const rFo=cyl(0.3,0.36,1.5,8,S,2.5,8.4,0.1,fig);  rFo.rotation.z=-0.25;
+  sph(0.38,S,2.75,9.1,0.1,fig);                                  // fist
+  const blade=box(0.16,4.6,0.5,S,2.75,11.7,0.1,fig);             // sword blade
+  blade.scale.z=0.55;
+  box(1.5,0.22,0.34,S,2.75,9.5,0.1,fig);                         // crossguard
+  cyl(0.12,0.12,0.7,8,S,2.75,9.0,0.1,fig);                       // grip
+  sph(0.18,S,2.75,8.6,0.1,fig);                                  // pommel
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.6,6),S); tip.position.set(2.75,14.3,0.1); fig.add(tip);
+  // left arm down to shield
+  const lUp=cyl(0.38,0.44,1.5,8,S,-1.6,6.6,0.35,fig); lUp.rotation.z=0.7;
+  const lFo=cyl(0.3,0.35,1.4,8,S,-2.05,5.4,0.7,fig);  lFo.rotation.z=0.25; lFo.rotation.x=-0.3;
+  // kite shield (tapered extruded shape)
+  (function(){
+    const sh=new THREE.Shape();
+    sh.moveTo(0,1.9); sh.quadraticCurveTo(1.2,1.6,1.15,0.4);
+    sh.quadraticCurveTo(1.0,-1.4,0,-2.4);
+    sh.quadraticCurveTo(-1.0,-1.4,-1.15,0.4);
+    sh.quadraticCurveTo(-1.2,1.6,0,1.9);
+    const geo=new THREE.ExtrudeGeometry(sh,{depth:0.28,bevelEnabled:true,bevelThickness:0.08,bevelSize:0.08,bevelSegments:1});
+    const shield=new THREE.Mesh(geo,S);
+    shield.castShadow=true; shield.receiveShadow=true;
+    shield.position.set(-2.1,3.6,1.2); shield.rotation.y=0.25; shield.rotation.x=0.06;
+    fig.add(shield);
+  })();
+  // head, beard, crown
+  sph(0.62,S,0,7.5,0.15,fig);
+  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.42,0.85,8),S);
+  beard.rotation.x=Math.PI; beard.position.set(0,6.95,0.55); fig.add(beard);
+  cyl(0.55,0.6,0.4,8,S,0,8.05,0.15,fig);                          // crown band
+  for(let i=0;i<6;i++){
+    const a=(i/6)*Math.PI*2;
+    const spike=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.55,5),S);
+    spike.position.set(Math.cos(a)*0.5,8.45,0.15+Math.sin(a)*0.5); fig.add(spike);
+  }
+  // two great swept wings (thin extruded blades)
+  function wing(mirror){
+    const w=new THREE.Shape();
+    w.moveTo(0,0);
+    w.quadraticCurveTo(1.5,2.8, 4.6,5.6);
+    w.quadraticCurveTo(6.4,7.2, 7.4,7.0);
+    w.quadraticCurveTo(6.2,5.2, 5.4,3.4);
+    w.quadraticCurveTo(4.2,1.0, 2.2,-0.4);
+    w.quadraticCurveTo(1.0,-0.9, 0,-0.6);
+    const geo=new THREE.ExtrudeGeometry(w,{depth:0.22,bevelEnabled:false});
+    const m=new THREE.Mesh(geo,S); m.castShadow=true; m.receiveShadow=true;
+    m.position.set(mirror*0.4,6.2,-0.55);
+    m.rotation.y=mirror*(Math.PI*0.62);
+    m.rotation.z=0.12*mirror;
+    if(mirror<0) m.scale.x=-1;
+    fig.add(m);
+  }
+  wing(1); wing(-1);
+  fig.rotation.y=Math.PI*0.9; // face roughly toward museum entrance
+})();
+
+// =====================================================================
+// KING'S GROTTO — rocks + mossy arch, NW corner
+// =====================================================================
+(function buildGrotto(){
+  const gx=-6, gz=-104;
+  for(let i=0;i<9;i++){
+    const a=(i/9)*Math.PI*1.4+2.0, r=6+Math.random()*3;
+    const rock=sph(1.8+Math.random()*1.8,M.rock,gx+Math.cos(a)*r,1.1,gz+Math.sin(a)*r,scene,8,6);
+    rock.scale.y=0.7+Math.random()*0.4; rock.rotation.y=Math.random()*3;
+  }
+  // arch
+  const arch=new THREE.Mesh(new THREE.TorusGeometry(3.4,0.9,8,18,Math.PI),M.rock);
+  arch.position.set(gx,0.4,gz); arch.castShadow=true; scene.add(arch);
+  const moss=sph(2.6,M.leafDk,gx-3.6,3.4,gz-1); moss.scale.set(1,0.5,1);
+  const moss2=sph(2.2,M.leaf,gx+3.4,3.6,gz+0.6); moss2.scale.set(1,0.5,1);
+  plaza(gx,gz+2,5,M.pathEdge);
+  addColliderBox(gx-4,gz,4,4); addColliderBox(gx+4,gz,4,4);
+})();
+
+// =====================================================================
+// FOUNTAIN PLAZA (Image 1 foreground), STATION CAFÉ, PARKING, CARS
+// =====================================================================
+(function buildFountain(){
+  const fx=4, fz=32;
+  plaza(fx,fz,12,M.path);
+  cyl(6.5,7,1,24,M.marbleSh,fx,0.5,fz);
+  const water=new THREE.Mesh(new THREE.CircleGeometry(5.9,24),M.water);
+  water.rotation.x=-Math.PI/2; water.position.set(fx,1.02,fz); scene.add(water);
+  cyl(1.2,1.6,1.6,10,M.marble,fx,1.8,fz);
+  cyl(2.6,3,0.5,16,M.marble,fx,2.8,fz);
+  cyl(0.7,0.9,1.4,10,M.marble,fx,3.7,fz);
+  // small echo of the monument atop the fountain
+  cyl(0.35,0.45,1.6,8,M.marbleSh,fx,5.1,fz);
+  sph(0.32,M.marbleSh,fx,6.1,fz);
+  box(0.08,1.5,0.2,M.marbleSh,fx+0.5,6.6,fz);
+  addColliderBox(fx,fz,14,14);
+})();
+
+(function buildStationCafe(){
+  const sx=-96, sz=28;
+  box(16,6,9,M.stone,sx,3,sz); addColliderBox(sx,sz,16,9);
+  const r=prismRoof(10,3,17,M.roof); r.rotation.y=Math.PI/2; r.position.set(sx,6.02,sz); scene.add(r);
+  box(20,0.7,4,M.stoneDk,sx,0.35,sz+7);         // old platform
+  for(let i=-2;i<=2;i++){ box(0.3,2.6,0.3,M.wood,sx+i*4,1.3,sz+8.6); }
+  box(19,0.3,1.2,M.roof,sx,2.7,sz+8.6);          // platform canopy
+  // café tables
+  for(let i=-1;i<=1;i++){ cyl(1,1,0.12,12,M.marbleSh,sx+i*4.5,1,sz+6.4); cyl(0.12,0.16,1,8,M.wood,sx+i*4.5,0.5,sz+6.4); }
+})();
+
+(function buildParking(){
+  const px=-96, pz=-24;
+  const lot=new THREE.Mesh(new THREE.PlaneGeometry(30,22),lam(0xb6b9bd));
+  lot.rotation.x=-Math.PI/2; lot.position.set(px,0.045,pz); lot.receiveShadow=true; scene.add(lot);
+  for(let i=-2;i<=2;i++){ box(0.25,0.06,8,lam(0xe6e2d6),px+i*5.4,0.08,pz-5); }
+})();
+
+function car(x,z,color,rot){
+  const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=rot||0; scene.add(g);
+  box(4.4,1,2.1,lam(color),0,0.85,0,g);
+  box(2.5,0.85,1.9,lam(color),-0.2,1.75,0,g);
+  box(2.3,0.6,1.7,M.window,-0.2,1.8,0,g).castShadow=false;
+  [[-1.5,0.95],[1.5,0.95],[-1.5,-0.95],[1.5,-0.95]].forEach(([wx,wz])=>{
+    const wheel=cyl(0.45,0.45,0.35,10,M.dark,wx,0.45,wz,g); wheel.rotation.x=Math.PI/2;
+  });
+  addColliderBox(x,z,4.6,2.4);
+  return g;
+}
+const decoyCar  = car(30, 66, 0x8a2320, 0.15);   // Decoy Car, south of entrance
+const getawayCar= car(6, -128, 0x8a2320, -0.4);  // Getaway Car, far NW
+
+// =====================================================================
+// PATH NETWORK (following the map)
+// =====================================================================
+path(55,86, 55,44, 8);          // entrance approach
+plaza(55,64,9);
+path(55,64, 8,44, 6);           // to fountain plaza
+path(4,32, 4,-8, 5);            // north from fountain
+path(4,-8, -48,22, 5);          // SW to Leerson Hall entrance (south pathway)
+path(-48,26, -48,60, 5);        // hall south approach
+path(4,-8, -24,-40, 4.5);       // to Moonside Courtyard gap
+path(4,-8, 34,-48, 5);          // NE toward Tiskin Park
+path(34,-48, 58,-48, 5);        // park south approach → gap
+path(58,-48, 58,-66, 4);        // spur north through both wall gaps
+path(4,-8, -6,-96, 4.5);        // north to King's Grotto
+path(-6,-118, 6,-128, 4);       // grotto to getaway lane
+path(-48,22, -80,26, 4.5);      // west to café
+path(-81,-2, -81,-22, 4.5);     // café/parking link
+path(-48,22,-81,-2,4.5);
+path(55,64, 96,52, 5);          // east grounds loop
+path(96,52, 96,-20, 5);
+path(96,-20, 84,-56, 5);
+
+// =====================================================================
+// TREES & BENCHES over the grounds
+// =====================================================================
+function tree(x,z,s){
+  s=s||1;
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  cyl(0.28*s,0.42*s,2.4*s,7,M.trunk,0,1.2*s,0,g);
+  const c1=sph(1.9*s,M.leaf,0,3.4*s,0,g,10,8);
+  const c2=sph(1.4*s,M.leafDk,0.9*s,4.2*s,0.4*s,g,10,8);
+  const c3=sph(1.2*s,M.leaf,-1.0*s,4.0*s,-0.4*s,g,10,8);
+  c1.scale.y=0.85; c2.scale.y=0.8; c3.scale.y=0.8;
+  addColliderBox(x,z,1.2*s,1.2*s,0.1);
+  return g;
+}
+const treeSpots=[
+  [30,86],[76,80],[92,70],[104,30],[104,-2],[98,-44],[80,-30],[26,-30],
+  [20,-64],[-16,-76],[-30,-92],[16,-104],[36,-112],[-8,-24],[-20,10],[-16,34],
+  [-34,44],[-66,44],[-80,10],[-70,-16],[-64,-52],[-40,-70],[24,44],[18,-14],
+  [86,-92],[62,-116],[-2,58],[-24,62],[110,-64],[46,-140]
+];
+treeSpots.forEach(([x,z])=>tree(x,z,0.85+Math.random()*0.7));
+// benches along south pathway & east grounds
+[[24,52,-0.5],[-18,6,0.5],[70,58,0.2],[96,10,Math.PI/2]].forEach(([x,z,r])=>{
+  const b=new THREE.Group(); b.position.set(x,0,z); b.rotation.y=r; scene.add(b);
+  box(2.8,0.22,0.9,M.wood,0,0.72,0,b);
+  box(2.8,0.8,0.18,M.wood,0,1.2,-0.42,b);
+  box(0.22,0.72,0.8,M.wood,-1.15,0.36,0,b);
+  box(0.22,0.72,0.8,M.wood, 1.15,0.36,0,b);
+});
+// entrance gate piers
+[-1,1].forEach(sx=>{
+  box(1.6,4.6,1.6,M.stone,55+sx*8,2.3,88);
+  sph(0.7,M.stoneDk,55+sx*8,5,88);
+  addColliderBox(55+sx*8,88,1.8,1.8);
+});
+
+// =====================================================================
+// HEIST INTEL — red markers from the crew's annotated map (toggle H)
+// =====================================================================
+const intel=new THREE.Group(); intel.visible=false; scene.add(intel);
+const intelPins=[];
+function intelMarker(x,z,text,sub,h){
+  h=h||9;
+  const pin=new THREE.Mesh(new THREE.OctahedronGeometry(0.9),pho(0xc23a33,{emissive:0x5a100c}));
+  pin.position.set(x,h,z); intel.add(pin); intelPins.push(pin);
+  const lab=makeLabelSprite(text,sub); lab.position.set(x,h+3.2,z); intel.add(lab);
+}
+intelMarker(6,-128,'Getaway Car','1:36',6);
+intelMarker(30,66,'Decoy Car','too easy to track',6);
+intelMarker(74,32,'Forced Entry','1:24',10);
+intelMarker(-24,-52,'White — 1:24','Moonside Courtyard',8);
+intelMarker(104,-30,'White · Farro · Marigold','1:05',8);
+intelMarker(92,60,'Manning','1:10',7);
+intelMarker(40,4,'roof access?','',14);
+intelMarker(-6,-104,'Escape Route','via King\u2019s Grotto',9);
+
+// =====================================================================
+// ZONES (name plate)
+// =====================================================================
+const zones=[
+  {x:58,z:-78,r:12, n:'Tiskin Monument', s:'commemorating the war of the fifth era'},
+  {x:58,z:-78,r:36, n:'Tiskin Park', s:'gardens · free access'},
+  {x:-24,z:-52,r:15,n:'Moonside Courtyard', s:'quietly hidden on the west end'},
+  {x:-48,z:-2,r:30, n:'Leerson Hall', s:'closed exhibits · restricted'},
+  {x:-6,z:-104,r:14,n:'King\u2019s Grotto', s:'gardens'},
+  {x:55,z:22,r:34,  n:'Museum — Main Concourse', s:'art & exhibits · ticket entry'},
+  {x:55,z:66,r:18,  n:'Museum Entrance', s:'ticket entry'},
+  {x:4,z:32,r:14,   n:'Fountain Plaza', s:'museum grounds'},
+  {x:-96,z:28,r:16, n:'Museum Station Caf\u00e9', s:'the defunct line, now shops'},
+  {x:-96,z:-24,r:20,n:'Parking Lot \u2014 West', s:'overflow parking'},
+  {x:96,z:0,r:30,   n:'East Grounds', s:'museum grounds'},
+  {x:-20,z:8,r:26,  n:'South Pathway', s:'gardens · free access'},
+];
+const zoneName=document.getElementById('zoneName');
+const zoneSub=document.getElementById('zoneSub');
+let curZone='';
+function updateZone(px,pz){
+  let best=null;
+  for(const z of zones){
+    const d=Math.hypot(px-z.x,pz-z.z);
+    if(d<z.r && (!best || z.r<best.r)) best=z;
+  }
+  const n=best?best.n:'Museum Grounds', s=best?best.s:'open to the general public';
+  if(n!==curZone){ curZone=n; zoneName.textContent=n; zoneSub.textContent=s; }
+}
+
+// =====================================================================
+// PLAYER CONTROLLER — pointer lock + touch
+// =====================================================================
+const player={x:55,z:96,yaw:0,pitch:-0.04,vx:0,vz:0};
+const EYE=1.75, SPEED=11, RUNMULT=1.8;
+const keys={};
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='KeyH') toggleIntel();
+});
+addEventListener('keyup',e=>keys[e.code]=false);
+
+const overlay=document.getElementById('startOverlay');
+const isTouch=matchMedia('(pointer:coarse)').matches;
+let started=false;
+overlay.addEventListener('click',()=>{
+  overlay.style.display='none'; started=true;
+  if(!isTouch) canvas.requestPointerLock && canvas.requestPointerLock();
+  else initTouch();
+});
+canvas.addEventListener('click',()=>{
+  if(started && !isTouch && document.pointerLockElement!==canvas)
+    canvas.requestPointerLock && canvas.requestPointerLock();
+});
+addEventListener('mousemove',e=>{
+  if(document.pointerLockElement!==canvas) return;
+  player.yaw   -= e.movementX*0.0023;
+  player.pitch -= e.movementY*0.0021;
+  player.pitch=Math.max(-1.25,Math.min(1.25,player.pitch));
+});
+
+// ---- touch controls ----
+const stickBase=document.getElementById('stickBase');
+const stickKnob=document.getElementById('stickKnob');
+let stick={active:false,id:null,cx:0,cy:0,dx:0,dy:0};
+let look={active:false,id:null,lx:0,ly:0};
+function initTouch(){
+  stickBase.style.display='block'; stickKnob.style.display='block';
+  positionKnob(0,0);
+  addEventListener('touchstart',onTS,{passive:false});
+  addEventListener('touchmove',onTM,{passive:false});
+  addEventListener('touchend',onTE);
+  addEventListener('touchcancel',onTE);
+  // intel toggle: tap title plate ◆? use double-tap right side? simple: tap zone plate
+  document.getElementById('zonePlate').style.pointerEvents='auto';
+  document.getElementById('zonePlate').addEventListener('click',toggleIntel);
+}
+function positionKnob(dx,dy){
+  const r=stickBase.getBoundingClientRect();
+  stickKnob.style.left=(r.left+r.width/2-24+dx)+'px';
+  stickKnob.style.top =(r.top +r.height/2-24+dy)+'px';
+}
+function onTS(e){
+  for(const t of e.changedTouches){
+    if(t.clientX<innerWidth*0.45 && !stick.active){
+      stick.active=true; stick.id=t.identifier;
+      const r=stickBase.getBoundingClientRect();
+      stick.cx=r.left+r.width/2; stick.cy=r.top+r.height/2;
+    } else if(!look.active){
+      look.active=true; look.id=t.identifier; look.lx=t.clientX; look.ly=t.clientY;
+    }
+  }
+  e.preventDefault();
+}
+function onTM(e){
+  for(const t of e.changedTouches){
+    if(stick.active && t.identifier===stick.id){
+      let dx=t.clientX-stick.cx, dy=t.clientY-stick.cy;
+      const len=Math.hypot(dx,dy), max=42;
+      if(len>max){dx*=max/len;dy*=max/len;}
+      stick.dx=dx/max; stick.dy=dy/max; positionKnob(dx,dy);
+    }
+    if(look.active && t.identifier===look.id){
+      player.yaw   -= (t.clientX-look.lx)*0.0042;
+      player.pitch -= (t.clientY-look.ly)*0.0038;
+      player.pitch=Math.max(-1.25,Math.min(1.25,player.pitch));
+      look.lx=t.clientX; look.ly=t.clientY;
+    }
+  }
+  e.preventDefault();
+}
+function onTE(e){
+  for(const t of e.changedTouches){
+    if(t.identifier===stick.id){stick.active=false;stick.dx=0;stick.dy=0;positionKnob(0,0);}
+    if(t.identifier===look.id) look.active=false;
+  }
+}
+
+function toggleIntel(){
+  intel.visible=!intel.visible;
+  document.getElementById('hint').style.display=intel.visible?'none':'block';
+  document.getElementById('intelPlate').style.display=intel.visible?'block':'none';
+}
+
+function resolveCollisions(){
+  const R=0.55;
+  for(const c of colliders){
+    if(player.x>c.minX-R && player.x<c.maxX+R && player.z>c.minZ-R && player.z<c.maxZ+R){
+      const dxl=(player.x)-(c.minX-R), dxr=(c.maxX+R)-(player.x);
+      const dzt=(player.z)-(c.minZ-R), dzb=(c.maxZ+R)-(player.z);
+      const m=Math.min(dxl,dxr,dzt,dzb);
+      if(m===dxl) player.x=c.minX-R;
+      else if(m===dxr) player.x=c.maxX+R;
+      else if(m===dzt) player.z=c.minZ-R;
+      else player.z=c.maxZ+R;
+    }
+  }
+  // grounds boundary
+  player.x=Math.max(-150,Math.min(150,player.x));
+  player.z=Math.max(-160,Math.min(120,player.z));
+}
+
+// =====================================================================
+// MAIN LOOP
+// =====================================================================
+const clock=new THREE.Clock();
+function tick(){
+  requestAnimationFrame(tick);
+  const dt=Math.min(0.05,clock.getDelta());
+  const t=clock.elapsedTime;
+
+  // input → intended velocity in camera space
+  let ix=0, iz=0;
+  if(keys.KeyW||keys.ArrowUp) iz-=1;
+  if(keys.KeyS||keys.ArrowDown) iz+=1;
+  if(keys.KeyA||keys.ArrowLeft) ix-=1;
+  if(keys.KeyD||keys.ArrowRight) ix+=1;
+  ix+=stick.dx; iz+=stick.dy;
+  const il=Math.hypot(ix,iz); if(il>1){ix/=il;iz/=il;}
+  const run=(keys.ShiftLeft||keys.ShiftRight)?RUNMULT:1;
+  // yaw=0 faces -Z (north); forward/right on the ground plane
+  const fwdX=-Math.sin(player.yaw), fwdZ=-Math.cos(player.yaw);
+  const rgtX=-fwdZ, rgtZ=fwdX;
+  const wvx=(fwdX*(-iz)+rgtX*ix)*SPEED*run;
+  const wvz=(fwdZ*(-iz)+rgtZ*ix)*SPEED*run;
+  player.vx+=(wvx-player.vx)*Math.min(1,dt*10);
+  player.vz+=(wvz-player.vz)*Math.min(1,dt*10);
+  player.x+=player.vx*dt; player.z+=player.vz*dt;
+  resolveCollisions();
+
+  // head bob
+  const speedNow=Math.hypot(player.vx,player.vz);
+  const bob=Math.sin(t*9)*Math.min(0.06,speedNow*0.006);
+
+  camera.position.set(player.x, EYE+bob, player.z);
+  camera.rotation.order='YXZ';
+  camera.rotation.y=player.yaw;
+  camera.rotation.x=player.pitch;
+
+  // flags ripple
+  for(const f of flags){
+    f.rotation.y=Math.sin(t*2.2+f.position.x)*0.28;
+    f.rotation.z=Math.sin(t*3.1+f.position.z)*0.06;
+  }
+  // intel pins bob & spin
+  if(intel.visible){
+    for(const p of intelPins){ p.rotation.y=t*1.6; p.position.y+=Math.sin(t*2+p.position.x)*0.004; }
+  }
+  updateZone(player.x,player.z);
+  renderer.render(scene,camera);
+}
+tick();
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+})();
+</script>
+</body>
+</html>
