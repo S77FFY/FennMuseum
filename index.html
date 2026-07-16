@@ -11,18 +11,18 @@
   .hud{position:fixed;z-index:10;color:var(--ink);pointer-events:none;user-select:none;-webkit-user-select:none;}
   #titlePlate{ top:14px;left:14px;background:linear-gradient(180deg,#f3eee2,#e7dfcd);
     border:1px solid #b8ab8d;border-radius:3px;box-shadow:0 3px 10px rgba(0,0,0,.35);
-    padding:8px 14px 9px;line-height:1.15;}
+    padding:8px 14px 9px;line-height:1.15;transition:opacity .8s;}
   #titlePlate .the{font-size:9px;letter-spacing:.35em;text-transform:uppercase;color:#6d6350;}
   #titlePlate .name{font-size:17px;letter-spacing:.06em;font-variant:small-caps;color:#25272b;}
   #titlePlate .name .strike{text-decoration:line-through;text-decoration-color:var(--royal);text-decoration-thickness:2px;color:#8a2320;}
   #titlePlate .night{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#8a2320;margin-top:2px;}
   #zonePlate{ bottom:16px;left:50%;transform:translateX(-50%);text-align:center;
     background:rgba(21,24,28,.62);color:#efe9dc;border:1px solid rgba(194,163,90,.55);
-    border-radius:2px;padding:5px 18px 6px;backdrop-filter:blur(3px);}
+    border-radius:2px;padding:5px 18px 6px;backdrop-filter:blur(3px);transition:opacity .7s;}
   #zoneName{font-variant:small-caps;letter-spacing:.14em;font-size:15px;}
   #zoneSub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#c2a35a;margin-top:1px;}
   #hint{ top:14px;right:14px;text-align:right;background:rgba(21,24,28,.55);color:#d9d2c2;
-    border:1px solid rgba(255,255,255,.12);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;}
+    border:1px solid rgba(255,255,255,.12);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;transition:opacity .8s;}
   #hint b{color:#c2a35a;font-weight:normal;}
   #intelPlate{ top:14px;right:14px;display:none;text-align:right;background:rgba(60,14,12,.72);color:#f0dcd4;
     border:1px solid rgba(213,90,80,.6);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;}
@@ -91,8 +91,8 @@
     display:none;align-items:center;justify-content:center;background:rgba(194,163,90,.22);
     border:1px solid rgba(194,163,90,.8);color:#efe9dc;font-size:24px;font-family:Georgia,serif;}
   #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;}
-  @media (pointer:coarse){ #hint .desktop{display:none} }
-  @media (pointer:fine){ #hint .touch{display:none} }
+  @media (pointer:coarse){ .desktop{display:none} }
+  @media (pointer:fine){ .touch{display:none} }
 </style>
 </head>
 <body>
@@ -134,7 +134,7 @@
     <div id="nightLine">Night 1 &nbsp;·&nbsp; Crowns lifted: 0</div>
     <div class="go">Click / tap to enter the grounds</div>
     <button class="btn" id="dirBtn">Room Directory</button>
-    <div id="verTag">v1.2.2</div>
+    <div id="verTag">v1.5.0</div>
   </div>
 </div>
 
@@ -185,7 +185,7 @@
 (function(){
 'use strict';
 
-const VERSION='v1.2.2';
+const VERSION='v1.5.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -221,18 +221,102 @@ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputEncoding=THREE.sRGBEncoding;
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(COL.sky);
-scene.fog=new THREE.Fog(COL.fog,90,480);
-const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,1200);
+scene.background=new THREE.Color(0x080b16);
+scene.fog=new THREE.Fog(0x080b16,80,460);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,1600);
 
-const hemi=new THREE.HemisphereLight(0xe8f0f7,0x8a9a80,0.85); scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xfff4e0,1.05);
-sun.position.set(-120,160,90); sun.castShadow=true;
+// dim, cool moonlit ambience
+const hemi=new THREE.HemisphereLight(0x2b3757,0x0a0d16,0.42); scene.add(hemi);
+const amb=new THREE.AmbientLight(0x141a2c,0.35); scene.add(amb);
+const sun=new THREE.DirectionalLight(0xaebfe4,0.55);       // the moon
+sun.position.set(-140,180,70); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-190; sun.shadow.camera.right=190;
 sun.shadow.camera.top=190; sun.shadow.camera.bottom=-190;
-sun.shadow.camera.far=520; sun.shadow.bias=-0.0006;
+sun.shadow.camera.far=560; sun.shadow.bias=-0.0006;
 scene.add(sun);
+const moonFill=new THREE.DirectionalLight(0x6f80b0,0.18);  // soft sky fill
+moonFill.position.set(120,90,-120); scene.add(moonFill);
+
+// ---------- night sky: stars, Milky Way, constellations, moon ----------
+let skyMesh=null;
+(function buildNightSky(){
+  const cv=document.createElement('canvas'); cv.width=2048; cv.height=1024;
+  const c=cv.getContext('2d');
+  // gradient: faint horizon glow -> deep space
+  const g=c.createLinearGradient(0,1024,0,0);
+  g.addColorStop(0.0,'#0c1428'); g.addColorStop(0.35,'#0a1020');
+  g.addColorStop(0.7,'#070a15'); g.addColorStop(1.0,'#04050c');
+  c.fillStyle=g; c.fillRect(0,0,2048,1024);
+  // Milky Way — a soft diagonal band of nebulous glow + dense stars
+  c.save(); c.translate(1024,512); c.rotate(-0.4);
+  for(let i=0;i<70;i++){
+    const x=(Math.random()-0.5)*2400, y=(Math.random()-0.5)*220;
+    const r=40+Math.random()*120;
+    const grd=c.createRadialGradient(x,y,0,x,y,r);
+    const a=0.03+Math.random()*0.05;
+    grd.addColorStop(0,'rgba(150,165,210,'+a+')');
+    grd.addColorStop(1,'rgba(150,165,210,0)');
+    c.fillStyle=grd; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill();
+  }
+  for(let i=0;i<2600;i++){
+    const x=(Math.random()-0.5)*2400, y=(Math.random()-0.5)*180*Math.random();
+    const s=Math.random()*1.3;
+    c.fillStyle='rgba(220,228,255,'+(0.4+Math.random()*0.5)+')';
+    c.fillRect(x,y,s,s);
+  }
+  c.restore();
+  // general starfield
+  function star(x,y,r,b){ const grd=c.createRadialGradient(x,y,0,x,y,r*2.5);
+    grd.addColorStop(0,'rgba(255,255,255,'+b+')'); grd.addColorStop(1,'rgba(255,255,255,0)');
+    c.fillStyle=grd; c.beginPath(); c.arc(x,y,r*2.5,0,Math.PI*2); c.fill();
+    c.fillStyle='rgba(255,255,255,'+Math.min(1,b+0.2)+')'; c.fillRect(x-r/2,y-r/2,r,r); }
+  for(let i=0;i<1500;i++){
+    const x=Math.random()*2048, y=Math.random()*1024;
+    const tw=Math.random(); star(x,y,0.4+tw*1.3,0.35+tw*0.5);
+  }
+  // a few tinted stars
+  ['#ffd9b0','#bcd0ff','#ffc0c0'].forEach(col=>{
+    for(let i=0;i<40;i++){ const x=Math.random()*2048,y=Math.random()*1024;
+      c.fillStyle=col; c.globalAlpha=0.7; c.beginPath(); c.arc(x,y,1.4,0,Math.PI*2); c.fill(); }
+  });
+  c.globalAlpha=1;
+  // constellations (connect-the-dots) with bright nodes
+  function constellation(cx,cy,pts){
+    c.strokeStyle='rgba(150,175,230,0.35)'; c.lineWidth=1.2;
+    c.beginPath();
+    pts.forEach((p,i)=>{ const x=cx+p[0],y=cy+p[1]; i?c.lineTo(x,y):c.moveTo(x,y); });
+    c.stroke();
+    pts.forEach(p=>{ const x=cx+p[0],y=cy+p[1];
+      const grd=c.createRadialGradient(x,y,0,x,y,6);
+      grd.addColorStop(0,'rgba(255,255,255,1)'); grd.addColorStop(1,'rgba(200,215,255,0)');
+      c.fillStyle=grd; c.beginPath(); c.arc(x,y,6,0,Math.PI*2); c.fill(); });
+  }
+  // Big Dipper
+  constellation(360,300,[[0,0],[60,10],[120,26],[176,54],[196,110],[130,120],[120,60]]);
+  // Orion-ish
+  constellation(1300,420,[[0,0],[40,70],[10,150],[70,90],[130,60],[150,140],[95,95]]);
+  // Cassiopeia (W)
+  constellation(760,180,[[0,0],[50,40],[100,6],[150,46],[200,4]]);
+  // a small cross
+  constellation(1650,640,[[0,0],[0,80],[-30,40],[30,40]]);
+  // the Moon
+  (function(){ const mx=1580,my=250,mr=70;
+    const halo=c.createRadialGradient(mx,my,0,mx,my,mr*2.6);
+    halo.addColorStop(0,'rgba(220,230,255,0.5)'); halo.addColorStop(1,'rgba(220,230,255,0)');
+    c.fillStyle=halo; c.beginPath(); c.arc(mx,my,mr*2.6,0,Math.PI*2); c.fill();
+    const mg=c.createRadialGradient(mx-18,my-18,10,mx,my,mr);
+    mg.addColorStop(0,'#ffffff'); mg.addColorStop(1,'#c9d2e6');
+    c.fillStyle=mg; c.beginPath(); c.arc(mx,my,mr,0,Math.PI*2); c.fill();
+    c.fillStyle='rgba(160,172,200,0.35)';
+    [[-20,-10,14],[18,8,10],[6,28,8],[-30,20,7],[24,-24,6]].forEach(([dx,dy,r])=>{
+      c.beginPath(); c.arc(mx+dx,my+dy,r,0,Math.PI*2); c.fill(); });
+  })();
+  const tex=new THREE.CanvasTexture(cv);
+  const geo=new THREE.SphereGeometry(760,40,24);
+  const mat=new THREE.MeshBasicMaterial({map:tex,side:THREE.BackSide,fog:false,depthWrite:false});
+  skyMesh=new THREE.Mesh(geo,mat); scene.add(skyMesh);
+})();
 
 // ---------- materials ----------
 function lam(c,extra){ return new THREE.MeshLambertMaterial(Object.assign({color:c},extra||{})); }
@@ -247,9 +331,10 @@ const M={
   leaf:lam(COL.leaf), leafDk:lam(COL.leafDk), trunk:lam(COL.trunk),
   water:pho(COL.water,{transparent:true,opacity:0.8,shininess:80,specular:0xffffff}),
   mountain:lam(COL.mountain), statue:pho(COL.statue,{shininess:14,specular:0x331a15}),
-  rock:lam(COL.rock), dark:lam(0x3a4048), window:lam(0x64768c),
+  rock:lam(COL.rock), dark:lam(0x3a4048), window:lam(0x2a2415,{emissive:0xdca24a}),
   darkWood:lam(0x4a3626), metal:lam(0x6a7076), laser:new THREE.MeshBasicMaterial({color:0xff2a1a}),
-  velvet:lam(0x8e1f1c), floorIn:lam(0xd8d2c2), wallIn:lam(0xe6e1d4), ceilIn:lam(0xcfc9ba)
+  velvet:lam(0x8e1f1c),
+  floorIn:lam(0xd8d2c2,{emissive:0x2a2a24}), wallIn:lam(0xe6e1d4,{emissive:0x2e2a20}), ceilIn:lam(0xcfc9ba,{emissive:0x242018})
 };
 
 // ---------- collision ----------
@@ -396,8 +481,96 @@ function makePlankTexture(base,plankW,repeat){
   return tex;
 }
 let _plankMat=null,_plankMatDk=null;
-function plankMat(){ if(!_plankMat) _plankMat=new THREE.MeshLambertMaterial({map:makePlankTexture(0x8a6a44,42,4)}); return _plankMat; }
-function plankMatDk(){ if(!_plankMatDk) _plankMatDk=new THREE.MeshLambertMaterial({map:makePlankTexture(0x6f4f30,42,3)}); return _plankMatDk; }
+function plankMat(){ if(!_plankMat) _plankMat=new THREE.MeshLambertMaterial({map:makePlankTexture(0x8a6a44,42,4),emissive:0x241a10,emissiveIntensity:0.5}); return _plankMat; }
+function plankMatDk(){ if(!_plankMatDk) _plankMatDk=new THREE.MeshLambertMaterial({map:makePlankTexture(0x6f4f30,42,3),emissive:0x1c140a,emissiveIntensity:0.45}); return _plankMatDk; }
+
+// pale gravel for the outdoor paths — light, speckled, tileable
+function makeGravelTexture(base){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+  const c=cv.getContext('2d');
+  c.fillStyle='#'+('000000'+base.toString(16)).slice(-6); c.fillRect(0,0,256,256);
+  for(let i=0;i<5200;i++){
+    const x=Math.random()*256,y=Math.random()*256, r=0.6+Math.random()*2.2;
+    const t=Math.random();
+    const v= t<0.5 ? 190+Math.random()*55 : 120+Math.random()*60; // light & mid pebbles
+    const tint=Math.random()*14;
+    c.fillStyle='rgba('+(v+tint)+','+(v+tint*0.6)+','+(v-tint*0.4)+','+(0.5+Math.random()*0.5)+')';
+    c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill();
+  }
+  // faint darker grout specks for depth
+  for(let i=0;i<400;i++){ c.fillStyle='rgba(70,66,58,0.25)';
+    c.beginPath(); c.arc(Math.random()*256,Math.random()*256,0.6+Math.random(),0,Math.PI*2); c.fill(); }
+  const tex=new THREE.CanvasTexture(cv);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(6,6);
+  return tex;
+}
+(function applyGravel(){
+  const g1=makeGravelTexture(0xcfcabd), g2=makeGravelTexture(0xb9b3a4);
+  M.path.map=g1; M.path.color.setHex(0xffffff); M.path.needsUpdate=true;
+  M.pathEdge.map=g2; M.pathEdge.color.setHex(0xf2efe8); M.pathEdge.needsUpdate=true;
+  // night tones for the open grounds
+  M.grass.color.setHex(0x4f6455);
+  M.mountain.color.setHex(0x232c40);
+  M.leaf.color.setHex(0x445a41); M.leafDk.color.setHex(0x374b36);
+  M.water.color.setHex(0x2a3d52);
+})();
+
+// blue checkerboard floor tiles — clearly reads as "floor"
+function makeTileTexture(light,dark){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+  const c=cv.getContext('2d');
+  const n=4, s=256/n;
+  for(let y=0;y<n;y++) for(let x=0;x<n;x++){
+    const hex=((x+y)%2===0)?light:dark;
+    c.fillStyle='#'+('000000'+hex.toString(16)).slice(-6);
+    c.fillRect(x*s,y*s,s,s);
+    // subtle bevel/grout
+    c.strokeStyle='rgba(255,255,255,0.10)'; c.lineWidth=2;
+    c.strokeRect(x*s+1,y*s+1,s-2,s-2);
+  }
+  c.strokeStyle='rgba(20,30,55,0.30)'; c.lineWidth=2;
+  for(let i=0;i<=n;i++){ c.beginPath();c.moveTo(i*s,0);c.lineTo(i*s,256);c.stroke();
+                         c.beginPath();c.moveTo(0,i*s);c.lineTo(256,i*s);c.stroke(); }
+  const tex=new THREE.CanvasTexture(cv);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(3,3);
+  return tex;
+}
+let _tileMat=null;
+function tileMat(){ if(!_tileMat) _tileMat=new THREE.MeshLambertMaterial({map:makeTileTexture(0x9fc2e8,0x35507e),emissive:0x1a2436,emissiveIntensity:0.6}); return _tileMat; }
+
+// ornate damask wallpaper — clearly reads as "wall"
+function makeWallpaperTexture(base,motif){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+  const c=cv.getContext('2d');
+  c.fillStyle='#'+('000000'+base.toString(16)).slice(-6); c.fillRect(0,0,256,256);
+  // vertical damask stripes
+  c.fillStyle='rgba(255,255,255,0.05)';
+  for(let x=0;x<256;x+=32) c.fillRect(x,0,16,256);
+  const mo='#'+('000000'+motif.toString(16)).slice(-6);
+  c.strokeStyle=mo; c.fillStyle=mo; c.lineWidth=2;
+  // repeating fleur/diamond motif on a 2x2 lattice
+  function fleur(cx,cy){
+    c.beginPath();
+    c.moveTo(cx,cy-16);
+    c.bezierCurveTo(cx+12,cy-10,cx+12,cy+6,cx,cy+14);
+    c.bezierCurveTo(cx-12,cy+6,cx-12,cy-10,cx,cy-16);
+    c.stroke();
+    c.beginPath(); c.arc(cx,cy,3,0,Math.PI*2); c.fill();
+    // side scrolls
+    c.beginPath(); c.moveTo(cx-14,cy); c.quadraticCurveTo(cx-20,cy-8,cx-14,cy-14); c.stroke();
+    c.beginPath(); c.moveTo(cx+14,cy); c.quadraticCurveTo(cx+20,cy-8,cx+14,cy-14); c.stroke();
+  }
+  fleur(64,64); fleur(192,64); fleur(64,192); fleur(192,192);
+  fleur(128,128); fleur(0,128); fleur(256,128); fleur(128,0); fleur(128,256);
+  // border pinstripes
+  c.strokeStyle='rgba(0,0,0,0.10)'; c.lineWidth=1;
+  for(let y=0;y<256;y+=8){ c.beginPath();c.moveTo(0,y);c.lineTo(256,y);c.stroke(); }
+  const tex=new THREE.CanvasTexture(cv);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(2,1);
+  return tex;
+}
+let _wallpaperMat=null;
+function wallpaperMat(){ if(!_wallpaperMat) _wallpaperMat=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(0xe7ddc4,0xb69a5e),emissive:0x2a2418,emissiveIntensity:0.55}); return _wallpaperMat; }
 
 function makeBlueprintMaterial(){
   const cv=document.createElement('canvas'); cv.width=768; cv.height=512;
@@ -536,7 +709,14 @@ const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
   glassDome(7.6,8,museum).position.set(0,18.3,-1);
   box(17,9,13,M.marble,0,10.1+4.5,-10,museum);
   box(18.2,1,14.2,M.marbleSh,0,19.1,-10,museum);
-  glassDome(5.6,8,museum).position.set(0,19.6,-10);
+  // --- stacked upper tiers rising to the great cupola (mirrors the 3 interior floors) ---
+  const drum2=cyl(6.6,7.0,6.5,20,M.marble,0,22.8,-10,museum);
+  for(let i=0;i<12;i++){ const a=(i/12)*Math.PI*2;
+    box(0.4,6,0.4,M.slate,Math.cos(a)*6.9,22.8,-10+Math.sin(a)*6.9,museum); }
+  cyl(7.3,7.3,0.7,20,M.marbleSh,0,26.35,-10,museum);
+  glassDome(6.2,10,museum).position.set(0,26.7,-10);          // the great cupola
+  cyl(0.22,0.42,1.7,8,M.gold,0,33.1,-10,museum);
+  sph(0.42,M.gold,0,34.3,-10,museum,10,8);
   for(let i=-3;i<=3;i++){ box(1.2,6,0.3,M.window,i*2.4,14.4,-3.35,museum).castShadow=false; }
 
   [-1,1].forEach(sx=>{
@@ -919,6 +1099,49 @@ treeSpots.forEach(([x,z])=>tree(x,z,0.85+Math.random()*0.7));
 });
 
 // =====================================================================
+// STREET LAMPS — warm pools of light across the night grounds
+// =====================================================================
+const lampGlassMat=new THREE.MeshBasicMaterial({color:0xffe6b0,fog:true});
+const lampMetal=lam(0x22262c);
+const lampGlows=[];
+// shared warm ground-glow decal (cheap fake illumination — no per-lamp light)
+const glowTex=(function(){
+  const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
+  const c=cv.getContext('2d'); const g=c.createRadialGradient(64,64,0,64,64,64);
+  g.addColorStop(0,'rgba(255,214,140,0.55)'); g.addColorStop(0.5,'rgba(255,196,110,0.18)');
+  g.addColorStop(1,'rgba(255,196,110,0)');
+  c.fillStyle=g; c.fillRect(0,0,128,128); return new THREE.CanvasTexture(cv);
+})();
+function groundGlow(x,z,r){
+  const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),
+    new THREE.MeshBasicMaterial({map:glowTex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:true}));
+  m.rotation.x=-Math.PI/2; m.position.set(x,0.07,z); scene.add(m); return m;
+}
+function streetLamp(x,z,realLight){
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  cyl(0.42,0.55,0.5,8,M.stoneDk,0,0.25,0,g);      // base
+  cyl(0.16,0.22,5.2,8,lampMetal,0,2.8,0,g);        // post
+  cyl(0.34,0.22,0.4,8,lampMetal,0,5.35,0,g);       // crown
+  const lantern=box(0.9,1.1,0.9,lampGlassMat,0,6.0,0,g); lantern.castShadow=false;
+  [[-0.45,-0.45],[0.45,-0.45],[-0.45,0.45],[0.45,0.45]].forEach(([ox,oz])=>{
+    cyl(0.05,0.05,1.2,6,lampMetal,ox,6.0,oz,g); });
+  box(1.05,0.14,1.05,lampMetal,0,6.62,0,g);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(0.75,0.6,4),lampMetal); cap.position.set(0,6.95,0); g.add(cap);
+  sph(0.12,M.gold,0,7.32,0,g,8,8);
+  const glow=sph(0.5,new THREE.MeshBasicMaterial({color:0xffdf9a,transparent:true,opacity:0.55,fog:false}),0,6.0,0,g,10,8);
+  glow.castShadow=false; lampGlows.push(glow);
+  groundGlow(x,z,7.5);
+  if(realLight){ const L=new THREE.PointLight(0xffd489,0.9,34,1.8); L.position.set(x,6.0,z); scene.add(L); }
+  addColliderBox(x,z,0.6,0.6,0.2);
+  return g;
+}
+[[40,60],[70,60],[30,40],[16,10],[-6,-6],[-30,-30],[-40,10],[-66,30],
+ [-40,-58],[24,-40],[46,-52],[58,-60],[6,-96],[-6,-120],[80,-40],[96,20],[96,-14]
+].forEach(([x,z])=>streetLamp(x,z,false));
+// a few lamps with genuine cast light (entrance + main approach)
+streetLamp(47,60,true); streetLamp(63,60,true); streetLamp(24,50,true);
+
+// =====================================================================
 // HEIST INTEL markers (H)
 // =====================================================================
 const intel=new THREE.Group(); intel.visible=false; scene.add(intel);
@@ -993,6 +1216,25 @@ const ROOMS=[
   R('sealedvault','Sealed Vault',0,[],CX,'No way in. Placing it seals the doorway.')
 ];
 function roomById(id){ for(const r of ROOMS) if(r.id===id) return r; return null; }
+// lift + stair specials, and floor-specific draft pools
+ROOMS.push(R('lift','Lift',2,P2I,CO,'A cage lift. Once built it carries you up a floor.','lift'));
+ROOMS.push(R('grandstair','Grand Staircase',2,P2L,CG,'Sweeping stair to the level above.','lift'));
+ROOMS.push(R('gallerylong','Skylight Gallery',3,P3F,CA,'Upper gallery beneath the glass.'));
+ROOMS.push(R('domechamber','Dome Chamber',2,P2I,CO,'Directly under the great cupola.'));
+ROOMS.push(R('belvedere','Belvedere',1,P1,CO,'A room with a view over Fenn.'));
+ROOMS.push(R('orrery','Orrery',1,P1,CO,'Clockwork planets turn overhead.'));
+// floor tags: 0=ground, 1=upper, 2=cupola. default ground.
+ROOMS.forEach(r=>{ r.fl=[0]; });
+const UPPER=new Set(['whisperinghall','scholarsstair','fiftherawing','archive','conservationlab',
+  'musicroom','armoury','tiskinannex','securityoffice','readingroom','curatorsoffice','recordsroom',
+  'porcelainroom','clockroom','princesstudy','gallerylong','tearoom','maproom','longgallery','colonnade']);
+const CUPOLA=new Set(['observatory','moonroom','sunroom','domechamber','belvedere','orrery','clockroom']);
+UPPER.forEach(id=>{ const r=roomById(id); if(r) r.fl=[1]; });
+CUPOLA.forEach(id=>{ const r=roomById(id); if(r) r.fl=[2]; });
+// shared across floors
+['brickedwing','sealedvault'].forEach(id=>{ const r=roomById(id); if(r) r.fl=[0,1,2]; });
+['lift','grandstair'].forEach(id=>{ const r=roomById(id); if(r) r.fl=[0,1]; }); // no lift needed on top
+function poolFor(f){ return ROOMS.filter(r=>r.fl.indexOf(f.idx)>=0 && !dirOff.has(r.id) && !f.placed.has(r.id)); }
 const ORD=['N','E','S','W'];
 function rotSide(s,k){ return ORD[(ORD.indexOf(s)+k)%4]; }
 function oppSide(s){ return {N:'S',S:'N',E:'W',W:'E'}[s]; }
@@ -1001,53 +1243,59 @@ const SIDE_D={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0]}; // [dc, dr] (N = deeper row)
 // =====================================================================
 // DRAFT WING — East Extension interior (grid 5x5 + south landing)
 // =====================================================================
-const DX=600, DZ=0, CS_=12, GW=5, GH=5;
-function cellX(c){ return DX+(c-2)*CS_; }
-function cellZ(r){ return DZ-r*CS_; }
-const grid=[]; for(let r=0;r<GH;r++){ grid.push([null,null,null,null,null]); }
-const placed=new Set();
-const edges=new Map();
+const CS_=12, DZ=0;
+// three stacked floors, each its own grid + landing + room pool
+const FLOORS=[
+  {name:'Ground Floor', ox:600,  oz:0, gw:8, gh:3},
+  {name:'Upper Gallery',ox:900,  oz:0, gw:5, gh:3},
+  {name:'The Cupola',   ox:1180, oz:0, gw:2, gh:2},
+];
+FLOORS.forEach((f,i)=>{ f.idx=i; f.grid=[]; for(let r=0;r<f.gh;r++){ f.grid.push(new Array(f.gw).fill(null)); }
+  f.edges=new Map(); f.placed=new Set(); f.liftUpPos=null; f.unlocked=(i===0); });
 let tunnelPos=null;
-const tintCache={};
-function tintMat(c){ if(!tintCache[c]) tintCache[c]=lam(c); return tintCache[c]; }
+
+function cellX(f,c){ return f.ox+(c-(f.gw-1)/2)*CS_; }
+function cellZ(f,r){ return f.oz-r*CS_; }
+function entryCells(f){ const n=Math.min(3,f.gw), start=Math.floor((f.gw-n)/2), a=[]; for(let i=0;i<n;i++) a.push(start+i); return a; }
+function activeFloor(px){ for(const f of FLOORS){ if(Math.abs(px-f.ox)<f.gw*CS_/2+34) return f; } return null; }
 
 // dark underlay slabs so interior doorways never open onto sky
-[[DX,DZ-22],[ -600, 0 ]].forEach(([ux,uz])=>{
-  const u=new THREE.Mesh(new THREE.PlaneGeometry(150,150),lam(0x2c3036));
-  u.rotation.x=-Math.PI/2; u.position.set(ux,-0.02,uz); scene.add(u);
-});
+FLOORS.forEach(f=>{ const u=new THREE.Mesh(new THREE.PlaneGeometry(f.gw*CS_+60,f.gh*CS_+80),lam(0x2c3036));
+  u.rotation.x=-Math.PI/2; u.position.set(f.ox,-0.02,f.oz-f.gh*CS_/2); scene.add(u); });
+(function(){ const u=new THREE.Mesh(new THREE.PlaneGeometry(150,150),lam(0x2c3036));
+  u.rotation.x=-Math.PI/2; u.position.set(-600,-0.02,0); scene.add(u); })();
 
-function edgeInfo(c,r,side){
-  if(side==='S') return {key:'h'+c+'_'+r,     x:cellX(c),  z:cellZ(r)+6, horiz:true};
-  if(side==='N') return {key:'h'+c+'_'+(r+1), x:cellX(c),  z:cellZ(r)-6, horiz:true};
-  if(side==='W') return {key:'v'+c+'_'+r,     x:cellX(c)-6,z:cellZ(r),   horiz:false};
-  return             {key:'v'+(c+1)+'_'+r,    x:cellX(c)+6,z:cellZ(r),   horiz:false};
+function edgeInfo(f,c,r,side){
+  if(side==='S') return {key:'h'+c+'_'+r,     x:cellX(f,c),  z:cellZ(f,r)+6, horiz:true};
+  if(side==='N') return {key:'h'+c+'_'+(r+1), x:cellX(f,c),  z:cellZ(f,r)-6, horiz:true};
+  if(side==='W') return {key:'v'+c+'_'+r,     x:cellX(f,c)-6,z:cellZ(f,r),   horiz:false};
+  return             {key:'v'+(c+1)+'_'+r,    x:cellX(f,c)+6,z:cellZ(f,r),   horiz:false};
 }
-function buildEdgeWall(info,gap){
+function buildEdgeWall(f,info,gap){
   const rec={gap:gap,cols:[],panelMesh:null,panelCol:null,inter:null,sealed:false};
-  const H=4.6;
+  const H=4.6, WM=wallpaperMat();
   if(!gap){
-    if(info.horiz){ box(12,H,0.5,M.wallIn,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,12,0.5,0.25)); }
-    else{ box(0.5,H,12,M.wallIn,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.5,12,0.25)); }
+    if(info.horiz){ box(12,H,0.5,WM,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,12,0.5,0.25)); }
+    else{ box(0.5,H,12,WM,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.5,12,0.25)); }
   }else{
     const segL=4.7, off=3.65;
     if(info.horiz){
-      box(segL,H,0.5,M.wallIn,info.x-off,H/2,info.z);
-      box(segL,H,0.5,M.wallIn,info.x+off,H/2,info.z);
-      box(2.6,1.05,0.5,M.wallIn,info.x,4.07,info.z);
+      box(segL,H,0.5,WM,info.x-off,H/2,info.z);
+      box(segL,H,0.5,WM,info.x+off,H/2,info.z);
+      box(2.6,1.05,0.5,WM,info.x,4.07,info.z);
       rec.cols.push(addColliderBox(info.x-off,info.z,segL,0.5,0.25));
       rec.cols.push(addColliderBox(info.x+off,info.z,segL,0.5,0.25));
     }else{
-      box(0.5,H,segL,M.wallIn,info.x,H/2,info.z-off);
-      box(0.5,H,segL,M.wallIn,info.x,H/2,info.z+off);
-      box(0.5,1.05,2.6,M.wallIn,info.x,4.07,info.z);
+      box(0.5,H,segL,WM,info.x,H/2,info.z-off);
+      box(0.5,H,segL,WM,info.x,H/2,info.z+off);
+      box(0.5,1.05,2.6,WM,info.x,4.07,info.z);
       rec.cols.push(addColliderBox(info.x,info.z-off,0.5,segL,0.25));
       rec.cols.push(addColliderBox(info.x,info.z+off,0.5,segL,0.25));
     }
   }
-  edges.set(info.key,rec); return rec;
+  f.edges.set(info.key,rec); return rec;
 }
-function addDoorPanel(rec,info,target){
+function addDoorPanel(f,rec,info,target){
   const p=info.horiz? box(2.5,3.4,0.16,M.darkWood,info.x,1.7,info.z)
                     : box(0.16,3.4,2.5,M.darkWood,info.x,1.7,info.z);
   sph(0.09,M.gold,info.horiz?info.x+0.8:info.x+0.11,1.6,info.horiz?info.z+0.11:info.z+0.8,scene,8,8);
@@ -1068,26 +1316,30 @@ function sealEdgeGap(rec,info){
   else{ box(0.55,4.6,2.7,M.stoneDk,info.x,2.3,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.55,2.7,0.2)); }
   rec.sealed=true; rec.gap=false;
 }
-function buildRoomGeom(c,r,room,abs){
-  const cx=cellX(c),cz=cellZ(r);
-  box(11.9,0.1,11.9,tintMat(room.c),cx,0.05,cz).castShadow=false;
+function buildRoomGeom(f,c,r,room,abs){
+  const cx=cellX(f,c),cz=cellZ(f,r);
+  box(11.9,0.1,11.9,tileMat(),cx,0.05,cz).castShadow=false;   // blue tiled floor
   box(12,0.3,12,M.ceilIn,cx,4.75,cz);
+  // ceiling light fixture — a warm glowing panel so the room reads as lit
+  const fix=box(2.6,0.12,2.6,new THREE.MeshBasicMaterial({color:0xffe9c2,fog:true}),cx,4.55,cz);
+  fix.castShadow=false;
+  const fr=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.06,6,16),M.gold);
+  fr.rotation.x=Math.PI/2; fr.position.set(cx,4.5,cz); scene.add(fr);
   const tag=makeTag(room.n,false); tag.position.set(cx,3.55,cz); scene.add(tag);
   ORD.forEach(side=>{
-    const info=edgeInfo(c,r,side);
+    const info=edgeInfo(f,c,r,side);
     const meDoor=abs.has(side);
-    if(edges.has(info.key)){
-      const rec=edges.get(info.key);
-      if(rec.gap && meDoor){ clearPanel(rec); }               // passage opens
+    if(f.edges.has(info.key)){
+      const rec=f.edges.get(info.key);
+      if(rec.gap && meDoor){ clearPanel(rec); }
       else if(rec.gap && !meDoor){ clearPanel(rec); sealEdgeGap(rec,info); }
-      // solid wall + meDoor: blocked, nothing to build
     }else{
-      const rec=buildEdgeWall(info,meDoor);
+      const rec=buildEdgeWall(f,info,meDoor);
       if(meDoor){
         const [dc,dr]=SIDE_D[side];
         const nc=c+dc,nr=r+dr;
-        if(nc<0||nc>=GW||nr<0||nr>=GH){ sealEdgeGap(rec,info); }
-        else{ addDoorPanel(rec,info,{tc:nc,tr:nr,entry:oppSide(side)}); }
+        if(nc<0||nc>=f.gw||nr<0||nr>=f.gh){ sealEdgeGap(rec,info); }
+        else{ addDoorPanel(f,rec,info,{f:f,tc:nc,tr:nr,entry:oppSide(side)}); }
       }
     }
   });
@@ -1098,68 +1350,97 @@ function buildRoomGeom(c,r,room,abs){
     tunnelPos={x:cx,z:cz};
     interactables.push({x:cx+2,z:cz+2,r:1.7,label:'descend the service hatch',
       fn:()=>{ fadeTeleport(-600-8,0-18.2,-Math.PI/2);
-               setTimeout(()=>msg('Staff corridor \u2014 behind the Closed Exhibit. Use the controls: open the SHUTTER, then disarm ROPE, LASERS and ALARM.'),700); },
+               setTimeout(()=>msg('Staff corridor. Slide the control panel cover open, then flip SHUTTER, ROPE, LASERS \u0026 ALARM.'),700); },
       dead:false});
   }
+  if(room.sp==='lift'){ buildLift(f,cx,cz); }
+}
+function buildLift(f,cx,cz){
+  const up=FLOORS[f.idx+1];
+  // platform + rails
+  cyl(2.1,2.1,0.18,16,M.metal,cx,0.16,cz);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.08,8,24),M.gold);
+  ring.rotation.x=-Math.PI/2; ring.position.set(cx,0.34,cz); scene.add(ring);
+  [[-1.4,-1.4],[1.4,-1.4],[-1.4,1.4],[1.4,1.4]].forEach(([ox,oz])=>{
+    cyl(0.1,0.1,3.6,8,M.gold,cx+ox,1.8,cz+oz); });
+  const lp=new THREE.PointLight(0xfff0cc,0.7,10); lp.position.set(cx,3,cz); scene.add(lp);
+  if(!up){
+    const tg=makeTag('LIFT \u2014 TOP FLOOR',true); tg.position.set(cx,3.4,cz); scene.add(tg);
+    return;
+  }
+  f.liftUpPos={x:cx,z:cz};
+  up.unlocked=true;
+  const tg=makeTag('LIFT \u2014 UP',true); tg.position.set(cx,3.4,cz); scene.add(tg);
+  // ascend
+  interactables.push({x:cx,z:cz,r:1.9,dead:false,
+    label:'take the lift up to '+up.name,
+    fn:()=>{ fadeTeleport(up.ox, up.oz+10.4, 0);
+             setTimeout(()=>msg('Arrived: '+up.name+'. Draft on through the doors.'),700); }});
+  // descend pad on the upper landing (built now that the lift exists)
+  const dz=up.oz+9.2, dx=cellX(up,-0.5);
+  cyl(1.6,1.6,0.16,14,M.metal,dx,0.14,dz);
+  const dring=new THREE.Mesh(new THREE.TorusGeometry(1.4,0.07,8,20),M.gold);
+  dring.rotation.x=-Math.PI/2; dring.position.set(dx,0.3,dz); scene.add(dring);
+  const dtg=makeTag('LIFT \u2014 DOWN',true); dtg.position.set(dx,2.6,dz); scene.add(dtg);
+  interactables.push({x:dx,z:dz,r:1.8,dead:false,
+    label:'take the lift down to '+f.name,
+    fn:()=>fadeTeleport(cx,cz,0)});
 }
 function placeRoom(id,ctx){
-  const room=roomById(id); if(!room) return;
-  placed.add(id);
-  const info=edgeInfo(ctx.tc,ctx.tr,ctx.entry);
+  const f=ctx.f, room=roomById(id); if(!room) return;
+  f.placed.add(id);
+  const info=edgeInfo(f,ctx.tc,ctx.tr,ctx.entry);
   if(room.d===0){
-    const rec=edges.get(info.key);
+    const rec=f.edges.get(info.key);
     if(rec){ clearPanel(rec); sealEdgeGap(rec,info); }
-    box(11.5,4.6,11.5,lam(0x4b4e54),cellX(ctx.tc),2.3,cellZ(ctx.tr));
-    addColliderBox(cellX(ctx.tc),cellZ(ctx.tr),11.5,11.5,0.2);
-    grid[ctx.tr][ctx.tc]={id:id,abs:[],sealed:true};
+    box(11.5,4.6,11.5,lam(0x4b4e54),cellX(f,ctx.tc),2.3,cellZ(f,ctx.tr));
+    addColliderBox(cellX(f,ctx.tc),cellZ(f,ctx.tr),11.5,11.5,0.2);
+    f.grid[ctx.tr][ctx.tc]={id:id,abs:[],sealed:true};
     msg(room.n+' \u2014 the doorway is sealed for the night.');
     return;
   }
   let rot=0;
   for(let k=0;k<4;k++){ if(room.s.some(s=>rotSide(s,k)===ctx.entry)){ rot=k; break; } }
   const abs=new Set(room.s.map(s=>rotSide(s,rot)));
-  grid[ctx.tr][ctx.tc]={id:id,abs:[...abs],sealed:false};
-  buildRoomGeom(ctx.tc,ctx.tr,room,abs);
-  msg('Drafted: '+room.n);
+  f.grid[ctx.tr][ctx.tc]={id:id,abs:[...abs],sealed:false};
+  buildRoomGeom(f,ctx.tc,ctx.tr,room,abs);
+  msg('Drafted: '+room.n+(room.sp==='lift'?' \u2014 a way up unlocked!':''));
 }
-// ---- south landing ----
-(function buildLanding(){
-  box(36,0.14,6.8,M.floorIn,DX,0.07,9.2).castShadow=false;
-  box(2.2,0.06,6.8,M.royal,DX,0.13,9.2).castShadow=false;
-  box(36,0.3,6.8,M.ceilIn,DX,4.75,9.2);
-  box(0.5,4.6,6.8,M.wallIn,DX-18,2.3,9.2); addColliderBox(DX-18,9.2,0.5,6.8,0.25);
-  box(0.5,4.6,6.8,M.wallIn,DX+18,2.3,9.2); addColliderBox(DX+18,9.2,0.5,6.8,0.25);
-  // south wall with three return arches
-  const zS=12.4;
-  [[-18,-13.3],[-10.7,-1.3],[1.3,10.7],[13.3,18]].forEach(([a,b])=>{
-    const len=b-a, mid=DX+(a+b)/2;
-    box(len,4.6,0.5,M.wallIn,mid,2.3,zS);
-    addColliderBox(mid,zS,len,0.5,0.25);
-  });
-  [-12,0,12].forEach(off=>{
-    box(2.6,1.05,0.5,M.wallIn,DX+off,4.07,zS);
+// ---- landings (one per floor) ----
+function buildLanding(f){
+  const W=f.gw*CS_, half=W/2;
+  box(W+8,0.14,6.8,tileMat(),f.ox,0.07,f.oz+9.2).castShadow=false;
+  box(2.2,0.06,6.8,M.royal,f.ox,0.13,f.oz+9.2).castShadow=false;
+  box(W+8,0.3,6.8,M.ceilIn,f.ox,4.75,f.oz+9.2);
+  box(0.5,4.6,6.8,wallpaperMat(),f.ox-half-4,2.3,f.oz+9.2); addColliderBox(f.ox-half-4,f.oz+9.2,0.5,6.8,0.25);
+  box(0.5,4.6,6.8,wallpaperMat(),f.ox+half+4,2.3,f.oz+9.2); addColliderBox(f.ox+half+4,f.oz+9.2,0.5,6.8,0.25);
+  const cells=entryCells(f), zS=f.oz+12.4;
+  // south wall segments between door gaps
+  const gapX=cells.map(c=>cellX(f,c));
+  let xL=f.ox-half-4;
+  const segEnds=[];
+  gapX.forEach(gx=>{ segEnds.push([xL,gx-1.3]); xL=gx+1.3; });
+  segEnds.push([xL,f.ox+half+4]);
+  segEnds.forEach(([a,b])=>{ const len=b-a; if(len<0.2) return; const mid=(a+b)/2;
+    box(len,4.6,0.5,wallpaperMat(),mid,2.3,zS); addColliderBox(mid,zS,len,0.5,0.25); });
+  gapX.forEach(gx=>{ box(2.6,1.05,0.5,wallpaperMat(),gx,4.07,zS);
     const ring=new THREE.Mesh(new THREE.TorusGeometry(1.35,0.09,8,18,Math.PI),M.gold);
-    ring.position.set(DX+off,3.4,zS); scene.add(ring);
-  });
-  const lt=makeTag('SOUTH LANDING',true); lt.position.set(DX,3.7,9.2); scene.add(lt);
-  // north wall: three draftable doorways into row 0
-  [1,2,3].forEach(c=>{
-    const info=edgeInfo(c,0,'S');
-    const rec=buildEdgeWall(info,true);
-    addDoorPanel(rec,info,{tc:c,tr:0,entry:'S'});
-  });
-  const L1=new THREE.PointLight(0xffe2b8,0.7,26); L1.position.set(DX,3.8,9.2); scene.add(L1);
-  [[DX-12,-6],[DX+12,-6],[DX-12,-30],[DX+12,-30],[DX,-48]].forEach(([lx,lz])=>{
-    const L=new THREE.PointLight(0xf4e6cd,0.55,26); L.position.set(lx,4.1,lz); scene.add(L);
-  });
-})();
-// museum hall doors <-> landing teleports
-teleports.push({x:55,z:7.4,r:1.5, tx:DX,   tz:10.4, yaw:0});
-teleports.push({x:43.3,z:14,r:1.3, tx:DX-12,tz:10.4, yaw:0});
-teleports.push({x:66.7,z:14,r:1.3, tx:DX+12,tz:10.4, yaw:0});
-teleports.push({x:DX,   z:12.0,r:1.0, tx:55,  tz:10.4, yaw:Math.PI});
-teleports.push({x:DX-12,z:12.0,r:1.0, tx:44.9,tz:14, yaw:-Math.PI/2});
-teleports.push({x:DX+12,z:12.0,r:1.0, tx:65.1,tz:14, yaw: Math.PI/2});
+    ring.position.set(gx,3.4,zS); scene.add(ring); });
+  const lt=makeTag(f.name.toUpperCase()+' LANDING',true); lt.position.set(f.ox,3.7,f.oz+9.2); scene.add(lt);
+  // draftable doorways into row 0
+  cells.forEach(c=>{ const info=edgeInfo(f,c,0,'S'); const rec=buildEdgeWall(f,info,true);
+    addDoorPanel(f,rec,info,{f:f,tc:c,tr:0,entry:'S'}); });
+  const L1=new THREE.PointLight(0xffe2b8,0.85,40); L1.position.set(f.ox,4.0,f.oz+2); scene.add(L1);
+}
+FLOORS.forEach(buildLanding);
+// entrance-hall doors <-> GROUND landing
+const G=FLOORS[0];
+teleports.push({x:55,z:7.4,r:1.5, tx:G.ox,   tz:10.4, yaw:0});
+teleports.push({x:43.3,z:14,r:1.3, tx:G.ox-12,tz:10.4, yaw:0});
+teleports.push({x:66.7,z:14,r:1.3, tx:G.ox+12,tz:10.4, yaw:0});
+teleports.push({x:G.ox,   z:12.0,r:1.0, tx:55,  tz:10.4, yaw:Math.PI});
+teleports.push({x:G.ox-12,z:12.0,r:1.0, tx:44.9,tz:14, yaw:-Math.PI/2});
+teleports.push({x:G.ox+12,z:12.0,r:1.0, tx:65.1,tz:14, yaw: Math.PI/2});
 
 // =====================================================================
 // LEERSON HALL interior — fixed layout + CLOSED EXHIBIT heist
@@ -1169,6 +1450,8 @@ const WINDOW_MS=14000; // disarm window (ms) — enough to round through the gal
 const heist={rope:true,lasers:true,alarm:true,caged:false,stolen:false,shutter:false,winUntil:0};
 let ropeG,laserG,cageG,cageCol=null,shutterMesh,secDoor,secCol=null,crownG;
 const btnMats={};
+const switchKnobs={};
+const panelState={open:false,cover:null,ctag:null};
 function wallRun(x1,z1,x2,z2,gaps){
   const horiz=(z1===z2), H=5;
   const a=horiz?Math.min(x1,x2):Math.min(z1,z2), b=horiz?Math.max(x1,x2):Math.max(z1,z2);
@@ -1288,19 +1571,28 @@ function wallRun(x1,z1,x2,z2,gaps){
     rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
     ropeG.add(rope);
   }
-  // laser field
+  // laser field — a full cage of beams from floor to ceiling, all around the crown
   laserG=new THREE.Group(); scene.add(laserG);
-  [0.35,0.85,1.35].forEach(hy=>{
-    [[-2,-2,2,-2],[2,-2,2,2],[2,2,-2,2],[-2,2,-2,-2]].forEach(([ax,az,bx,bz])=>{
-      const a=new THREE.Vector3(EC.x+ax,hy,EC.z+az), b=new THREE.Vector3(EC.x+bx,hy,EC.z+bz);
+  (function(){
+    const LR=2.0, y0=0.15, y1=4.7;
+    function beam(ax,ay,az,bx,by,bz){
+      const a=new THREE.Vector3(EC.x+ax,ay,EC.z+az), b=new THREE.Vector3(EC.x+bx,by,EC.z+bz);
       const dir=new THREE.Vector3().subVectors(b,a); const len=dir.length();
-      const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,len,5),M.laser);
-      beam.castShadow=false;
-      beam.position.copy(a).add(b).multiplyScalar(0.5);
-      beam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
-      laserG.add(beam);
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,len,5),M.laser); m.castShadow=false;
+      m.position.copy(a).add(b).multiplyScalar(0.5);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+      laserG.add(m);
+    }
+    const corners=[[-LR,-LR],[LR,-LR],[LR,LR],[-LR,LR]];
+    // horizontal square rings stacked floor to ceiling
+    [0.3,1.0,1.7,2.4,3.1,3.8,4.5].forEach(hy=>{
+      for(let i=0;i<4;i++){ const [ax,az]=corners[i],[bx,bz]=corners[(i+1)%4]; beam(ax,hy,az,bx,hy,bz); }
     });
-  });
+    // vertical bars around the whole perimeter -> a cage grid
+    for(let i=0;i<4;i++){ const [ax,az]=corners[i],[bx,bz]=corners[(i+1)%4];
+      for(let t=0;t<1;t+=0.25){ const vx=ax+(bx-ax)*t, vz=az+(bz-az)*t; beam(vx,y0,vz,vx,y1,vz); }
+    }
+  })();
   // cage (starts hidden above)
   cageG=new THREE.Group(); cageG.position.set(EC.x,7,EC.z); cageG.visible=false; scene.add(cageG);
   cageG.userData.ty=7;
@@ -1319,18 +1611,69 @@ function wallRun(x1,z1,x2,z2,gaps){
   secDoor.userData.tx=W(8);
   secCol=addColliderBox(W(8),Z(-6),2.6,0.6,0.15);
   const sdTag=makeTag('SECURITY DOOR',true); sdTag.position.set(W(8),4.6,Z(-6.6)); scene.add(sdTag);
-  // control buttons beside the shutter
-  const BTN=[
-    ['shutter','SHUTTER',3.2],['rope','ROPE',4.5],['lasers','LASERS',5.8],['alarm','ALARM',7.1]
-  ];
-  BTN.forEach(([id,label,bx])=>{
-    const mat=lam(0xb02a24); btnMats[id]=mat;
-    box(0.5,0.5,0.22,mat,W(bx),1.45,Z(-16.15));
-    const tg=makeTag(label,true); tg.scale.set(3.4,0.9,1); tg.position.set(W(bx),2.35,Z(-16.3)); scene.add(tg);
-    interactables.push({x:W(bx),z:Z(-16.8),r:1.6,dead:false,
-      label:id==='shutter'?'toggle the shutter':('disarm: '+label.toLowerCase()),
-      fn:()=>pressButton(id)});
-  });
+  // ---- consolidated SECURITY CONTROL panel: slide-open cover + slide switches ----
+  (function(){
+    const PANX=W(5.7), PANY=1.95, zFace=Z(-16.35), zTrack=Z(-16.46), zCover=Z(-16.56);
+    // housing
+    box(5.4,2.5,0.4,lam(0x30343b),PANX,PANY,Z(-16.18));
+    box(5.6,0.2,0.5,M.gold,PANX,PANY+1.32,Z(-16.2));
+    box(5.6,0.2,0.5,M.gold,PANX,PANY-1.32,Z(-16.2));
+    // baked faceplate (labels read correctly when viewed from the corridor)
+    function makePanelFace(){
+      const cv=document.createElement('canvas'); cv.width=640; cv.height=288;
+      const c=cv.getContext('2d');
+      c.save(); c.translate(640,0); c.scale(-1,1);       // pre-mirror for the -z facing plane
+      c.fillStyle='#23262c'; c.fillRect(0,0,640,288);
+      c.fillStyle='#c2a35a'; c.font='bold 26px Georgia'; c.textAlign='center';
+      c.fillText('SECURITY CONTROLS',320,44);
+      const labels=[['SHUTTER',-1.5],['ROPE',-0.5],['LASERS',0.5],['ALARM',1.5]];
+      labels.forEach(([lb,off])=>{
+        const px=320+off*128;
+        c.fillStyle='#e6e1d4'; c.font='20px Georgia'; c.fillText(lb,px,110);
+        // track
+        c.fillStyle='#15171b'; c.strokeStyle='#5a5f68'; c.lineWidth=2;
+        roundRect(c,px-48,150,96,44,10); c.fill(); c.stroke();
+        c.fillStyle='#8a8a8a'; c.font='12px Georgia';
+        c.fillText('OFF',px-30,178); c.fillText('ON',px+30,178);
+      });
+      c.restore();
+      return new THREE.CanvasTexture(cv);
+    }
+    const face=new THREE.Mesh(new THREE.PlaneGeometry(5.0,2.25),
+      new THREE.MeshBasicMaterial({map:makePanelFace()}));
+    face.position.set(PANX,PANY,zFace); face.rotation.y=Math.PI; scene.add(face);
+
+    const SW=[['shutter','SHUTTER',-1.5],['rope','ROPE',-0.5],['lasers','LASERS',0.5],['alarm','ALARM',1.5]];
+    SW.forEach(([id,label,off])=>{
+      const sx=PANX+off*1.0;                 // 1 world unit per label spacing
+      const km=lam(0xb02a24); btnMats[id]=km;   // reused by pressButton for colour
+      const knob=box(0.42,0.5,0.18,km,sx-0.28,1.62,zTrack);  // OFF = left
+      knob.userData.onX=sx+0.28; knob.userData.offX=sx-0.28; knob.userData.tx=sx-0.28;
+      switchKnobs[id]=knob;
+      interactables.push({x:sx,z:Z(-16.95),r:0.62,dead:false,
+        cond:()=>panelState.open,
+        label:id==='shutter'?'flip the shutter switch':('flip the '+label.toLowerCase()+' switch'),
+        fn:()=>pressButton(id)});
+    });
+    // sliding cover with a grab knob (slide it up to reveal the switches)
+    const cover=new THREE.Group(); cover.position.y=0; scene.add(cover);
+    const plate=box(5.2,2.5,0.12,lam(0x474c55),PANX,PANY,zCover,cover);
+    box(5.2,0.14,0.16,M.gold,PANX,PANY+1.2,zCover-0.02,cover);
+    box(5.2,0.14,0.16,M.gold,PANX,PANY-1.2,zCover-0.02,cover);
+    const knobG=box(1.0,0.34,0.22,M.gold,PANX,PANY-1.0,zCover-0.14,cover);
+    box(1.0,0.12,0.28,lam(0x2a2e34),PANX,PANY-1.0,zCover-0.26,cover);
+    const ctag=makeTag('SECURITY \u2014 SLIDE OPEN',true); ctag.scale.set(4.4,1.1,1);
+    ctag.position.set(PANX,PANY+1.7,zCover); scene.add(ctag);
+    panelState.cover=cover; panelState.ctag=ctag;
+    cover.userData.ty=0;                    // 0 closed, +2.9 open (slides up)
+    interactables.push({x:PANX,z:Z(-16.95),r:2.9,dead:false,
+      cond:()=>true,
+      label:()=>panelState.open?'slide the cover shut':'slide the cover open',
+      fn:()=>{ panelState.open=!panelState.open;
+               cover.userData.ty=panelState.open?2.55:0;
+               ctag.visible=!panelState.open;
+               msg(panelState.open?'Control panel open.':'Control panel closed.'); }});
+  })();
   // service hatch back up (corridor west end)
   box(1.5,0.22,1.5,M.metal,W(-8.5),0.16,Z(-18.25));
   interactables.push({x:W(-8.5),z:Z(-18.25),r:1.6,dead:false,
@@ -1350,18 +1693,24 @@ teleports.push({x:LX,  z:LZ+16.0,r:0.9, tx:-48, tz:25.2, yaw:Math.PI});
 // ---- heist logic ----
 function allDisarmed(){ return !heist.rope && !heist.lasers && !heist.alarm; }
 function windowActive(){ return heist.winUntil>performance.now(); }
+function slideSwitch(id,on){
+  const k=switchKnobs[id]; if(!k) return;
+  k.userData.tx=on?k.userData.onX:k.userData.offX;
+  btnMats[id].color.setHex(on?0x3fae52:0xb02a24);
+}
 function pressButton(id){
   if(heist.stolen) return;
   if(id==='shutter'){
     heist.shutter=!heist.shutter;
     shutterMesh.userData.ty=heist.shutter?4.2:2.1;
-    msg(heist.shutter?'The shutter grinds open. The crown sits just beyond the glassless frame.':'The shutter closes.');
+    slideSwitch('shutter',heist.shutter);
+    msg(heist.shutter?'Shutter open \u2014 the crown sits just beyond the frame.':'Shutter closed.');
     return;
   }
   if(windowActive()){ msg('Systems are already down \u2014 run for the crown!'); return; }
-  if(id==='rope'&&heist.rope){ heist.rope=false; ropeG.userData.ty=-1.25; btnMats.rope.color.setHex(0x3fae52); msg('Rope barrier lowered. ('+disarmCount()+'/3)'); }
-  else if(id==='lasers'&&heist.lasers){ heist.lasers=false; laserG.visible=false; btnMats.lasers.color.setHex(0x3fae52); msg('Laser field offline. ('+disarmCount()+'/3)'); }
-  else if(id==='alarm'&&heist.alarm){ heist.alarm=false; btnMats.alarm.color.setHex(0x3fae52); msg('Alarm disarmed \u2014 magnetic locks released. ('+disarmCount()+'/3)'); }
+  if(id==='rope'&&heist.rope){ heist.rope=false; ropeG.userData.ty=-1.25; slideSwitch('rope',true); msg('Rope barrier lowered. ('+disarmCount()+'/3)'); }
+  else if(id==='lasers'&&heist.lasers){ heist.lasers=false; laserG.visible=false; slideSwitch('lasers',true); msg('Laser field offline. ('+disarmCount()+'/3)'); }
+  else if(id==='alarm'&&heist.alarm){ heist.alarm=false; slideSwitch('alarm',true); msg('Alarm disarmed. ('+disarmCount()+'/3)'); }
   else{ msg('Already disarmed.'); return; }
   if(allDisarmed()){
     heist.winUntil=performance.now()+WINDOW_MS;
@@ -1377,7 +1726,7 @@ function rearm(){
   heist.rope=true; ropeG.userData.ty=0;
   heist.lasers=true; laserG.visible=true;
   heist.alarm=true;
-  ['rope','lasers','alarm'].forEach(k=>btnMats[k].color.setHex(0xb02a24));
+  ['rope','lasers','alarm'].forEach(k=>slideSwitch(k,false));
   secDoor.userData.tx=LX+8;
   if(!secCol) secCol=addColliderBox(LX+8,LZ-6,2.6,0.6,0.15);
   msg('The systems re-arm \u2014 the window closed. Disarm them again to reopen it.');
@@ -1472,9 +1821,10 @@ byId('dirBtn').addEventListener('click',function(e){
 // ---- draft overlay ----
 let draftCtx=null;
 function openDraft(target){
-  if(grid[target.tr][target.tc]) return;
-  const pool=ROOMS.filter(r=>!dirOff.has(r.id)&&!placed.has(r.id));
-  if(!pool.length){ msg('No rooms left in the draft pool.'); return; }
+  const f=target.f;
+  if(f.grid[target.tr][target.tc]) return;
+  const pool=poolFor(f);
+  if(!pool.length){ msg('No rooms left in this floor\u2019s draft pool.'); return; }
   draftCtx=target;
   let html='';
   pool.forEach(r=>{
@@ -1485,7 +1835,7 @@ function openDraft(target){
           '<div class="rnote">'+(r.note||(r.d?'Empty \u2014 awaiting curation.':''))+'</div></div>';
   });
   byId('draftCards').innerHTML=html;
-  byId('draftSub').textContent='choose what lies beyond this door \u00b7 '+pool.length+' in the pool';
+  byId('draftSub').textContent=f.name+' \u00b7 '+pool.length+' rooms in the pool';
   openOverlay(byId('draftOverlay'));
 }
 byId('draftCards').onclick=function(e){
@@ -1505,15 +1855,16 @@ function drawBP(){
   for(let i=0;i<160;i++){ c.fillStyle='rgba(150,130,90,0.05)';
     c.fillRect(Math.random()*640,Math.random()*740,2+Math.random()*4,2+Math.random()*4); }
   c.strokeStyle='#b8ab8d'; c.lineWidth=3; c.strokeRect(8,8,624,724);
+  const f=(typeof player!=='undefined' ? activeFloor(player.x) : null)||FLOORS[0];
   c.fillStyle='#2b2e33'; c.textAlign='left';
-  c.font='bold 26px Georgia'; c.fillText('EAST EXTENSION \u2014 DRAFT',24,42);
-  c.font='16px Georgia'; c.fillStyle='#8a2320'; c.fillText('Night '+night,24,66);
-  const cell=96, ox=(640-GW*cell)/2, oy=88;
+  c.font='bold 24px Georgia'; c.fillText('EAST EXTENSION \u2014 '+f.name.toUpperCase(),24,42);
+  c.font='15px Georgia'; c.fillStyle='#8a2320'; c.fillText('Night '+night+'  \u00b7  floor '+(f.idx+1)+' of '+FLOORS.length,24,64);
+  const cell=Math.min(92,Math.floor((640-60)/f.gw)), gwpx=f.gw*cell, ox=(640-gwpx)/2, oy=84;
   c.textAlign='center';
-  for(let r=0;r<GH;r++) for(let cc=0;cc<GW;cc++){
-    const x=ox+cc*cell, y=oy+(GH-1-r)*cell;
+  for(let r=0;r<f.gh;r++) for(let cc=0;cc<f.gw;cc++){
+    const x=ox+cc*cell, y=oy+(f.gh-1-r)*cell;
     c.strokeStyle='#c6bba0'; c.lineWidth=1.5; c.strokeRect(x,y,cell,cell);
-    const g=grid[r][cc];
+    const g=f.grid[r][cc];
     if(!g) continue;
     const rm=roomById(g.id);
     if(g.sealed){
@@ -1525,8 +1876,8 @@ function drawBP(){
       }
     }else{
       c.fillStyle=rm.c; c.fillRect(x+2,y+2,cell-4,cell-4);
-      c.fillStyle='#2b2e33'; c.font='12px Georgia';
-      c.fillText(rm.n,x+cell/2,y+cell/2+4,cell-10);
+      c.fillStyle='#2b2e33'; c.font=(cell<80?'10px':'12px')+' Georgia';
+      c.fillText(rm.n,x+cell/2,y+cell/2+4,cell-8);
       c.fillStyle='#8a2320';
       (g.abs||[]).forEach(s=>{
         if(s==='N') c.fillRect(x+cell/2-8,y,16,5);
@@ -1536,23 +1887,23 @@ function drawBP(){
       });
     }
   }
-  // landing + hall sketch
-  const ly=oy+GH*cell+8;
-  c.fillStyle='#e0d6c2'; c.fillRect(ox+cell,ly,cell*3,44);
-  c.strokeStyle='#c6bba0'; c.strokeRect(ox+cell,ly,cell*3,44);
-  c.fillStyle='#2b2e33'; c.font='12px Georgia'; c.fillText('SOUTH LANDING',ox+cell*2.5,ly+26);
+  // landing strip
+  const ly=oy+f.gh*cell+8;
+  c.fillStyle='#e0d6c2'; c.fillRect(ox,ly,gwpx,40);
+  c.strokeStyle='#c6bba0'; c.strokeRect(ox,ly,gwpx,40);
+  c.fillStyle='#2b2e33'; c.font='12px Georgia'; c.fillText(f.name.toUpperCase()+' LANDING',ox+gwpx/2,ly+25);
   c.fillStyle='#8a2320';
-  [1.5,2.5,3.5].forEach(f=>c.fillRect(ox+f*cell-8,ly-3,16,5));
-  c.fillStyle='#d9c9a3'; c.fillRect(ox+cell*1.4,ly+52,cell*2.2,40);
-  c.strokeStyle='#c6bba0'; c.strokeRect(ox+cell*1.4,ly+52,cell*2.2,40);
-  c.fillStyle='#2b2e33'; c.fillText('GRAND ENTRANCE HALL',ox+cell*2.5,ly+76);
-  // status
-  let drafted=0; for(let r=0;r<GH;r++) for(let cc=0;cc<GW;cc++) if(grid[r][cc]) drafted++;
-  c.textAlign='left'; c.font='14px Georgia'; c.fillStyle='#2b2e33';
-  c.fillText('Rooms drafted: '+drafted+' / '+(GW*GH),24,712);
-  c.fillStyle='#8a2320';
-  const crownState=heist.stolen?'SECURED':(heist.caged?'CAGED UNTIL DAWN':'on display \u2014 Closed Exhibit');
-  c.fillText('The crown: '+crownState,300,712);
+  entryCells(f).forEach(cc=>c.fillRect(ox+cc*cell+cell/2-8,ly-3,16,5));
+  // floor list down the side
+  c.textAlign='left'; c.font='13px Georgia';
+  FLOORS.forEach((ff,i)=>{
+    let d=0; for(let r=0;r<ff.gh;r++) for(let cc=0;cc<ff.gw;cc++) if(ff.grid[r][cc]) d++;
+    c.fillStyle=(ff===f)?'#8a2320':'#7a715d';
+    c.fillText((ff===f?'\u25B8 ':'   ')+ff.name+'  '+d+'/'+(ff.gw*ff.gh)+(ff.unlocked?'':'  (locked)'),24,700+i*18);
+  });
+  c.textAlign='left'; c.font='13px Georgia'; c.fillStyle='#8a2320';
+  const crownState=heist.stolen?'SECURED':(heist.caged?'CAGED':'on display');
+  c.fillText('Crown: '+crownState,470,712);
 }
 function openBP(){ drawBP(); openOverlay(byId('bpOverlay')); }
 byId('endNightBtn').onclick=function(){
@@ -1582,14 +1933,15 @@ const outdoorZones=[
   {x:-20,z:8,r:26, n:'South Pathway', s:'gardens \u00b7 free access'},
 ];
 function zoneFor(px,pz){
-  if(px>DX-60){
-    if(pz>6&&pz<12.4&&Math.abs(px-DX)<18) return ['South Landing','east extension \u2014 the new wing'];
-    const c=Math.round((px-DX)/CS_)+2, r=Math.round(-pz/CS_);
-    if(c>=0&&c<GW&&r>=0&&r<GH&&grid[r][c]){
-      const rm=roomById(grid[r][c].id);
-      return [rm.n, grid[r][c].sealed?'sealed for the night':'east extension \u2014 drafted'];
+  const f=activeFloor(px);
+  if(f){
+    if(pz>f.oz+6&&pz<f.oz+12.6) return [f.name+' Landing','east extension'];
+    const c=Math.round((px-f.ox)/CS_+(f.gw-1)/2), r=Math.round(-(pz-f.oz)/CS_);
+    if(c>=0&&c<f.gw&&r>=0&&r<f.gh&&f.grid[r][c]){
+      const rm=roomById(f.grid[r][c].id);
+      return [rm.n, f.grid[r][c].sealed?'sealed for the night':f.name];
     }
-    return ['The New Wing','east extension'];
+    return [f.name,'east extension'];
   }
   if(px<LX+60){
     const lx=px-LX, lz=pz-LZ;
@@ -1608,11 +1960,16 @@ function zoneFor(px,pz){
   }
   return best?[best.n,best.s]:['Museum Grounds','open to the general public'];
 }
-const zoneName=byId('zoneName'), zoneSub=byId('zoneSub');
-let curZone='';
+const zoneName=byId('zoneName'), zoneSub=byId('zoneSub'), zonePlateEl=byId('zonePlate');
+let curZone='', zoneDimTimer=null;
 function updateZone(px,pz){
   const [n,s]=zoneFor(px,pz);
-  if(n!==curZone){ curZone=n; zoneName.textContent=n; zoneSub.textContent=s; }
+  if(n!==curZone){
+    curZone=n; zoneName.textContent=n; zoneSub.textContent=s;
+    zonePlateEl.style.opacity='1';
+    if(zoneDimTimer) clearTimeout(zoneDimTimer);
+    zoneDimTimer=setTimeout(()=>{ zonePlateEl.style.opacity='0.28'; },3400);
+  }
 }
 
 // =====================================================================
@@ -1639,7 +1996,11 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyE' && currentInter) currentInter.fn();
 });
 addEventListener('keyup',e=>keys[e.code]=false);
-interactBtn.addEventListener('click',()=>{ if(currentInter&&!uiOpen) currentInter.fn(); });
+function fireInteract(){ if(currentInter && !uiOpen) currentInter.fn(); }
+interactBtn.addEventListener('click',fireInteract);
+interactBtn.addEventListener('touchstart',function(e){
+  e.preventDefault(); e.stopPropagation(); fireInteract();
+},{passive:false});
 
 const overlay=byId('startOverlay');
 const isTouch=matchMedia('(pointer:coarse)').matches;
@@ -1649,6 +2010,9 @@ overlay.addEventListener('click',()=>{
   overlay.style.display='none'; started=true;
   if(!isTouch) canvas.requestPointerLock && canvas.requestPointerLock();
   else initTouch();
+  // let the onboarding chrome fade so the view stays clear
+  setTimeout(()=>{ const h=byId('hint'); if(!intel.visible) h.style.opacity='0'; },9000);
+  setTimeout(()=>{ byId('titlePlate').style.opacity='0'; },7000);
 });
 canvas.addEventListener('click',()=>{
   if(started && !isTouch && !uiOpen && document.pointerLockElement!==canvas)
@@ -1679,18 +2043,27 @@ function positionKnob(dx,dy){
   stickKnob.style.left=(r.left+r.width/2-24+dx)+'px';
   stickKnob.style.top =(r.top +r.height/2-24+dy)+'px';
 }
+function isUITouch(t){
+  const el=t.target;
+  if(!el||!el.closest) return el===interactBtn;
+  return !!el.closest('#interactBtn,#zonePlate,.modal,.btn');
+}
 function onTS(e){
   if(uiOpen) return;
+  let consumed=false;
   for(const t of e.changedTouches){
+    if(isUITouch(t)) continue;                 // let UI buttons handle their own taps
     if(t.clientX<innerWidth*0.45 && !stick.active){
       stick.active=true; stick.id=t.identifier;
       const r=stickBase.getBoundingClientRect();
       stick.cx=r.left+r.width/2; stick.cy=r.top+r.height/2;
+      consumed=true;
     } else if(!look.active){
       look.active=true; look.id=t.identifier; look.lx=t.clientX; look.ly=t.clientY;
+      consumed=true;
     }
   }
-  e.preventDefault();
+  if(consumed) e.preventDefault();
 }
 function onTM(e){
   for(const t of e.changedTouches){
@@ -1734,9 +2107,11 @@ function resolveCollisions(){
     }
   }
   // bounds: outdoors vs interior pockets
-  if(player.x>DX-80){
-    player.x=Math.max(DX-40,Math.min(DX+40,player.x));
-    player.z=Math.max(-70,Math.min(20,player.z));
+  const fl=activeFloor(player.x);
+  if(fl){
+    const hw=fl.gw*CS_/2+10;
+    player.x=Math.max(fl.ox-hw,Math.min(fl.ox+hw,player.x));
+    player.z=Math.max(fl.oz-fl.gh*CS_-16,Math.min(fl.oz+16,player.z));
   }else if(player.x<LX+80){
     player.x=Math.max(LX-30,Math.min(LX+30,player.x));
     player.z=Math.max(LZ-28,Math.min(LZ+24,player.z));
@@ -1825,10 +2200,14 @@ function tick(){
   if(cageG&&cageG.visible) cageG.position.y=lerpTo(cageG.position.y,cageG.userData.ty,dt,6);
   if(shutterMesh) shutterMesh.position.y=lerpTo(shutterMesh.position.y,shutterMesh.userData.ty,dt,3);
   if(secDoor) secDoor.position.x=lerpTo(secDoor.position.x,secDoor.userData.tx,dt,3);
+  for(const id in switchKnobs){ const k=switchKnobs[id];
+    k.position.x=lerpTo(k.position.x,k.userData.tx,dt,10); }
+  if(panelState.cover) panelState.cover.position.y=lerpTo(panelState.cover.position.y,panelState.cover.userData.ty,dt,4);
 
   const speedNow=Math.hypot(player.vx,player.vz);
   const bob=Math.sin(t*9)*Math.min(0.06,speedNow*0.006);
   camera.position.set(player.x,EYE+bob,player.z);
+  if(skyMesh) skyMesh.position.copy(camera.position);
   camera.rotation.order='YXZ';
   camera.rotation.y=player.yaw;
   camera.rotation.x=player.pitch;
@@ -1836,6 +2215,9 @@ function tick(){
   for(const f of flags){
     f.rotation.y=Math.sin(t*2.2+f.position.x)*0.28;
     f.rotation.z=Math.sin(t*3.1+f.position.z)*0.06;
+  }
+  for(let i=0;i<lampGlows.length;i++){
+    lampGlows[i].material.opacity=0.5+Math.sin(t*3+i*1.7)*0.06+Math.random()*0.02;
   }
   if(intel.visible){
     for(const p of intelPins){ p.rotation.y=t*1.6; }
