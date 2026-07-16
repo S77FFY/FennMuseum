@@ -3,59 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>The Royal Museum of the City of Fenn — 3D Grounds</title>
+<title>The Fenn Job — The Royal Museum</title>
 <style>
-  :root{
-    --ink:#2b2e33; --parchment:#efe9dc; --royal:#a52f2c; --gold:#c2a35a; --slate:#8d9bb0;
-  }
+  :root{ --ink:#2b2e33; --parchment:#efe9dc; --royal:#a52f2c; --gold:#c2a35a; --slate:#8d9bb0; }
   html,body{margin:0;padding:0;overflow:hidden;height:100%;background:#0d0f12;font-family:Georgia,'Times New Roman',serif;}
   #c{display:block;width:100%;height:100%;}
   .hud{position:fixed;z-index:10;color:var(--ink);pointer-events:none;user-select:none;-webkit-user-select:none;}
-  #titlePlate{
-    top:14px;left:14px;background:linear-gradient(180deg,#f3eee2,#e7dfcd);
+  #titlePlate{ top:14px;left:14px;background:linear-gradient(180deg,#f3eee2,#e7dfcd);
     border:1px solid #b8ab8d;border-radius:3px;box-shadow:0 3px 10px rgba(0,0,0,.35);
-    padding:8px 14px 9px;line-height:1.15;
-  }
+    padding:8px 14px 9px;line-height:1.15;}
   #titlePlate .the{font-size:9px;letter-spacing:.35em;text-transform:uppercase;color:#6d6350;}
   #titlePlate .name{font-size:17px;letter-spacing:.06em;font-variant:small-caps;color:#25272b;}
   #titlePlate .name .strike{text-decoration:line-through;text-decoration-color:var(--royal);text-decoration-thickness:2px;color:#8a2320;}
-  #zonePlate{
-    bottom:16px;left:50%;transform:translateX(-50%);text-align:center;
+  #titlePlate .night{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#8a2320;margin-top:2px;}
+  #zonePlate{ bottom:16px;left:50%;transform:translateX(-50%);text-align:center;
     background:rgba(21,24,28,.62);color:#efe9dc;border:1px solid rgba(194,163,90,.55);
-    border-radius:2px;padding:5px 18px 6px;backdrop-filter:blur(3px);
-  }
+    border-radius:2px;padding:5px 18px 6px;backdrop-filter:blur(3px);}
   #zoneName{font-variant:small-caps;letter-spacing:.14em;font-size:15px;}
   #zoneSub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#c2a35a;margin-top:1px;}
-  #hint{
-    top:14px;right:14px;text-align:right;background:rgba(21,24,28,.55);color:#d9d2c2;
-    border:1px solid rgba(255,255,255,.12);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;
-    letter-spacing:.04em;
-  }
+  #hint{ top:14px;right:14px;text-align:right;background:rgba(21,24,28,.55);color:#d9d2c2;
+    border:1px solid rgba(255,255,255,.12);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;}
   #hint b{color:#c2a35a;font-weight:normal;}
-  #intelPlate{
-    top:14px;right:14px;display:none;text-align:right;background:rgba(60,14,12,.72);color:#f0dcd4;
-    border:1px solid rgba(213,90,80,.6);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;
-  }
-  #startOverlay{
-    position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(ellipse at 50% 40%, rgba(30,36,44,.82), rgba(10,12,15,.94));
-    cursor:pointer;
-  }
-  #startCard{
-    text-align:center;color:#efe9dc;max-width:520px;padding:34px 40px;
-    border:1px solid rgba(194,163,90,.5);background:rgba(18,21,26,.6);border-radius:3px;
-  }
+  #intelPlate{ top:14px;right:14px;display:none;text-align:right;background:rgba(60,14,12,.72);color:#f0dcd4;
+    border:1px solid rgba(213,90,80,.6);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;}
+  #prompt{ bottom:76px;left:50%;transform:translateX(-50%);display:none;
+    background:rgba(21,24,28,.78);color:#efe9dc;border:1px solid #c2a35a;border-radius:2px;
+    padding:6px 16px;font-size:13px;letter-spacing:.06em;}
+  #prompt b{color:#c2a35a;}
+  #timerHud{ top:64px;left:50%;transform:translateX(-50%);display:none;text-align:center;
+    background:rgba(80,14,10,.85);color:#ffd9d2;border:1px solid #d55a50;border-radius:3px;
+    padding:8px 22px;font-size:20px;letter-spacing:.12em;font-variant:small-caps;
+    box-shadow:0 0 24px rgba(200,60,50,.45);}
+  #timerHud small{display:block;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#e8968c;}
+  #msgToast{ top:64px;left:50%;transform:translateX(-50%);display:none;
+    background:rgba(21,24,28,.85);color:#efe9dc;border:1px solid rgba(194,163,90,.6);
+    border-radius:2px;padding:7px 18px;font-size:13px;letter-spacing:.05em;max-width:80vw;text-align:center;}
+  #startOverlay{ position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 40%, rgba(30,36,44,.82), rgba(10,12,15,.94));cursor:pointer;}
+  #startCard{ text-align:center;color:#efe9dc;max-width:540px;padding:30px 38px;
+    border:1px solid rgba(194,163,90,.5);background:rgba(18,21,26,.6);border-radius:3px;}
   #startCard .the{font-size:10px;letter-spacing:.5em;text-transform:uppercase;color:#c2a35a;}
-  #startCard h1{font-variant:small-caps;font-weight:normal;font-size:30px;margin:8px 0 2px;letter-spacing:.05em;}
+  #startCard h1{font-variant:small-caps;font-weight:normal;font-size:28px;margin:8px 0 2px;letter-spacing:.05em;}
   #startCard h1 .strike{text-decoration:line-through;text-decoration-color:#c65550;color:#c98a86;}
-  #startCard .rule{width:120px;height:1px;background:#c2a35a;margin:14px auto;opacity:.7;}
-  #startCard p{font-size:13px;line-height:1.8;color:#cfc7b4;margin:0;}
-  #startCard .go{margin-top:18px;font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:#c2a35a;animation:pulse 2.2s infinite;}
+  #startCard .rule{width:120px;height:1px;background:#c2a35a;margin:12px auto;opacity:.7;}
+  #startCard p{font-size:12.5px;line-height:1.75;color:#cfc7b4;margin:0;}
+  #nightLine{margin-top:12px;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:#e0b9b4;}
+  #startCard .go{margin-top:12px;font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:#c2a35a;animation:pulse 2.2s infinite;}
   @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
-  #verTag{margin-top:16px;font-size:10px;letter-spacing:.3em;color:#7d7663;text-transform:uppercase;}
+  #verTag{margin-top:12px;font-size:10px;letter-spacing:.3em;color:#7d7663;text-transform:uppercase;}
+  .btn{display:inline-block;pointer-events:auto;cursor:pointer;background:#2a2e35;color:#e8dfc9;
+    border:1px solid #c2a35a;border-radius:2px;padding:7px 16px;font-size:11px;
+    letter-spacing:.2em;text-transform:uppercase;font-family:Georgia,serif;}
+  .btn:hover{background:#3a3f48;}
+  .btn.red{border-color:#d55a50;color:#f0d0ca;}
+  #dirBtn{margin-top:14px;}
+  .modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
+    background:rgba(8,10,13,.82);}
+  .sheet{background:linear-gradient(180deg,#f3eee2,#e7dfcd);color:#2b2e33;border:1px solid #b8ab8d;
+    border-radius:4px;box-shadow:0 8px 40px rgba(0,0,0,.6);width:min(680px,94vw);
+    max-height:88vh;overflow-y:auto;padding:18px 20px 20px;}
+  .sheet h2{font-variant:small-caps;font-weight:normal;letter-spacing:.1em;margin:0 0 2px;font-size:22px;}
+  .sheet .sub{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#8a2320;margin-bottom:12px;}
+  .sheet .close{float:right;cursor:pointer;pointer-events:auto;border:1px solid #b8ab8d;border-radius:2px;
+    padding:3px 10px;font-size:11px;background:#efe9dc;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+  .roomCard{border:1px solid #b8ab8d;background:#f6f1e5;padding:8px 9px;cursor:pointer;border-radius:2px;}
+  .roomCard:hover{background:#fff8e8;border-color:#8a2320;}
+  .roomCard .rn{font-size:13px;font-variant:small-caps;letter-spacing:.04em;}
+  .roomCard .rd{margin:4px 0 2px;}
+  .roomCard .rnote{font-size:10px;color:#7a715d;line-height:1.4;}
+  .pip{display:inline-block;width:9px;height:9px;border:1px solid #6b6250;margin-right:3px;background:#c2a35a;}
+  .pip.off{background:transparent;}
+  .dirRow{display:flex;align-items:center;gap:10px;border-bottom:1px solid #d8cfb8;padding:5px 2px;}
+  .dirRow .rn{flex:1;font-size:13px;font-variant:small-caps;}
+  .dirRow .tog{pointer-events:auto;cursor:pointer;border:1px solid #6b6250;border-radius:2px;
+    padding:2px 10px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;}
+  .dirRow .tog.on{background:#2a2e35;color:#e8dfc9;}
+  .dirRow .tog.off{background:transparent;color:#8a8171;}
+  .dirRow.special .rn{color:#8a2320;}
+  #bpCanvas{display:block;width:100%;background:#efe9dc;border:1px solid #b8ab8d;}
+  #winCard{text-align:center;}
+  #winCard h2{color:#8a2320;font-size:26px;}
   .stick{position:fixed;z-index:12;border-radius:50%;display:none;touch-action:none;}
   #stickBase{left:24px;bottom:24px;width:110px;height:110px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);}
   #stickKnob{width:48px;height:48px;background:rgba(239,233,220,.35);border:1px solid rgba(239,233,220,.55);position:fixed;pointer-events:none;}
+  #interactBtn{position:fixed;right:26px;bottom:104px;z-index:12;width:66px;height:66px;border-radius:50%;
+    display:none;align-items:center;justify-content:center;background:rgba(194,163,90,.22);
+    border:1px solid rgba(194,163,90,.8);color:#efe9dc;font-size:24px;font-family:Georgia,serif;}
+  #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;}
   @media (pointer:coarse){ #hint .desktop{display:none} }
   @media (pointer:fine){ #hint .touch{display:none} }
 </style>
@@ -66,11 +101,12 @@
 <div class="hud" id="titlePlate">
   <div class="the">The</div>
   <div class="name">Royal Museum <span style="font-size:11px;color:#6d6350;">of the</span> <span class="strike">Grand</span> <span style="font-size:11px;color:#6d6350;">City of</span> Fenn</div>
+  <div class="night" id="plateNight">Night 1</div>
 </div>
 
 <div class="hud" id="hint">
-  <span class="desktop"><b>W A S D</b> move &nbsp;·&nbsp; <b>mouse</b> look &nbsp;·&nbsp; <b>shift</b> run<br><b>H</b> heist intel &nbsp;·&nbsp; <b>esc</b> release cursor</span>
-  <span class="touch"><b>left stick</b> move &nbsp;·&nbsp; <b>drag right</b> look<br>tap the <b>location plate</b> for heist intel</span>
+  <span class="desktop"><b>W A S D</b> move &nbsp;·&nbsp; <b>mouse</b> look &nbsp;·&nbsp; <b>shift</b> run<br><b>E</b> interact &nbsp;·&nbsp; <b>B</b> blueprint &nbsp;·&nbsp; <b>H</b> heist intel</span>
+  <span class="touch"><b>left stick</b> move &nbsp;·&nbsp; <b>drag right</b> look<br><b>◈</b> interact &nbsp;·&nbsp; tap the <b>location plate</b> for intel</span>
 </div>
 <div class="hud" id="intelPlate">
   <b style="color:#e5867f">HEIST INTEL — ACTIVE</b><br>
@@ -83,131 +119,157 @@
   <div id="zoneSub">open to the general public</div>
 </div>
 
+<div class="hud" id="prompt"></div>
+<div class="hud" id="timerHud"><small>systems disarmed</small><span id="timerVal">0:10</span></div>
+<div class="hud" id="msgToast"></div>
+
 <div id="startOverlay">
   <div id="startCard">
-    <div class="the">The</div>
-    <h1>Royal Museum <span style="font-size:16px;color:#9a917d;">of the</span> <span class="strike">Grand</span> <span style="font-size:16px;color:#9a917d;">City of</span> Fenn</h1>
+    <div class="the">The Fenn Job</div>
+    <h1>Royal Museum <span style="font-size:15px;color:#9a917d;">of the</span> <span class="strike">Grand</span> <span style="font-size:15px;color:#9a917d;">City of</span> Fenn</h1>
     <div class="rule"></div>
-    <p>Walk the grounds ahead of the job. The East Extension, Leerson Hall, the Moonside Courtyard,
-       Tiskin Park and the King's Grotto — all rendered from the crew's marked-up visitor map.</p>
+    <p>Two buildings. Leerson Hall keeps its old bones — the Closed Exhibit, the crown, the staff
+       corridor behind it. The East Extension is yours to draft, door by door, night by night.
+       Rooms reset at dawn. Some things don't.</p>
+    <div id="nightLine">Night 1 &nbsp;·&nbsp; Crowns lifted: 0</div>
     <div class="go">Click / tap to enter the grounds</div>
-    <div id="verTag">v1.0.0</div>
+    <button class="btn" id="dirBtn">Room Directory</button>
+    <div id="verTag">v1.2.2</div>
   </div>
 </div>
 
+<div class="modal" id="dirOverlay"><div class="sheet">
+  <span class="close" id="dirClose">Close</span>
+  <h2>Room Directory</h2>
+  <div class="sub">curate which rooms can appear in the draft pool</div>
+  <div id="dirList"></div>
+</div></div>
+
+<div class="modal" id="draftOverlay"><div class="sheet">
+  <span class="close" id="draftClose">Step back</span>
+  <h2>Draft a Room</h2>
+  <div class="sub" id="draftSub">choose what lies beyond this door</div>
+  <div class="cards" id="draftCards"></div>
+</div></div>
+
+<div class="modal" id="bpOverlay"><div class="sheet">
+  <span class="close" id="bpClose">Close</span>
+  <h2>The Blueprint</h2>
+  <div class="sub" id="bpSub">east extension — drafted layout</div>
+  <canvas id="bpCanvas" width="640" height="740"></canvas>
+  <div style="margin-top:12px;text-align:right;">
+    <button class="btn red" id="endNightBtn">End the Night</button>
+  </div>
+</div></div>
+
+<div class="modal" id="winOverlay"><div class="sheet" id="winCard">
+  <h2>Crown Secured</h2>
+  <div class="sub" id="winSub">night complete</div>
+  <p style="font-size:13px;line-height:1.7;">The red crown of Fenn is in the bag. The getaway car is waiting.</p>
+  <div style="margin-top:16px;"><button class="btn" id="nextNightBtn">Begin the Next Night</button></div>
+</div></div>
+
 <div class="stick" id="stickBase"></div>
 <div class="stick" id="stickKnob"></div>
+<div id="interactBtn">◈</div>
+<div id="fade"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
-   THE ROYAL MUSEUM OF THE (GRAND) CITY OF FENN — explorable 3D grounds
-   Single file · Three.js r128 · no other dependencies
-   North = -Z. Layout follows the annotated visitor map.
+   THE FENN JOB — The Royal Museum of the (Grand) City of Fenn
+   v1.2.0 · Single file · Three.js r128
+   Exterior grounds + fixed Leerson Hall interior (Closed Exhibit heist)
+   + draftable East Extension interior (46-room directory, night system)
    ===================================================================== */
 (function(){
 'use strict';
 
-const VERSION='v1.0.0';
-document.getElementById('verTag').textContent=VERSION+' \u00b7 S77FFY';
-document.title='The Royal Museum of the City of Fenn \u2014 3D Grounds '+VERSION;
+const VERSION='v1.2.2';
 
-// ---------- palette (watercolour-ish, from the map & concept art) ----------
-const COL = {
-  sky:      0xdfe7ee,
-  fog:      0xcfd9e0,
-  grass:    0x9db38e,
-  grassDk:  0x8aa37c,
-  path:     0xc9cdd2,
-  pathEdge: 0xa9aeb6,
-  marble:   0xece8df,
-  marbleSh: 0xd8d3c7,
-  slate:    0x93a1b4,
-  stone:    0xcfc9bb,
-  stoneDk:  0xb2ab9a,
-  roof:     0x9aa7b8,
-  glass:    0xdfeaf2,
-  gold:     0xc2a35a,
-  royal:    0xa52f2c,
-  royalDk:  0x7e211f,
-  wood:     0x7c6248,
-  leaf:     0x7e9a6d,
-  leafDk:   0x6a8a5c,
-  trunk:    0x6f5d49,
-  water:    0x9fb9c6,
-  mountain: 0xaebccb,
-  statue:   0xa2453a,   // weathered red bronze, as on the map
-  rock:     0x9aa0a4,
+// ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
+const store={
+  mem:{},
+  get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }
+            catch(e){ return (k in this.mem)?this.mem[k]:d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }
+            catch(e){ this.mem[k]=v; } }
 };
+let night=store.get('fenn_night',1);
+let crowns=store.get('fenn_crowns',0);
+const dirOff=new Set(store.get('fenn_dir_off',[]));
+
+document.getElementById('verTag').textContent=VERSION+' \u00b7 S77FFY';
+document.getElementById('nightLine').textContent='Night '+night+' \u00b7 Crowns lifted: '+crowns;
+document.getElementById('plateNight').textContent='Night '+night;
+document.title='The Fenn Job \u2014 Night '+night+' '+VERSION;
+
+// ---------- palette ----------
+const COL={ sky:0xdfe7ee, fog:0xcfd9e0, grass:0x9db38e, grassDk:0x8aa37c, path:0xc9cdd2,
+  pathEdge:0xa9aeb6, marble:0xece8df, marbleSh:0xd8d3c7, slate:0x93a1b4, stone:0xcfc9bb,
+  stoneDk:0xb2ab9a, roof:0x9aa7b8, glass:0xdfeaf2, gold:0xc2a35a, royal:0xa52f2c,
+  royalDk:0x7e211f, wood:0x7c6248, leaf:0x7e9a6d, leafDk:0x6a8a5c, trunk:0x6f5d49,
+  water:0x9fb9c6, mountain:0xaebccb, statue:0xa2453a, rock:0x9aa0a4 };
 
 // ---------- renderer / scene ----------
-const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.outputEncoding = THREE.sRGBEncoding;
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(COL.sky);
-scene.fog = new THREE.Fog(COL.fog, 90, 480);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(COL.sky);
+scene.fog=new THREE.Fog(COL.fog,90,480);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,1200);
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1200);
-
-// ---------- lights ----------
-const hemi = new THREE.HemisphereLight(0xe8f0f7, 0x8a9a80, 0.85);
-scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff4e0, 1.05);
-sun.position.set(-120, 160, 90);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+const hemi=new THREE.HemisphereLight(0xe8f0f7,0x8a9a80,0.85); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff4e0,1.05);
+sun.position.set(-120,160,90); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-190; sun.shadow.camera.right=190;
-sun.shadow.camera.top=190;  sun.shadow.camera.bottom=-190;
-sun.shadow.camera.far=520;  sun.shadow.bias=-0.0006;
+sun.shadow.camera.top=190; sun.shadow.camera.bottom=-190;
+sun.shadow.camera.far=520; sun.shadow.bias=-0.0006;
 scene.add(sun);
 
-// ---------- material helpers ----------
-const M = {};
+// ---------- materials ----------
 function lam(c,extra){ return new THREE.MeshLambertMaterial(Object.assign({color:c},extra||{})); }
 function pho(c,extra){ return new THREE.MeshPhongMaterial(Object.assign({color:c,shininess:22},extra||{})); }
-M.grass   = lam(COL.grass);
-M.path    = lam(COL.path);
-M.pathEdge= lam(COL.pathEdge);
-M.marble  = lam(COL.marble);
-M.marbleSh= lam(COL.marbleSh);
-M.slate   = lam(COL.slate);
-M.stone   = lam(COL.stone);
-M.stoneDk = lam(COL.stoneDk);
-M.roof    = lam(COL.roof);
-M.gold    = pho(COL.gold,{shininess:60,specular:0x554411});
-M.royal   = lam(COL.royal);
-M.royalDk = lam(COL.royalDk);
-M.glass   = pho(COL.glass,{transparent:true,opacity:0.42,shininess:90,specular:0xffffff,side:THREE.DoubleSide});
-M.leaf    = lam(COL.leaf);
-M.leafDk  = lam(COL.leafDk);
-M.trunk   = lam(COL.trunk);
-M.water   = pho(COL.water,{transparent:true,opacity:0.8,shininess:80,specular:0xffffff});
-M.mountain= lam(COL.mountain,{fog:true});
-M.statue  = pho(COL.statue,{shininess:14,specular:0x331a15});
-M.rock    = lam(COL.rock);
-M.dark    = lam(0x3a4048);
-M.window  = lam(0x64768c);
+const M={
+  grass:lam(COL.grass), path:lam(COL.path), pathEdge:lam(COL.pathEdge),
+  marble:lam(COL.marble), marbleSh:lam(COL.marbleSh), slate:lam(COL.slate),
+  stone:lam(COL.stone), stoneDk:lam(COL.stoneDk), roof:lam(COL.roof),
+  gold:pho(COL.gold,{shininess:60,specular:0x554411}),
+  royal:lam(COL.royal), royalDk:lam(COL.royalDk),
+  glass:pho(COL.glass,{transparent:true,opacity:0.42,shininess:90,specular:0xffffff,side:THREE.DoubleSide}),
+  leaf:lam(COL.leaf), leafDk:lam(COL.leafDk), trunk:lam(COL.trunk),
+  water:pho(COL.water,{transparent:true,opacity:0.8,shininess:80,specular:0xffffff}),
+  mountain:lam(COL.mountain), statue:pho(COL.statue,{shininess:14,specular:0x331a15}),
+  rock:lam(COL.rock), dark:lam(0x3a4048), window:lam(0x64768c),
+  darkWood:lam(0x4a3626), metal:lam(0x6a7076), laser:new THREE.MeshBasicMaterial({color:0xff2a1a}),
+  velvet:lam(0x8e1f1c), floorIn:lam(0xd8d2c2), wallIn:lam(0xe6e1d4), ceilIn:lam(0xcfc9ba)
+};
 
 // ---------- collision ----------
-const colliders = []; // {minX,maxX,minZ,maxZ}
-function addColliderBox(cx, cz, w, d, pad){
-  pad = pad===undefined ? 0.6 : pad;
-  colliders.push({minX:cx-w/2-pad, maxX:cx+w/2+pad, minZ:cz-d/2-pad, maxZ:cz+d/2+pad});
+const colliders=[];
+function addColliderBox(cx,cz,w,d,pad){
+  pad=pad===undefined?0.6:pad;
+  const o={minX:cx-w/2-pad,maxX:cx+w/2+pad,minZ:cz-d/2-pad,maxZ:cz+d/2+pad};
+  colliders.push(o); return o;
 }
-// rotated wall segment -> sampled small AABBs
+function removeCollider(o){ const i=colliders.indexOf(o); if(i>=0) colliders.splice(i,1); }
 function addColliderSegment(x1,z1,x2,z2,thick){
-  const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz), steps=Math.max(1,Math.ceil(len/1.6));
-  for(let i=0;i<=steps;i++){
-    const t=i/steps;
-    addColliderBox(x1+dx*t, z1+dz*t, thick, thick, 0.35);
-  }
+  const dx=x2-x1,dz=z2-z1,len=Math.sqrt(dx*dx+dz*dz),steps=Math.max(1,Math.ceil(len/1.6));
+  const list=[];
+  for(let i=0;i<=steps;i++){ const t=i/steps; list.push(addColliderBox(x1+dx*t,z1+dz*t,thick,thick,0.35)); }
+  return list;
 }
+
+// ---------- interaction / teleport registries ----------
+const interactables=[];   // {x,z,r,label,fn,dead}
+const teleports=[];       // {x,z,r,tx,tz,yaw}
 
 // ---------- small builders ----------
 function box(w,h,d,mat,x,y,z,parent){
@@ -225,16 +287,14 @@ function sph(r,mat,x,y,z,parent,ws,hs){
   m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
   (parent||scene).add(m); return m;
 }
-// glass dome with gold meridian ribs + rings — the museum's signature panes
-function glassDome(r, ribs, parent){
+function glassDome(r,ribs,parent){
   const g=new THREE.Group();
   const dome=new THREE.Mesh(new THREE.SphereGeometry(r,24,12,0,Math.PI*2,0,Math.PI/2),M.glass);
   dome.castShadow=false; dome.receiveShadow=false; g.add(dome);
   const tube=Math.max(0.05,r*0.02);
   for(let i=0;i<ribs;i++){
     const arc=new THREE.Mesh(new THREE.TorusGeometry(r,tube,6,24,Math.PI),M.gold);
-    arc.rotation.y=(i/ribs)*Math.PI;   // arcs span the upper half already
-    g.add(arc);
+    arc.rotation.y=(i/ribs)*Math.PI; g.add(arc);
   }
   [0.35,0.7].forEach(f=>{
     const rr=Math.cos(Math.asin(f))*r;
@@ -243,7 +303,6 @@ function glassDome(r, ribs, parent){
   });
   (parent||scene).add(g); return g;
 }
-// pitched triangular roof (prism)
 function prismRoof(w,h,d,mat){
   const s=new THREE.Shape();
   s.moveTo(-w/2,0); s.lineTo(w/2,0); s.lineTo(0,h); s.closePath();
@@ -251,34 +310,32 @@ function prismRoof(w,h,d,mat){
   geo.translate(0,0,-d/2);
   const m=new THREE.Mesh(geo,mat); m.castShadow=true; m.receiveShadow=true; return m;
 }
-// hipped roof — proper ridge geometry (ridge along the long axis, 45° hips)
 function hipRoof(w,h,d,mat){
   let rotY=0;
   if(w>d){ const t=w; w=d; d=t; rotY=Math.PI/2; }
-  const hw=w/2, hd=d/2, rh=Math.max(0.01,(d-w)/2);
-  const A=[-hw,0,-hd], B=[hw,0,-hd], C=[hw,0,hd], D=[-hw,0,hd];
-  const R1=[0,h,-rh], R2=[0,h,rh];
+  const hw=w/2,hd=d/2,rh=Math.max(0.01,(d-w)/2);
+  const A=[-hw,0,-hd],B=[hw,0,-hd],C=[hw,0,hd],D=[-hw,0,hd],R1=[0,h,-rh],R2=[0,h,rh];
   const tris=[A,D,R2, A,R2,R1, B,R1,R2, B,R2,C, A,R1,B, C,R2,D];
   const pos=new Float32Array(tris.length*3);
   tris.forEach((v,i)=>{pos[i*3]=v[0];pos[i*3+1]=v[1];pos[i*3+2]=v[2];});
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   geo.computeVertexNormals();
-  const m=new THREE.Mesh(geo,mat);
-  m.rotation.y=rotY;
+  const m=new THREE.Mesh(geo,mat); m.rotation.y=rotY;
   m.castShadow=true; m.receiveShadow=true; return m;
 }
-function flagPole(x,y,z,h,parent,flags){
+const flags=[];
+function flagPole(x,y,z,h,parent,fl){
   const g=new THREE.Group(); g.position.set(x,y,z);
   cyl(0.07,0.09,h,8,M.gold,0,h/2,0,g);
   sph(0.16,M.gold,0,h+0.05,0,g,10,8);
   const flag=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.2,6,1),M.royal);
   flag.position.set(1.15,h-0.75,0); flag.castShadow=true;
-  flag.material=M.royal; flag.userData.baseX=1.15;
-  g.add(flag); flags.push(flag);
+  g.add(flag); (fl||flags).push(flag);
   (parent||scene).add(g); return g;
 }
-function makeLabelSprite(text, sub){
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function makeLabelSprite(text,sub){
   const cv=document.createElement('canvas'); cv.width=512; cv.height=160;
   const cx=cv.getContext('2d');
   cx.fillStyle='rgba(60,14,12,0.82)'; roundRect(cx,6,20,500,120,10); cx.fill();
@@ -290,221 +347,364 @@ function makeLabelSprite(text, sub){
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
   sp.scale.set(14,4.4,1); return sp;
 }
-function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function makeTag(text,dark){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=128;
+  const cx=cv.getContext('2d');
+  cx.fillStyle=dark?'rgba(30,32,36,0.85)':'rgba(239,233,220,0.92)';
+  roundRect(cx,8,24,496,80,8); cx.fill();
+  cx.strokeStyle=dark?'#c2a35a':'#8a8171'; cx.lineWidth=3; roundRect(cx,8,24,496,80,8); cx.stroke();
+  cx.fillStyle=dark?'#efe9dc':'#2b2e33'; cx.font='44px Georgia'; cx.textAlign='center';
+  cx.fillText(text,256,78);
+  const tex=new THREE.CanvasTexture(cv);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));
+  sp.scale.set(6,1.5,1); return sp;
+}
+// the crew's marked-up plan, drawn to a canvas texture (on the hall table)
+// wooden plank floor — canvas texture, tileable, clear board seams
+function makePlankTexture(base,plankW,repeat){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+  const c=cv.getContext('2d');
+  const bands=Math.max(3,Math.round(256/(plankW||42)));
+  const bh=256/bands;
+  const b=(base>>16)&255,g=(base>>8)&255,r0=base&255;
+  for(let i=0;i<bands;i++){
+    const shade=0.82+((i*57)%20)/100;        // per-plank tone variation
+    const rr=Math.min(255,((base>>16)&255)*shade)|0;
+    const gg=Math.min(255,((base>>8)&255)*shade)|0;
+    const bb=Math.min(255,(base&255)*shade)|0;
+    c.fillStyle='rgb('+rr+','+gg+','+bb+')';
+    c.fillRect(0,i*bh,256,bh);
+    // grain streaks
+    c.strokeStyle='rgba(60,40,24,0.10)'; c.lineWidth=1;
+    for(let k=0;k<5;k++){
+      const y=i*bh+4+Math.random()*(bh-8);
+      c.beginPath(); c.moveTo(0,y);
+      c.bezierCurveTo(64,y+(Math.random()*4-2),160,y+(Math.random()*4-2),256,y);
+      c.stroke();
+    }
+    // board seam (dark line between planks)
+    c.strokeStyle='rgba(30,18,10,0.55)'; c.lineWidth=2;
+    c.beginPath(); c.moveTo(0,i*bh); c.lineTo(256,i*bh); c.stroke();
+    // staggered end-joints
+    const jx=((i%2)?128:64);
+    c.strokeStyle='rgba(30,18,10,0.4)'; c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(jx,i*bh); c.lineTo(jx,i*bh+bh); c.stroke();
+  }
+  const tex=new THREE.CanvasTexture(cv);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+  tex.repeat.set(repeat||4,repeat||4);
+  return tex;
+}
+let _plankMat=null,_plankMatDk=null;
+function plankMat(){ if(!_plankMat) _plankMat=new THREE.MeshLambertMaterial({map:makePlankTexture(0x8a6a44,42,4)}); return _plankMat; }
+function plankMatDk(){ if(!_plankMatDk) _plankMatDk=new THREE.MeshLambertMaterial({map:makePlankTexture(0x6f4f30,42,3)}); return _plankMatDk; }
+
+function makeBlueprintMaterial(){
+  const cv=document.createElement('canvas'); cv.width=768; cv.height=512;
+  const c=cv.getContext('2d');
+  c.fillStyle='#e9e2cf'; c.fillRect(0,0,768,512);
+  c.strokeStyle='#c6bba0'; c.lineWidth=6; c.strokeRect(10,10,748,492);
+  for(let i=0;i<200;i++){ c.fillStyle='rgba(150,130,90,0.05)';
+    c.fillRect(Math.random()*768,Math.random()*512,2+Math.random()*4,2+Math.random()*4); }
+  c.fillStyle='#2b2e33'; c.textAlign='left';
+  c.font='bold 40px Georgia'; c.fillText('THE ROYAL MUSEUM',34,62);
+  c.font='22px Georgia'; c.fillText('OF THE',34,94);
+  c.font='italic 22px Georgia'; c.fillText('GRAND',118,94);
+  c.strokeStyle='#a52f2c'; c.lineWidth=3;
+  c.beginPath(); c.moveTo(112,87); c.lineTo(196,87); c.stroke();
+  c.font='22px Georgia'; c.fillStyle='#2b2e33'; c.fillText('CITY OF FENN',206,94);
+  c.strokeStyle='#5c6470'; c.lineWidth=3;
+  c.strokeRect(60,180,110,220);
+  c.font='16px Georgia'; c.fillStyle='#5c6470';
+  c.fillText('LEERSON',72,290); c.fillText('HALL',90,310);
+  c.beginPath(); c.ellipse(430,330,120,88,0,0,Math.PI*2); c.stroke();
+  c.beginPath(); c.arc(430,315,34,0,Math.PI*2); c.stroke();
+  c.beginPath(); c.arc(370,350,15,0,Math.PI*2); c.stroke();
+  c.beginPath(); c.arc(490,350,15,0,Math.PI*2); c.stroke();
+  c.fillText('EAST EXTENSION',360,450);
+  c.beginPath();
+  for(let i=0;i<=5;i++){ const a=-Math.PI/2+i*Math.PI*2/5;
+    const x=620+Math.cos(a)*66,y=190+Math.sin(a)*66;
+    i?c.lineTo(x,y):c.moveTo(x,y); }
+  c.stroke();
+  c.fillStyle='#a52f2c'; c.beginPath(); c.arc(620,190,8,0,Math.PI*2); c.fill();
+  c.fillStyle='#5c6470'; c.fillText('TISKIN PARK',568,286);
+  c.strokeStyle='#a52f2c'; c.fillStyle='#a52f2c'; c.lineWidth=3;
+  c.font='italic 22px Georgia';
+  c.fillText('forced entry 1:24',300,180);
+  c.beginPath(); c.moveTo(360,190); c.lineTo(400,255); c.stroke();
+  c.beginPath(); c.moveTo(400,255); c.lineTo(390,240); c.moveTo(400,255); c.lineTo(408,238); c.stroke();
+  c.fillText('roof access?',95,160);
+  c.setLineDash([10,8]);
+  c.beginPath(); c.moveTo(430,240); c.quadraticCurveTo(300,80,150,60); c.stroke();
+  c.setLineDash([]);
+  c.fillText('getaway 1:36',150,52);
+  c.beginPath(); c.ellipse(620,190,86,86,0,0,Math.PI*2); c.stroke();
+  c.font='italic 19px Georgia'; c.fillText('too exposed',660,300);
+  c.font='italic 20px Georgia'; c.fillText('White \u00b7 Farro \u00b7 Marigold 1:05',430,490);
+  const tex=new THREE.CanvasTexture(cv);
+  return new THREE.MeshLambertMaterial({map:tex});
+}
 
 // =====================================================================
 // TERRAIN, PATHS, MOUNTAINS
 // =====================================================================
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(1100,1100), M.grass);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1100,1100),M.grass);
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-
-// darker grass patches for watercolour blotting
 const patchGeo=new THREE.CircleGeometry(1,14);
 for(let i=0;i<60;i++){
-  const p=new THREE.Mesh(patchGeo, lam(i%2?COL.grassDk:0x93aa85));
-  p.rotation.x=-Math.PI/2; p.position.set((Math.random()-0.5)*420, 0.02+Math.random()*0.01, (Math.random()-0.5)*420);
-  const s=6+Math.random()*22; p.scale.set(s,s*(0.6+Math.random()*0.6),1);
+  const p=new THREE.Mesh(patchGeo,lam(i%2?COL.grassDk:0x93aa85));
+  p.rotation.x=-Math.PI/2; p.position.set((Math.random()-0.5)*420,0.02+Math.random()*0.01,(Math.random()-0.5)*420);
+  const sc=6+Math.random()*22; p.scale.set(sc,sc*(0.6+Math.random()*0.6),1);
   p.receiveShadow=true; scene.add(p);
 }
-
-// path helper: flat rounded strip between points
 function path(x1,z1,x2,z2,w){
-  const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz);
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(len+w*0.4,w), M.path);
+  const dx=x2-x1,dz=z2-z1,len=Math.sqrt(dx*dx+dz*dz);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(len+w*0.4,w),M.path);
   m.rotation.x=-Math.PI/2; m.rotation.z=-Math.atan2(dz,dx);
-  m.position.set((x1+x2)/2, 0.05, (z1+z2)/2); m.receiveShadow=true; scene.add(m);
-  const e=new THREE.Mesh(new THREE.PlaneGeometry(len+w*0.4,w+0.9), M.pathEdge);
+  m.position.set((x1+x2)/2,0.05,(z1+z2)/2); m.receiveShadow=true; scene.add(m);
+  const e=new THREE.Mesh(new THREE.PlaneGeometry(len+w*0.4,w+0.9),M.pathEdge);
   e.rotation.copy(m.rotation); e.position.set(m.position.x,0.035,m.position.z); e.receiveShadow=true; scene.add(e);
 }
 function plaza(x,z,r,mat){
-  const m=new THREE.Mesh(new THREE.CircleGeometry(r,28), mat||M.path);
+  const m=new THREE.Mesh(new THREE.CircleGeometry(r,28),mat||M.path);
   m.rotation.x=-Math.PI/2; m.position.set(x,0.055,z); m.receiveShadow=true; scene.add(m);
 }
-
-// mountain ring (pale, fog-eaten — like the concept painting)
 for(let i=0;i<26;i++){
-  const a=(i/26)*Math.PI*2 + Math.random()*0.15;
-  const r=430+Math.random()*120;
+  const a=(i/26)*Math.PI*2+Math.random()*0.15, r=430+Math.random()*120;
   const h=90+Math.random()*130, w=90+Math.random()*90;
-  const mt=new THREE.Mesh(new THREE.ConeGeometry(w,h,5), M.mountain);
-  mt.position.set(Math.cos(a)*r, h/2-6, Math.sin(a)*r);
-  mt.rotation.y=Math.random()*Math.PI;
-  scene.add(mt);
+  const mt=new THREE.Mesh(new THREE.ConeGeometry(w,h,5),M.mountain);
+  mt.position.set(Math.cos(a)*r,h/2-6,Math.sin(a)*r);
+  mt.rotation.y=Math.random()*Math.PI; scene.add(mt);
 }
-// distant pine bands
 for(let i=0;i<40;i++){
   const a=Math.random()*Math.PI*2, r=300+Math.random()*90;
-  const t=new THREE.Mesh(new THREE.ConeGeometry(5+Math.random()*4, 16+Math.random()*10, 6), lam(0x7c9484));
-  t.position.set(Math.cos(a)*r, 7, Math.sin(a)*r); scene.add(t);
+  const t=new THREE.Mesh(new THREE.ConeGeometry(5+Math.random()*4,16+Math.random()*10,6),lam(0x7c9484));
+  t.position.set(Math.cos(a)*r,7,Math.sin(a)*r); scene.add(t);
 }
 
 // =====================================================================
-// EAST EXTENSION — the curved white museum with the glass domes (Image 2)
-// centred ~ (55, 25), portico faces south (+z)
+// EAST EXTENSION — curved white museum, walk-in Grand Entrance Hall
 // =====================================================================
 const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
 (function buildEastExtension(){
-  // scalloped/curved footprint via extruded shape
+  // (shape y maps to -z after rotateX, so the y-negative side is the SOUTH facade)
   const s=new THREE.Shape();
-  const W=24, D=17;                     // half extents
+  const W=24,D=17;
   s.moveTo(-W,-D);
-  s.quadraticCurveTo(-W-6,0,-W,D);      // west lobe
-  s.quadraticCurveTo(-W*0.5,D+4,0,D+2); // south curve toward entrance
-  s.quadraticCurveTo(W*0.5,D+4,W,D);    // east
-  s.quadraticCurveTo(W+6,0,W,-D);       // east lobe
-  s.quadraticCurveTo(0,-D-5,-W,-D);     // north curve
+  s.quadraticCurveTo(-W-6,0,-W,D);
+  s.quadraticCurveTo(-W*0.5,D+4,0,D+2);
+  s.quadraticCurveTo(W*0.5,D+4,W,D);
+  s.quadraticCurveTo(W+6,0,W,-D);
+  s.quadraticCurveTo(13,-21,3.2,-19.5);
+  s.lineTo(3.2,-4);
+  s.lineTo(13,-4); s.lineTo(13,12);
+  s.lineTo(-13,12); s.lineTo(-13,-4);
+  s.lineTo(-3.2,-4); s.lineTo(-3.2,-19.5);
+  s.quadraticCurveTo(-13,-21,-W,-D);
   const baseGeo=new THREE.ExtrudeGeometry(s,{depth:9,bevelEnabled:false});
-  baseGeo.rotateX(-Math.PI/2);          // extrusion now rises +Y; shape y maps to -z
+  baseGeo.rotateX(-Math.PI/2);
   const base=new THREE.Mesh(baseGeo,M.marble);
   base.castShadow=true; base.receiveShadow=true; museum.add(base);
-
-  // cornice slab following same shape, slightly larger
   const corn=new THREE.Mesh(new THREE.ExtrudeGeometry(s,{depth:1.1,bevelEnabled:false}),M.marbleSh);
-  corn.geometry.rotateX(-Math.PI/2);
-  corn.geometry.scale(1.045,1,1.045);
+  corn.geometry.rotateX(-Math.PI/2); corn.geometry.scale(1.045,1,1.045);
   corn.position.y=9; corn.castShadow=true; corn.receiveShadow=true; museum.add(corn);
 
-  // pilaster ring (slate strips) around the curved base — note z = -shape.y
-  const pts=s.getPoints(64);
+  const pts=s.getPoints(12);
+  const isInterior=p=>(p.y>-4.6 && p.y<12.5 && Math.abs(p.x)<13.6)||
+                      (Math.abs(p.x)<3.6 && p.y>=-20 && p.y<-4);
   const centreW=new THREE.Vector3();
   for(let i=0;i<pts.length;i+=2){
-    const p=pts[i];
-    const pil=box(0.5,8.4,0.5,M.slate, p.x, 4.6, -p.y, museum);
+    const p=pts[i]; if(isInterior(p)) continue;
+    const pil=box(0.5,8.4,0.5,M.slate,p.x,4.6,-p.y,museum);
     museum.getWorldPosition(centreW); centreW.y=pil.getWorldPosition(new THREE.Vector3()).y;
     pil.lookAt(centreW);
   }
-  // windows band (dark) around base
   for(let i=1;i<pts.length;i+=2){
-    const p=pts[i];
-    const win=box(1.6,4.6,0.25,M.window, p.x*1.012, 4.8, -p.y*1.012, museum);
+    const p=pts[i]; if(isInterior(p)) continue;
+    const win=box(1.6,4.6,0.25,M.window,p.x*1.012,4.8,-p.y*1.012,museum);
     museum.getWorldPosition(centreW); centreW.y=win.getWorldPosition(new THREE.Vector3()).y;
     win.lookAt(centreW); win.castShadow=false;
   }
 
-  // central drum + big glass dome
-  const drum=cyl(8.2,8.6,7.5,20,M.marble, 0,10.1+3.75,-1, museum);
+  const drum=cyl(8.2,8.6,7.5,20,M.marble,0,10.1+3.75,-1,museum);
   for(let i=0;i<14;i++){
     const a=(i/14)*Math.PI*2;
-    box(0.45,7.2,0.45,M.slate, Math.cos(a)*8.5, 13.6, -1+Math.sin(a)*8.5, museum);
+    box(0.45,7.2,0.45,M.slate,Math.cos(a)*8.5,13.6,-1+Math.sin(a)*8.5,museum);
   }
   cyl(8.9,8.9,0.8,20,M.marbleSh,0,17.9,-1,museum);
   glassDome(7.6,8,museum).position.set(0,18.3,-1);
-
-  // rear upper block + top glass dome
-  box(17,9,13,M.marble, 0,10.1+4.5,-10, museum);
-  box(18.2,1,14.2,M.marbleSh, 0,19.1,-10, museum);
+  box(17,9,13,M.marble,0,10.1+4.5,-10,museum);
+  box(18.2,1,14.2,M.marbleSh,0,19.1,-10,museum);
   glassDome(5.6,8,museum).position.set(0,19.6,-10);
-  // slit windows on upper block
-  for(let i=-3;i<=3;i++){ box(1.2,6,0.3,M.window, i*2.4, 14.4, -3.35, museum).castShadow=false; }
+  for(let i=-3;i<=3;i++){ box(1.2,6,0.3,M.window,i*2.4,14.4,-3.35,museum).castShadow=false; }
 
-  // twin towers with gold onion domes (front corners)
   [-1,1].forEach(sx=>{
-    const tx=sx*15.5, tz=6.5;
-    cyl(3.5,3.8,6,8,M.marble, tx,10.1+3,tz,museum);
-    cyl(3.9,3.9,0.7,8,M.marbleSh, tx,16.5,tz,museum);
-    cyl(3.2,3.5,5.4,8,M.marble, tx,19.6,tz,museum);
-    // arched window per tier
+    const tx=sx*15.5,tz=6.5;
+    cyl(3.5,3.8,6,8,M.marble,tx,10.1+3,tz,museum);
+    cyl(3.9,3.9,0.7,8,M.marbleSh,tx,16.5,tz,museum);
+    cyl(3.2,3.5,5.4,8,M.marble,tx,19.6,tz,museum);
     box(2.2,3,0.3,M.window,tx,13.4,tz+3.4,museum).castShadow=false;
     box(2.0,2.6,0.3,M.window,tx,19.8,tz+3.1,museum).castShadow=false;
-    cyl(3.6,3.6,0.6,8,M.marbleSh, tx,22.5,tz,museum);
+    cyl(3.6,3.6,0.6,8,M.marbleSh,tx,22.5,tz,museum);
     const onion=sph(2.7,M.gold,tx,24.6,tz,museum,14,12); onion.scale.y=1.25;
     cyl(0.14,0.3,2.6,8,M.gold,tx,27.6,tz,museum);
     sph(0.3,M.gold,tx,29,tz,museum,8,8);
   });
-
-  // corner barrel glass roofs (west & east lobes) — stretched glass domes
   [-1,1].forEach(sx=>{
     const b=glassDome(3.2,6,museum);
-    b.position.set(sx*20.5,10.1,-4);
-    b.scale.set(1,0.65,1.7);
+    b.position.set(sx*20.5,10.1,-4); b.scale.set(1,0.65,1.7);
   });
 
-  // entrance portico + steps (south face)
+  // portico + low walkable steps
   const steps=new THREE.Group(); steps.position.set(0,0,21); museum.add(steps);
-  for(let i=0;i<5;i++){ box(13-i*1.2, 0.5, 6-i*1.1, M.marbleSh, 0, 0.25+i*0.5, 2.5-i*0.55, steps); }
-  for(let i=-2;i<=2;i++){ cyl(0.42,0.48,4.6,10,M.marble, i*2.2, 2.5+2.3, 0.4, steps); }
+  box(13,0.28,6,M.marbleSh,0,0.14,2.8,steps);
+  box(11.5,0.28,4.8,M.marbleSh,0,0.42,2.2,steps);
+  [-5.2,-2.9,2.9,5.2].forEach(cx=>{ cyl(0.42,0.48,6.5,10,M.marble,cx,0.56+3.25,0.4,steps); });
   const pr=prismRoof(12.5,2.6,7,M.roof); pr.rotation.y=Math.PI/2; pr.position.set(0,7.6,0.4); steps.add(pr);
   box(12.5,0.5,7,M.marbleSh,0,7.35,0.4,steps);
-
-  // red royal banners flanking entrance
   [-1,1].forEach(sx=>{
-    const b=box(2.6,6.5,0.15,M.royal, sx*7.5, 6.4, 18.6, museum);
-    box(3,0.35,0.3,M.gold, sx*7.5, 9.85, 18.6, museum);
+    box(2.6,6.5,0.15,M.royal,sx*7.5,6.4,18.6,museum);
+    box(3,0.35,0.3,M.gold,sx*7.5,9.85,18.6,museum);
     const tip=new THREE.Mesh(new THREE.ConeGeometry(1.32,1.4,4),M.royalDk);
     tip.rotation.x=Math.PI; tip.rotation.y=Math.PI/4; tip.position.set(sx*7.5,2.6,18.6); museum.add(tip);
   });
-})();
-addColliderBox(55,18,52,40);      // museum body
-addColliderBox(55,42,14,10);      // portico/steps
 
-// flags on museum roofline
-const flags=[];
-flagPole(55-21,11.2,26,5,scene,flags);   // west roof-deck corner
-flagPole(55+21,11.2,26,5,scene,flags);   // east roof-deck corner
-flagPole(55,20.1,8,6,scene,flags);       // atop the rear upper block
+  // ------- GRAND ENTRANCE HALL interior -------
+  box(7.0,3.1,16.4,M.marble,0,7.55,11.8,museum);
+  box(27.6,1.0,17.6,M.marble,0,9.5,-4,museum);
+  box(26,0.12,16,M.marbleSh,0,0.06,-4,museum);
+  box(6.4,0.12,15.6,M.marbleSh,0,0.06,11.7,museum);
+  box(2.4,0.06,22,M.royal,0,0.15,8,museum).receiveShadow=true;
+  [[-8.5,0.5],[8.5,0.5],[-8.5,-9],[8.5,-9]].forEach(([cx,cz])=>{
+    cyl(0.55,0.65,9,12,M.marble,cx,4.5,cz,museum);
+    cyl(0.8,0.8,0.3,12,M.gold,cx,8.75,cz,museum);
+    cyl(0.85,0.95,0.35,12,M.marbleSh,cx,0.2,cz,museum);
+  });
+  const l1=new THREE.PointLight(0xffe2b8,0.8,36); l1.position.set(0,7.5,-4); museum.add(l1);
+  const l2=new THREE.PointLight(0xffe2b8,0.6,28); l2.position.set(0,6,12); museum.add(l2);
+
+  box(3.6,0.18,2.2,M.wood,0,1.05,-5,museum);
+  box(3.1,0.28,1.8,lam(0x6a523c),0,0.85,-5,museum);
+  [[-1.55,-0.85],[1.55,-0.85],[-1.55,0.85],[1.55,0.85]].forEach(([lx,lz])=>{
+    box(0.18,0.95,0.18,M.wood,lx,0.48,-5+lz,museum);
+  });
+  const bp=new THREE.Mesh(new THREE.PlaneGeometry(2.7,1.8),makeBlueprintMaterial());
+  bp.rotation.x=-Math.PI/2; bp.rotation.z=0.055;
+  bp.position.set(0.05,1.155,-5); bp.receiveShadow=true; museum.add(bp);
+  cyl(0.06,0.06,0.5,6,M.gold,1.2,1.18,-4.5,museum).rotation.z=Math.PI/2;
+  sph(0.09,M.gold,1.48,1.18,-4.5,museum,8,8);
+  const mag=new THREE.Mesh(new THREE.TorusGeometry(0.16,0.035,6,14),M.gold);
+  mag.rotation.x=-Math.PI/2; mag.position.set(-1.1,1.18,-4.3); museum.add(mag);
+  cyl(0.03,0.035,0.32,6,M.wood,-1.35,1.18,-4.12,museum).rotation.set(Math.PI/2,0,0.7);
+
+  function ornateDoor(px,pz,ry){
+    const d=new THREE.Group(); d.position.set(px,0,pz); d.rotation.y=ry; museum.add(d);
+    box(4.8,7.2,0.3,M.marbleSh,0,3.6,0,d);
+    box(3.0,5.2,0.36,M.darkWood,0,2.6,0.12,d);
+    const arch=cyl(1.5,1.5,0.36,16,M.darkWood,0,5.2,0.12,d); arch.rotation.x=Math.PI/2;
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(1.55,0.1,8,20,Math.PI),M.gold);
+    ring.position.set(0,5.2,0.2); d.add(ring);
+    box(0.2,5.3,0.44,M.gold,-1.55,2.65,0.12,d);
+    box(0.2,5.3,0.44,M.gold,1.55,2.65,0.12,d);
+    box(0.1,4.5,0.42,M.gold,0,2.25,0.14,d);
+    sph(0.13,M.gold,-0.35,2.5,0.34,d,8,8);
+    sph(0.13,M.gold,0.35,2.5,0.34,d,8,8);
+    [-1,1].forEach(sx=>{
+      box(0.55,6.6,0.5,M.slate,sx*2.6,3.3,0.02,d);
+      box(0.85,0.3,0.7,M.gold,sx*2.6,6.75,0.02,d);
+    });
+    const ped=prismRoof(6.2,1.1,0.7,M.roof); ped.position.set(0,7.25,0); d.add(ped);
+    box(1.7,0.55,0.2,M.royal,0,6.35,0.1,d);
+    box(0.5,0.2,0.24,M.gold,0,6.35,0.12,d);
+    return d;
+  }
+  ornateDoor(0,-11.6,0);
+  ornateDoor(-12.6,-4,Math.PI/2);
+  ornateDoor(12.6,-4,-Math.PI/2);
+})();
+// museum shell colliders (hall + corridor open)
+addColliderBox(33.5,18,17,44);
+addColliderBox(76.5,18,17,44);
+addColliderBox(55,1,26,10);
+addColliderBox(46.9,30,9.8,17);
+addColliderBox(63.1,30,9.8,17);
+addColliderBox(55,13,4.2,2.8);
+[[46.5,18.5],[63.5,18.5],[46.5,9],[63.5,9]].forEach(([cx,cz])=>addColliderBox(cx,cz,1.5,1.5));
+[[52.1,39.4],[49.8,39.4],[57.9,39.4],[60.2,39.4]].forEach(([cx,cz])=>addColliderBox(cx,cz,1,1,0.3));
+
+flagPole(55-21,11.2,26,5);
+flagPole(55+21,11.2,26,5);
+flagPole(55,20.1,8,6);
 
 // =====================================================================
-// LEERSON HALL — restored classical hall, west arm (map, Image 1 left)
+// LEERSON HALL exterior — the fixed west building
 // =====================================================================
 const hall=new THREE.Group(); hall.position.set(-48,0,-2); scene.add(hall);
 (function buildLeersonHall(){
-  box(22,13,44,M.stone, 0,6.5,0, hall);
-  // rusticated base band
-  box(23,2.4,45,M.stoneDk, 0,1.2,0, hall);
-  // window rows on long faces
+  box(22,13,44,M.stone,0,6.5,0,hall);
+  box(23,2.4,45,M.stoneDk,0,1.2,0,hall);
   for(let r=0;r<2;r++){
     for(let i=-4;i<=4;i++){
       [-1,1].forEach(sx=>{
-        const w=box(0.3,3.1,1.7,M.window, sx*11.05, 4.4+r*4.6, i*4.4, hall); w.castShadow=false;
-        box(0.35,0.4,2.1,M.marbleSh, sx*11.05, 6.1+r*4.6, i*4.4, hall);
+        box(0.3,3.1,1.7,M.window,sx*11.05,4.4+r*4.6,i*4.4,hall).castShadow=false;
+        box(0.35,0.4,2.1,M.marbleSh,sx*11.05,6.1+r*4.6,i*4.4,hall);
       });
     }
   }
-  // short-face windows
   for(let r=0;r<2;r++) for(let i=-1;i<=1;i++){
-    [-1,1].forEach(sz=>{ box(1.7,3.1,0.3,M.window, i*4.6, 4.4+r*4.6, sz*22.05, hall).castShadow=false; });
+    [-1,1].forEach(sz=>{ box(1.7,3.1,0.3,M.window,i*4.6,4.4+r*4.6,sz*22.05,hall).castShadow=false; });
   }
-  // cornice + hipped slate roof + chimneys
-  box(23.4,1,45.4,M.marbleSh, 0,13.5,0, hall);
+  box(23.4,1,45.4,M.marbleSh,0,13.5,0,hall);
   const roof=hipRoof(24,6.5,46,M.roof); roof.position.set(0,14.02,0); hall.add(roof);
   box(1.6,3.4,1.6,M.stoneDk,-6,16.6,-12,hall);
-  box(1.6,3.4,1.6,M.stoneDk, 6,16.6, 10,hall);
-  // south entrance: steps + pediment
-  for(let i=0;i<3;i++){ box(9-i, 0.45, 3-i*0.7, M.stoneDk, 0, 0.22+i*0.45, 23.4-i*0.4, hall); }
-  for(let i=-1;i<=1;i++){ cyl(0.36,0.42,4.2,10,M.stone, i*2.6, 3.4, 23.4, hall); }
+  box(1.6,3.4,1.6,M.stoneDk,6,16.6,10,hall);
+  for(let i=0;i<3;i++){ box(9-i,0.45,3-i*0.7,M.stoneDk,0,0.22+i*0.45,23.4-i*0.4,hall); }
+  for(let i=-1;i<=1;i++){ if(i===0) continue; cyl(0.36,0.42,4.2,10,M.stone,i*2.6,3.4,23.4,hall); }
   const ped=prismRoof(8.6,1.9,3.4,M.roof); ped.rotation.y=Math.PI/2; ped.position.set(0,6.2,23.2); hall.add(ped);
-  flagPole(0,20.3,0,5.5,hall,flags);
+  // front door of Leerson Hall
+  box(2.6,4.2,0.3,M.darkWood,0,2.1,22.6,hall);
+  box(3.2,0.4,0.5,M.marbleSh,0,4.4,22.6,hall);
+  flagPole(0,20.3,0,5.5,hall);
 })();
 addColliderBox(-48,-2,23,45);
 
-// west annex + guard house (connecting Leerson Hall to the courtyard)
 box(10,7,16,M.stone,-48,3.5,-33); addColliderBox(-48,-33,10,16);
 const annexRoof=hipRoof(11,3.2,17,M.roof); annexRoof.position.set(-48,7.02,-33); scene.add(annexRoof);
 box(7,5.5,7,M.stone,-62,2.75,-36); addColliderBox(-62,-36,7,7);
 const ghRoof=hipRoof(8,2.6,8,M.roof); ghRoof.position.set(-62,5.52,-36); scene.add(ghRoof);
 
 // =====================================================================
-// MOONSIDE COURTYARD — quiet walled garden, NW of the hall
+// MOONSIDE COURTYARD
 // =====================================================================
+function tree(x,z,sc){
+  sc=sc||1;
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  cyl(0.28*sc,0.42*sc,2.4*sc,7,M.trunk,0,1.2*sc,0,g);
+  const c1=sph(1.9*sc,M.leaf,0,3.4*sc,0,g,10,8);
+  const c2=sph(1.4*sc,M.leafDk,0.9*sc,4.2*sc,0.4*sc,g,10,8);
+  const c3=sph(1.2*sc,M.leaf,-1.0*sc,4.0*sc,-0.4*sc,g,10,8);
+  c1.scale.y=0.85; c2.scale.y=0.8; c3.scale.y=0.8;
+  addColliderBox(x,z,1.2*sc,1.2*sc,0.1);
+  return g;
+}
 (function buildCourtyard(){
-  const cx=-24, cz=-52, hw=14, hd=11, wh=3.6;
-  // walls with a south gap
+  const cx=-24,cz=-52,hw=14,hd=11,wh=3.6;
   const segs=[
-    [cx-hw,cz-hd, cx+hw,cz-hd],       // north
-    [cx-hw,cz-hd, cx-hw,cz+hd],       // west
-    [cx+hw,cz-hd, cx+hw,cz+hd],       // east
-    [cx-hw,cz+hd, cx-4,cz+hd],        // south-left
-    [cx+4,cz+hd,  cx+hw,cz+hd],       // south-right
+    [cx-hw,cz-hd,cx+hw,cz-hd],
+    [cx-hw,cz-hd,cx-hw,cz+hd],
+    [cx+hw,cz-hd,cx+hw,cz+hd],
+    [cx-hw,cz+hd,cx-4,cz+hd],
+    [cx+4,cz+hd,cx+hw,cz+hd],
   ];
   segs.forEach(([x1,z1,x2,z2])=>{
-    const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz);
+    const dx=x2-x1,dz=z2-z1,len=Math.sqrt(dx*dx+dz*dz);
     const w=box(len,wh,1.1,M.stone,(x1+x2)/2,wh/2,(z1+z2)/2);
     w.rotation.y=-Math.atan2(dz,dx);
     box(len+0.4,0.4,1.5,M.stoneDk,(x1+x2)/2,wh+0.2,(z1+z2)/2).rotation.y=w.rotation.y;
     addColliderSegment(x1,z1,x2,z2,1.3);
   });
   plaza(cx,cz,10,M.pathEdge);
-  // benches + small trees inside
   [[-6,-4],[6,-4],[-6,4],[6,4]].forEach(([ox,oz])=>{
     box(2.6,0.25,0.9,M.wood,cx+ox,0.7,cz+oz);
     box(0.25,0.7,0.9,M.wood,cx+ox-1,0.35,cz+oz);
@@ -514,95 +714,70 @@ const ghRoof=hipRoof(8,2.6,8,M.roof); ghRoof.position.set(-62,5.52,-36); scene.a
 })();
 
 // =====================================================================
-// TISKIN PARK — pentagonal walled park + THE MONUMENT (Images 3 & 4)
-// centred NE at (58,-78)
+// TISKIN PARK + MONUMENT
 // =====================================================================
 const PARK={x:58,z:-78};
 function pentagonPoints(cx,cz,r,rot){
   const pts=[];
-  for(let i=0;i<5;i++){
-    const a=rot+(i/5)*Math.PI*2;
-    pts.push([cx+Math.cos(a)*r, cz+Math.sin(a)*r]);
-  }
+  for(let i=0;i<5;i++){ const a=rot+(i/5)*Math.PI*2; pts.push([cx+Math.cos(a)*r,cz+Math.sin(a)*r]); }
   return pts;
 }
 (function buildTiskinPark(){
-  const rot=-Math.PI/2; // vertex to the north like the overhead shot
-  // stone ring paths (two pentagons drawn flat)
+  const rot=-Math.PI/2;
   [30,17].forEach((r,ri)=>{
     const pts=pentagonPoints(PARK.x,PARK.z,r,rot);
-    for(let i=0;i<5;i++){
-      const [x1,z1]=pts[i], [x2,z2]=pts[(i+1)%5];
-      path(x1,z1,x2,z2, ri?4.5:5.5);
-    }
+    for(let i=0;i<5;i++){ const [x1,z1]=pts[i],[x2,z2]=pts[(i+1)%5]; path(x1,z1,x2,z2,ri?4.5:5.5); }
   });
-  // low pentagon walls with entrance gaps (south side open on both rings)
   [[33,2],[20,2]].forEach(([r,skip])=>{
     const pts=pentagonPoints(PARK.x,PARK.z,r,rot);
     for(let i=0;i<5;i++){
-      if(i===skip) continue; // gap
-      const [x1,z1]=pts[i], [x2,z2]=pts[(i+1)%5];
-      const dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz);
+      if(i===skip) continue;
+      const [x1,z1]=pts[i],[x2,z2]=pts[(i+1)%5];
+      const dx=x2-x1,dz=z2-z1,len=Math.sqrt(dx*dx+dz*dz);
       const w=box(len-3,2.2,1,M.stone,(x1+x2)/2,1.1,(z1+z2)/2);
       w.rotation.y=-Math.atan2(dz,dx);
       box(len-3,0.35,1.4,M.stoneDk,(x1+x2)/2,2.3,(z1+z2)/2).rotation.y=w.rotation.y;
-      // sampled colliders, leaving the gap side open
-      const t0=1.5/len, t1=1-1.5/len;
-      addColliderSegment(x1+dx*t0,z1+dz*t0, x1+dx*t1,z1+dz*t1, 1.2);
+      const t0=1.5/len,t1=1-1.5/len;
+      addColliderSegment(x1+dx*t0,z1+dz*t0,x1+dx*t1,z1+dz*t1,1.2);
     }
   });
-  // spoke paths in to the monument
   const inner=pentagonPoints(PARK.x,PARK.z,17,rot);
   inner.forEach(([x,z])=>path(x,z,PARK.x,PARK.z,3.5));
   plaza(PARK.x,PARK.z,10,M.pathEdge);
-  // hedges dotted between rings
   for(let i=0;i<10;i++){
     const a=rot+(i/10)*Math.PI*2+0.31;
-    const r=24;
-    const h=sph(1.6,M.leafDk,PARK.x+Math.cos(a)*r,1.2,PARK.z+Math.sin(a)*r); h.scale.y=0.75;
+    const h=sph(1.6,M.leafDk,PARK.x+Math.cos(a)*24,1.2,PARK.z+Math.sin(a)*24); h.scale.y=0.75;
   }
 })();
-
-// ---- THE TISKIN MONUMENT — winged king, sword raised, kite shield ----
 (function buildMonument(){
   const g=new THREE.Group(); g.position.set(PARK.x,0,PARK.z); scene.add(g);
-  // pentagonal stepped pedestal
   cyl(7.5,8,1.1,5,M.stoneDk,0,0.55,0,g);
   cyl(6,6.5,1.1,5,M.stone,0,1.65,0,g);
   cyl(4.4,4.9,1.3,5,M.stoneDk,0,2.85,0,g);
   cyl(2.6,3.0,2.2,5,M.stone,0,4.6,0,g);
   addColliderBox(PARK.x,PARK.z,15,15);
-
   const fig=new THREE.Group(); fig.position.y=5.7; g.add(fig);
   const S=M.statue;
-  // legs — weight on left, right foot forward on a rock (Image 3)
-  cyl(0.55,0.7,3.4,10,S,-0.75,1.7,0,fig);                       // standing leg
+  cyl(0.55,0.7,3.4,10,S,-0.75,1.7,0,fig);
   const rThigh=cyl(0.55,0.62,2.0,10,S,0.8,2.6,0.5,fig); rThigh.rotation.x=-0.7;
   const rShin=cyl(0.45,0.5,1.9,10,S,0.85,1.15,1.35,fig); rShin.rotation.x=0.15;
-  box(0.9,0.5,1.5,S,0.85,0.3,1.8,fig);                           // right boot
-  box(0.9,0.5,1.4,S,-0.75,0.25,0.15,fig);                        // left boot
-  cyl(0.9,1.1,0.7,10,S,0.85,0.35,1.9,fig);                       // rock under foot
-  // faulds / skirt
-  const skirt=cyl(1.15,1.6,1.4,10,S,0,3.6,0.1,fig);
-  // torso cuirass
+  box(0.9,0.5,1.5,S,0.85,0.3,1.8,fig);
+  box(0.9,0.5,1.4,S,-0.75,0.25,0.15,fig);
+  cyl(0.9,1.1,0.7,10,S,0.85,0.35,1.9,fig);
+  cyl(1.15,1.6,1.4,10,S,0,3.6,0.1,fig);
   const torso=cyl(1.25,1.05,2.6,10,S,0,5.4,0.1,fig); torso.scale.z=0.8;
-  box(2.1,0.5,1.3,S,0,6.55,0.1,fig);                             // gorget/chest plate
-  // pauldrons
+  box(2.1,0.5,1.3,S,0,6.55,0.1,fig);
   sph(0.72,S,-1.35,6.5,0.1,fig); sph(0.72,S,1.35,6.5,0.1,fig);
-  // right arm raised with sword
   const rUp=cyl(0.38,0.44,1.6,8,S,1.75,7.3,0.1,fig); rUp.rotation.z=-0.9;
-  const rFo=cyl(0.3,0.36,1.5,8,S,2.5,8.4,0.1,fig);  rFo.rotation.z=-0.25;
-  sph(0.38,S,2.75,9.1,0.1,fig);                                  // fist
-  const blade=box(0.16,4.6,0.5,S,2.75,11.7,0.1,fig);             // sword blade
-  blade.scale.z=0.55;
-  box(1.5,0.22,0.34,S,2.75,9.5,0.1,fig);                         // crossguard
-  cyl(0.12,0.12,0.7,8,S,2.75,9.0,0.1,fig);                       // grip
-  sph(0.18,S,2.75,8.6,0.1,fig);                                  // pommel
+  const rFo=cyl(0.3,0.36,1.5,8,S,2.5,8.4,0.1,fig); rFo.rotation.z=-0.25;
+  sph(0.38,S,2.75,9.1,0.1,fig);
+  const blade=box(0.16,4.6,0.5,S,2.75,11.7,0.1,fig); blade.scale.z=0.55;
+  box(1.5,0.22,0.34,S,2.75,9.5,0.1,fig);
+  cyl(0.12,0.12,0.7,8,S,2.75,9.0,0.1,fig);
+  sph(0.18,S,2.75,8.6,0.1,fig);
   const tip=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.6,6),S); tip.position.set(2.75,14.3,0.1); fig.add(tip);
-  // left arm down to shield
   const lUp=cyl(0.38,0.44,1.5,8,S,-1.6,6.6,0.35,fig); lUp.rotation.z=0.7;
-  const lFo=cyl(0.3,0.35,1.4,8,S,-2.05,5.4,0.7,fig);  lFo.rotation.z=0.25; lFo.rotation.x=-0.3;
-  // kite shield (tapered extruded shape)
+  const lFo=cyl(0.3,0.35,1.4,8,S,-2.05,5.4,0.7,fig); lFo.rotation.z=0.25; lFo.rotation.x=-0.3;
   (function(){
     const sh=new THREE.Shape();
     sh.moveTo(0,1.9); sh.quadraticCurveTo(1.2,1.6,1.15,0.4);
@@ -615,48 +790,44 @@ function pentagonPoints(cx,cz,r,rot){
     shield.position.set(-2.1,3.6,1.2); shield.rotation.y=0.25; shield.rotation.x=0.06;
     fig.add(shield);
   })();
-  // head, beard, crown
   sph(0.62,S,0,7.5,0.15,fig);
   const beard=new THREE.Mesh(new THREE.ConeGeometry(0.42,0.85,8),S);
   beard.rotation.x=Math.PI; beard.position.set(0,6.95,0.55); fig.add(beard);
-  cyl(0.55,0.6,0.4,8,S,0,8.05,0.15,fig);                          // crown band
+  cyl(0.55,0.6,0.4,8,S,0,8.05,0.15,fig);
   for(let i=0;i<6;i++){
     const a=(i/6)*Math.PI*2;
     const spike=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.55,5),S);
     spike.position.set(Math.cos(a)*0.5,8.45,0.15+Math.sin(a)*0.5); fig.add(spike);
   }
-  // two great swept wings (thin extruded blades)
   function wing(mirror){
     const w=new THREE.Shape();
     w.moveTo(0,0);
-    w.quadraticCurveTo(1.5,2.8, 4.6,5.6);
-    w.quadraticCurveTo(6.4,7.2, 7.4,7.0);
-    w.quadraticCurveTo(6.2,5.2, 5.4,3.4);
-    w.quadraticCurveTo(4.2,1.0, 2.2,-0.4);
-    w.quadraticCurveTo(1.0,-0.9, 0,-0.6);
+    w.quadraticCurveTo(1.5,2.8,4.6,5.6);
+    w.quadraticCurveTo(6.4,7.2,7.4,7.0);
+    w.quadraticCurveTo(6.2,5.2,5.4,3.4);
+    w.quadraticCurveTo(4.2,1.0,2.2,-0.4);
+    w.quadraticCurveTo(1.0,-0.9,0,-0.6);
     const geo=new THREE.ExtrudeGeometry(w,{depth:0.22,bevelEnabled:false});
     const m=new THREE.Mesh(geo,S); m.castShadow=true; m.receiveShadow=true;
     m.position.set(mirror*0.4,6.2,-0.55);
-    m.rotation.y=mirror*(Math.PI*0.62);
-    m.rotation.z=0.12*mirror;
+    m.rotation.y=mirror*(Math.PI*0.62); m.rotation.z=0.12*mirror;
     if(mirror<0) m.scale.x=-1;
     fig.add(m);
   }
   wing(1); wing(-1);
-  fig.rotation.y=Math.PI*0.9; // face roughly toward museum entrance
+  fig.rotation.y=Math.PI*0.9;
 })();
 
 // =====================================================================
-// KING'S GROTTO — rocks + mossy arch, NW corner
+// GROTTO, FOUNTAIN, CAFE, PARKING, CARS
 // =====================================================================
 (function buildGrotto(){
-  const gx=-6, gz=-104;
+  const gx=-6,gz=-104;
   for(let i=0;i<9;i++){
-    const a=(i/9)*Math.PI*1.4+2.0, r=6+Math.random()*3;
+    const a=(i/9)*Math.PI*1.4+2.0,r=6+Math.random()*3;
     const rock=sph(1.8+Math.random()*1.8,M.rock,gx+Math.cos(a)*r,1.1,gz+Math.sin(a)*r,scene,8,6);
     rock.scale.y=0.7+Math.random()*0.4; rock.rotation.y=Math.random()*3;
   }
-  // arch
   const arch=new THREE.Mesh(new THREE.TorusGeometry(3.4,0.9,8,18,Math.PI),M.rock);
   arch.position.set(gx,0.4,gz); arch.castShadow=true; scene.add(arch);
   const moss=sph(2.6,M.leafDk,gx-3.6,3.4,gz-1); moss.scale.set(1,0.5,1);
@@ -664,12 +835,8 @@ function pentagonPoints(cx,cz,r,rot){
   plaza(gx,gz+2,5,M.pathEdge);
   addColliderBox(gx-4,gz,4,4); addColliderBox(gx+4,gz,4,4);
 })();
-
-// =====================================================================
-// FOUNTAIN PLAZA (Image 1 foreground), STATION CAFÉ, PARKING, CARS
-// =====================================================================
 (function buildFountain(){
-  const fx=4, fz=32;
+  const fx=4,fz=32;
   plaza(fx,fz,12,M.path);
   cyl(6.5,7,1,24,M.marbleSh,fx,0.5,fz);
   const water=new THREE.Mesh(new THREE.CircleGeometry(5.9,24),M.water);
@@ -677,31 +844,26 @@ function pentagonPoints(cx,cz,r,rot){
   cyl(1.2,1.6,1.6,10,M.marble,fx,1.8,fz);
   cyl(2.6,3,0.5,16,M.marble,fx,2.8,fz);
   cyl(0.7,0.9,1.4,10,M.marble,fx,3.7,fz);
-  // small echo of the monument atop the fountain
   cyl(0.35,0.45,1.6,8,M.marbleSh,fx,5.1,fz);
   sph(0.32,M.marbleSh,fx,6.1,fz);
   box(0.08,1.5,0.2,M.marbleSh,fx+0.5,6.6,fz);
   addColliderBox(fx,fz,14,14);
 })();
-
 (function buildStationCafe(){
-  const sx=-96, sz=28;
+  const sx=-96,sz=28;
   box(16,6,9,M.stone,sx,3,sz); addColliderBox(sx,sz,16,9);
   const r=prismRoof(10,3,17,M.roof); r.rotation.y=Math.PI/2; r.position.set(sx,6.02,sz); scene.add(r);
-  box(20,0.7,4,M.stoneDk,sx,0.35,sz+7);         // old platform
+  box(20,0.7,4,M.stoneDk,sx,0.35,sz+7);
   for(let i=-2;i<=2;i++){ box(0.3,2.6,0.3,M.wood,sx+i*4,1.3,sz+8.6); }
-  box(19,0.3,1.2,M.roof,sx,2.7,sz+8.6);          // platform canopy
-  // café tables
+  box(19,0.3,1.2,M.roof,sx,2.7,sz+8.6);
   for(let i=-1;i<=1;i++){ cyl(1,1,0.12,12,M.marbleSh,sx+i*4.5,1,sz+6.4); cyl(0.12,0.16,1,8,M.wood,sx+i*4.5,0.5,sz+6.4); }
 })();
-
 (function buildParking(){
-  const px=-96, pz=-24;
+  const px=-96,pz=-24;
   const lot=new THREE.Mesh(new THREE.PlaneGeometry(30,22),lam(0xb6b9bd));
   lot.rotation.x=-Math.PI/2; lot.position.set(px,0.045,pz); lot.receiveShadow=true; scene.add(lot);
   for(let i=-2;i<=2;i++){ box(0.25,0.06,8,lam(0xe6e2d6),px+i*5.4,0.08,pz-5); }
 })();
-
 function car(x,z,color,rot){
   const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=rot||0; scene.add(g);
   box(4.4,1,2.1,lam(color),0,0.85,0,g);
@@ -713,45 +875,29 @@ function car(x,z,color,rot){
   addColliderBox(x,z,4.6,2.4);
   return g;
 }
-const decoyCar  = car(30, 66, 0x8a2320, 0.15);   // Decoy Car, south of entrance
-const getawayCar= car(6, -128, 0x8a2320, -0.4);  // Getaway Car, far NW
+car(30,66,0x8a2320,0.15);
+car(6,-128,0x8a2320,-0.4);
 
 // =====================================================================
-// PATH NETWORK (following the map)
+// PATH NETWORK / TREES / BENCHES / GATES
 // =====================================================================
-path(55,86, 55,44, 8);          // entrance approach
-plaza(55,64,9);
-path(55,64, 8,44, 6);           // to fountain plaza
-path(4,32, 4,-8, 5);            // north from fountain
-path(4,-8, -48,22, 5);          // SW to Leerson Hall entrance (south pathway)
-path(-48,26, -48,60, 5);        // hall south approach
-path(4,-8, -24,-40, 4.5);       // to Moonside Courtyard gap
-path(4,-8, 34,-48, 5);          // NE toward Tiskin Park
-path(34,-48, 58,-48, 5);        // park south approach → gap
-path(58,-48, 58,-66, 4);        // spur north through both wall gaps
-path(4,-8, -6,-96, 4.5);        // north to King's Grotto
-path(-6,-118, 6,-128, 4);       // grotto to getaway lane
-path(-48,22, -80,26, 4.5);      // west to café
-path(-81,-2, -81,-22, 4.5);     // café/parking link
+path(55,86,55,44,8); plaza(55,64,9);
+path(55,64,8,44,6);
+path(4,32,4,-8,5);
+path(4,-8,-48,22,5);
+path(-48,26,-48,60,5);
+path(4,-8,-24,-40,4.5);
+path(4,-8,34,-48,5);
+path(34,-48,58,-48,5);
+path(58,-48,58,-66,4);
+path(4,-8,-6,-96,4.5);
+path(-6,-118,6,-128,4);
+path(-48,22,-80,26,4.5);
+path(-81,-2,-81,-22,4.5);
 path(-48,22,-81,-2,4.5);
-path(55,64, 96,52, 5);          // east grounds loop
-path(96,52, 96,-20, 5);
-path(96,-20, 84,-56, 5);
-
-// =====================================================================
-// TREES & BENCHES over the grounds
-// =====================================================================
-function tree(x,z,s){
-  s=s||1;
-  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
-  cyl(0.28*s,0.42*s,2.4*s,7,M.trunk,0,1.2*s,0,g);
-  const c1=sph(1.9*s,M.leaf,0,3.4*s,0,g,10,8);
-  const c2=sph(1.4*s,M.leafDk,0.9*s,4.2*s,0.4*s,g,10,8);
-  const c3=sph(1.2*s,M.leaf,-1.0*s,4.0*s,-0.4*s,g,10,8);
-  c1.scale.y=0.85; c2.scale.y=0.8; c3.scale.y=0.8;
-  addColliderBox(x,z,1.2*s,1.2*s,0.1);
-  return g;
-}
+path(55,64,96,52,5);
+path(96,52,96,-20,5);
+path(96,-20,84,-56,5);
 const treeSpots=[
   [30,86],[76,80],[92,70],[104,30],[104,-2],[98,-44],[80,-30],[26,-30],
   [20,-64],[-16,-76],[-30,-92],[16,-104],[36,-112],[-8,-24],[-20,10],[-16,34],
@@ -759,15 +905,13 @@ const treeSpots=[
   [86,-92],[62,-116],[-2,58],[-24,62],[110,-64],[46,-140]
 ];
 treeSpots.forEach(([x,z])=>tree(x,z,0.85+Math.random()*0.7));
-// benches along south pathway & east grounds
 [[24,52,-0.5],[-18,6,0.5],[70,58,0.2],[96,10,Math.PI/2]].forEach(([x,z,r])=>{
   const b=new THREE.Group(); b.position.set(x,0,z); b.rotation.y=r; scene.add(b);
   box(2.8,0.22,0.9,M.wood,0,0.72,0,b);
   box(2.8,0.8,0.18,M.wood,0,1.2,-0.42,b);
   box(0.22,0.72,0.8,M.wood,-1.15,0.36,0,b);
-  box(0.22,0.72,0.8,M.wood, 1.15,0.36,0,b);
+  box(0.22,0.72,0.8,M.wood,1.15,0.36,0,b);
 });
-// entrance gate piers
 [-1,1].forEach(sx=>{
   box(1.6,4.6,1.6,M.stone,55+sx*8,2.3,88);
   sph(0.7,M.stoneDk,55+sx*8,5,88);
@@ -775,7 +919,7 @@ treeSpots.forEach(([x,z])=>tree(x,z,0.85+Math.random()*0.7));
 });
 
 // =====================================================================
-// HEIST INTEL — red markers from the crew's annotated map (toggle H)
+// HEIST INTEL markers (H)
 // =====================================================================
 const intel=new THREE.Group(); intel.visible=false; scene.add(intel);
 const intelPins=[];
@@ -788,76 +932,735 @@ function intelMarker(x,z,text,sub,h){
 intelMarker(6,-128,'Getaway Car','1:36',6);
 intelMarker(30,66,'Decoy Car','too easy to track',6);
 intelMarker(74,32,'Forced Entry','1:24',10);
-intelMarker(-24,-52,'White — 1:24','Moonside Courtyard',8);
-intelMarker(104,-30,'White · Farro · Marigold','1:05',8);
+intelMarker(-24,-52,'White \u2014 1:24','Moonside Courtyard',8);
+intelMarker(104,-30,'White \u00b7 Farro \u00b7 Marigold','1:05',8);
 intelMarker(92,60,'Manning','1:10',7);
 intelMarker(40,4,'roof access?','',14);
 intelMarker(-6,-104,'Escape Route','via King\u2019s Grotto',9);
 
 // =====================================================================
-// ZONES (name plate)
+// ROOM DIRECTORY — 46 rooms
 // =====================================================================
-const zones=[
-  {x:58,z:-78,r:12, n:'Tiskin Monument', s:'commemorating the war of the fifth era'},
-  {x:58,z:-78,r:36, n:'Tiskin Park', s:'gardens · free access'},
-  {x:-24,z:-52,r:15,n:'Moonside Courtyard', s:'quietly hidden on the west end'},
-  {x:-48,z:-2,r:30, n:'Leerson Hall', s:'closed exhibits · restricted'},
-  {x:-6,z:-104,r:14,n:'King\u2019s Grotto', s:'gardens'},
-  {x:55,z:22,r:34,  n:'Museum — Main Concourse', s:'art & exhibits · ticket entry'},
-  {x:55,z:66,r:18,  n:'Museum Entrance', s:'ticket entry'},
-  {x:4,z:32,r:14,   n:'Fountain Plaza', s:'museum grounds'},
-  {x:-96,z:28,r:16, n:'Museum Station Caf\u00e9', s:'the defunct line, now shops'},
-  {x:-96,z:-24,r:20,n:'Parking Lot \u2014 West', s:'overflow parking'},
-  {x:96,z:0,r:30,   n:'East Grounds', s:'museum grounds'},
-  {x:-20,z:8,r:26,  n:'South Pathway', s:'gardens · free access'},
+const P1=['S'],P2I=['S','N'],P2L=['S','E'],P3T=['S','E','W'],P3F=['S','N','E'],P4=['N','E','S','W'];
+function R(id,n,d,s,c,note,sp){ return {id,n,d,s,c,note:note||'',sp:sp||null}; }
+const CG='#d9c9a3',CA='#c2cbd8',CS='#c3cec3',CM='#e0d6c2',CO='#d8bcbc',CX='#b9b6b0';
+const ROOMS=[
+  R('antechamber','Antechamber',4,P4,CG),
+  R('rotunda','Rotunda',4,P4,CG),
+  R('atrium','Atrium',4,P4,CG),
+  R('royallanding','Royal Landing',4,P4,CG),
+  R('grandsalon','Grand Salon',4,P4,CG),
+  R('crossinghall','Crossing Hall',4,P4,CG),
+  R('longgallery','Long Gallery',2,P2I,CA),
+  R('marblepassage','Marble Passage',2,P2I,CA),
+  R('colonnade','Colonnade',2,P2I,CA),
+  R('tapestryhall','Tapestry Hall',2,P2I,CA),
+  R('cornergallery','Corner Gallery',2,P2L,CA),
+  R('turninghall','Turning Hall',2,P2L,CA),
+  R('redgallery','Red Gallery',3,P3F,CO,'Paintings in the royal colour.'),
+  R('sculpturecourt','Sculpture Court',3,P3T,CA),
+  R('whisperinghall','Whispering Hall',3,P3F,CO),
+  R('scholarsstair','Scholars\u2019 Stair',3,P3T,CA),
+  R('servantspassage','Servants\u2019 Passage',3,P3F,CS),
+  R('fiftherawing','Fifth Era Wing',3,P3T,CO,'Relics of King Tiskin\u2019s war.'),
+  R('fountaincourt','Fountain Court',3,P3F,CG),
+  R('gardenroom','Garden Room',2,P2L,CS),
+  R('tearoom','Tea Room',2,P2I,CM),
+  R('giftshop','Gift Shop',2,P2L,CM),
+  R('maproom','Map Room',2,P2I,CM),
+  R('archive','Archive',2,P2L,CM),
+  R('conservationlab','Conservation Lab',2,P2I,CS),
+  R('musicroom','Music Room',2,P2L,CM),
+  R('armoury','Armoury',2,P2I,CO),
+  R('tiskinannex','Tiskin Annex',2,P2L,CO),
+  R('securityoffice','Security Office',2,P2I,CS,'Monitors flicker somewhere.'),
+  R('readingroom','Reading Room',1,P1,CM),
+  R('curatorsoffice','Curator\u2019s Office',1,P1,CM),
+  R('broomcupboard','Broom Cupboard',1,P1,CS),
+  R('cloakroom','Cloakroom',1,P1,CM),
+  R('storageroom','Storage Room',1,P1,CS),
+  R('boilerroom','Boiler Room',1,P1,CS),
+  R('cameraroom','Camera Room',1,P1,CS),
+  R('recordsroom','Records Room',1,P1,CM),
+  R('porcelainroom','Porcelain Room',1,P1,CM),
+  R('clockroom','Clock Room',1,P1,CM),
+  R('moonroom','Moon Room',1,P1,CO),
+  R('sunroom','Sun Room',1,P1,CO),
+  R('princesstudy','Prince\u2019s Study',1,P1,CM,'Leerson\u2019s desk, they say.'),
+  R('observatory','Observatory',1,P1,CO),
+  R('servicetunnel','Service Tunnel',1,P1,CS,'A maintenance hatch, half-hidden beneath the grating.','tunnel'),
+  R('brickedwing','Bricked Wing',0,[],CX,'Placing it seals the doorway for the night.'),
+  R('sealedvault','Sealed Vault',0,[],CX,'No way in. Placing it seals the doorway.')
 ];
-const zoneName=document.getElementById('zoneName');
-const zoneSub=document.getElementById('zoneSub');
+function roomById(id){ for(const r of ROOMS) if(r.id===id) return r; return null; }
+const ORD=['N','E','S','W'];
+function rotSide(s,k){ return ORD[(ORD.indexOf(s)+k)%4]; }
+function oppSide(s){ return {N:'S',S:'N',E:'W',W:'E'}[s]; }
+const SIDE_D={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0]}; // [dc, dr] (N = deeper row)
+
+// =====================================================================
+// DRAFT WING — East Extension interior (grid 5x5 + south landing)
+// =====================================================================
+const DX=600, DZ=0, CS_=12, GW=5, GH=5;
+function cellX(c){ return DX+(c-2)*CS_; }
+function cellZ(r){ return DZ-r*CS_; }
+const grid=[]; for(let r=0;r<GH;r++){ grid.push([null,null,null,null,null]); }
+const placed=new Set();
+const edges=new Map();
+let tunnelPos=null;
+const tintCache={};
+function tintMat(c){ if(!tintCache[c]) tintCache[c]=lam(c); return tintCache[c]; }
+
+// dark underlay slabs so interior doorways never open onto sky
+[[DX,DZ-22],[ -600, 0 ]].forEach(([ux,uz])=>{
+  const u=new THREE.Mesh(new THREE.PlaneGeometry(150,150),lam(0x2c3036));
+  u.rotation.x=-Math.PI/2; u.position.set(ux,-0.02,uz); scene.add(u);
+});
+
+function edgeInfo(c,r,side){
+  if(side==='S') return {key:'h'+c+'_'+r,     x:cellX(c),  z:cellZ(r)+6, horiz:true};
+  if(side==='N') return {key:'h'+c+'_'+(r+1), x:cellX(c),  z:cellZ(r)-6, horiz:true};
+  if(side==='W') return {key:'v'+c+'_'+r,     x:cellX(c)-6,z:cellZ(r),   horiz:false};
+  return             {key:'v'+(c+1)+'_'+r,    x:cellX(c)+6,z:cellZ(r),   horiz:false};
+}
+function buildEdgeWall(info,gap){
+  const rec={gap:gap,cols:[],panelMesh:null,panelCol:null,inter:null,sealed:false};
+  const H=4.6;
+  if(!gap){
+    if(info.horiz){ box(12,H,0.5,M.wallIn,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,12,0.5,0.25)); }
+    else{ box(0.5,H,12,M.wallIn,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.5,12,0.25)); }
+  }else{
+    const segL=4.7, off=3.65;
+    if(info.horiz){
+      box(segL,H,0.5,M.wallIn,info.x-off,H/2,info.z);
+      box(segL,H,0.5,M.wallIn,info.x+off,H/2,info.z);
+      box(2.6,1.05,0.5,M.wallIn,info.x,4.07,info.z);
+      rec.cols.push(addColliderBox(info.x-off,info.z,segL,0.5,0.25));
+      rec.cols.push(addColliderBox(info.x+off,info.z,segL,0.5,0.25));
+    }else{
+      box(0.5,H,segL,M.wallIn,info.x,H/2,info.z-off);
+      box(0.5,H,segL,M.wallIn,info.x,H/2,info.z+off);
+      box(0.5,1.05,2.6,M.wallIn,info.x,4.07,info.z);
+      rec.cols.push(addColliderBox(info.x,info.z-off,0.5,segL,0.25));
+      rec.cols.push(addColliderBox(info.x,info.z+off,0.5,segL,0.25));
+    }
+  }
+  edges.set(info.key,rec); return rec;
+}
+function addDoorPanel(rec,info,target){
+  const p=info.horiz? box(2.5,3.4,0.16,M.darkWood,info.x,1.7,info.z)
+                    : box(0.16,3.4,2.5,M.darkWood,info.x,1.7,info.z);
+  sph(0.09,M.gold,info.horiz?info.x+0.8:info.x+0.11,1.6,info.horiz?info.z+0.11:info.z+0.8,scene,8,8);
+  rec.panelMesh=p;
+  rec.panelCol=info.horiz? addColliderBox(info.x,info.z,2.6,0.5,0.15)
+                         : addColliderBox(info.x,info.z,0.5,2.6,0.15);
+  rec.inter={x:info.x,z:info.z,r:1.8,label:'open the door \u2014 draft a room',
+             fn:()=>openDraft(target),dead:false};
+  interactables.push(rec.inter);
+}
+function clearPanel(rec){
+  if(rec.panelMesh){ scene.remove(rec.panelMesh); rec.panelMesh=null; }
+  if(rec.panelCol){ removeCollider(rec.panelCol); rec.panelCol=null; }
+  if(rec.inter){ rec.inter.dead=true; rec.inter=null; }
+}
+function sealEdgeGap(rec,info){
+  if(info.horiz){ box(2.7,4.6,0.55,M.stoneDk,info.x,2.3,info.z); rec.cols.push(addColliderBox(info.x,info.z,2.7,0.55,0.2)); }
+  else{ box(0.55,4.6,2.7,M.stoneDk,info.x,2.3,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.55,2.7,0.2)); }
+  rec.sealed=true; rec.gap=false;
+}
+function buildRoomGeom(c,r,room,abs){
+  const cx=cellX(c),cz=cellZ(r);
+  box(11.9,0.1,11.9,tintMat(room.c),cx,0.05,cz).castShadow=false;
+  box(12,0.3,12,M.ceilIn,cx,4.75,cz);
+  const tag=makeTag(room.n,false); tag.position.set(cx,3.55,cz); scene.add(tag);
+  ORD.forEach(side=>{
+    const info=edgeInfo(c,r,side);
+    const meDoor=abs.has(side);
+    if(edges.has(info.key)){
+      const rec=edges.get(info.key);
+      if(rec.gap && meDoor){ clearPanel(rec); }               // passage opens
+      else if(rec.gap && !meDoor){ clearPanel(rec); sealEdgeGap(rec,info); }
+      // solid wall + meDoor: blocked, nothing to build
+    }else{
+      const rec=buildEdgeWall(info,meDoor);
+      if(meDoor){
+        const [dc,dr]=SIDE_D[side];
+        const nc=c+dc,nr=r+dr;
+        if(nc<0||nc>=GW||nr<0||nr>=GH){ sealEdgeGap(rec,info); }
+        else{ addDoorPanel(rec,info,{tc:nc,tr:nr,entry:oppSide(side)}); }
+      }
+    }
+  });
+  if(room.sp==='tunnel'){
+    box(1.5,0.22,1.5,M.metal,cx+2,0.16,cz+2);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.05,6,14),M.gold);
+    ring.rotation.x=-Math.PI/2; ring.position.set(cx+2,0.3,cz+2); scene.add(ring);
+    tunnelPos={x:cx,z:cz};
+    interactables.push({x:cx+2,z:cz+2,r:1.7,label:'descend the service hatch',
+      fn:()=>{ fadeTeleport(-600-8,0-18.2,-Math.PI/2);
+               setTimeout(()=>msg('Staff corridor \u2014 behind the Closed Exhibit. Use the controls: open the SHUTTER, then disarm ROPE, LASERS and ALARM.'),700); },
+      dead:false});
+  }
+}
+function placeRoom(id,ctx){
+  const room=roomById(id); if(!room) return;
+  placed.add(id);
+  const info=edgeInfo(ctx.tc,ctx.tr,ctx.entry);
+  if(room.d===0){
+    const rec=edges.get(info.key);
+    if(rec){ clearPanel(rec); sealEdgeGap(rec,info); }
+    box(11.5,4.6,11.5,lam(0x4b4e54),cellX(ctx.tc),2.3,cellZ(ctx.tr));
+    addColliderBox(cellX(ctx.tc),cellZ(ctx.tr),11.5,11.5,0.2);
+    grid[ctx.tr][ctx.tc]={id:id,abs:[],sealed:true};
+    msg(room.n+' \u2014 the doorway is sealed for the night.');
+    return;
+  }
+  let rot=0;
+  for(let k=0;k<4;k++){ if(room.s.some(s=>rotSide(s,k)===ctx.entry)){ rot=k; break; } }
+  const abs=new Set(room.s.map(s=>rotSide(s,rot)));
+  grid[ctx.tr][ctx.tc]={id:id,abs:[...abs],sealed:false};
+  buildRoomGeom(ctx.tc,ctx.tr,room,abs);
+  msg('Drafted: '+room.n);
+}
+// ---- south landing ----
+(function buildLanding(){
+  box(36,0.14,6.8,M.floorIn,DX,0.07,9.2).castShadow=false;
+  box(2.2,0.06,6.8,M.royal,DX,0.13,9.2).castShadow=false;
+  box(36,0.3,6.8,M.ceilIn,DX,4.75,9.2);
+  box(0.5,4.6,6.8,M.wallIn,DX-18,2.3,9.2); addColliderBox(DX-18,9.2,0.5,6.8,0.25);
+  box(0.5,4.6,6.8,M.wallIn,DX+18,2.3,9.2); addColliderBox(DX+18,9.2,0.5,6.8,0.25);
+  // south wall with three return arches
+  const zS=12.4;
+  [[-18,-13.3],[-10.7,-1.3],[1.3,10.7],[13.3,18]].forEach(([a,b])=>{
+    const len=b-a, mid=DX+(a+b)/2;
+    box(len,4.6,0.5,M.wallIn,mid,2.3,zS);
+    addColliderBox(mid,zS,len,0.5,0.25);
+  });
+  [-12,0,12].forEach(off=>{
+    box(2.6,1.05,0.5,M.wallIn,DX+off,4.07,zS);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(1.35,0.09,8,18,Math.PI),M.gold);
+    ring.position.set(DX+off,3.4,zS); scene.add(ring);
+  });
+  const lt=makeTag('SOUTH LANDING',true); lt.position.set(DX,3.7,9.2); scene.add(lt);
+  // north wall: three draftable doorways into row 0
+  [1,2,3].forEach(c=>{
+    const info=edgeInfo(c,0,'S');
+    const rec=buildEdgeWall(info,true);
+    addDoorPanel(rec,info,{tc:c,tr:0,entry:'S'});
+  });
+  const L1=new THREE.PointLight(0xffe2b8,0.7,26); L1.position.set(DX,3.8,9.2); scene.add(L1);
+  [[DX-12,-6],[DX+12,-6],[DX-12,-30],[DX+12,-30],[DX,-48]].forEach(([lx,lz])=>{
+    const L=new THREE.PointLight(0xf4e6cd,0.55,26); L.position.set(lx,4.1,lz); scene.add(L);
+  });
+})();
+// museum hall doors <-> landing teleports
+teleports.push({x:55,z:7.4,r:1.5, tx:DX,   tz:10.4, yaw:0});
+teleports.push({x:43.3,z:14,r:1.3, tx:DX-12,tz:10.4, yaw:0});
+teleports.push({x:66.7,z:14,r:1.3, tx:DX+12,tz:10.4, yaw:0});
+teleports.push({x:DX,   z:12.0,r:1.0, tx:55,  tz:10.4, yaw:Math.PI});
+teleports.push({x:DX-12,z:12.0,r:1.0, tx:44.9,tz:14, yaw:-Math.PI/2});
+teleports.push({x:DX+12,z:12.0,r:1.0, tx:65.1,tz:14, yaw: Math.PI/2});
+
+// =====================================================================
+// LEERSON HALL interior — fixed layout + CLOSED EXHIBIT heist
+// =====================================================================
+const LX=-600, LZ=0;
+const WINDOW_MS=14000; // disarm window (ms) — enough to round through the gallery
+const heist={rope:true,lasers:true,alarm:true,caged:false,stolen:false,shutter:false,winUntil:0};
+let ropeG,laserG,cageG,cageCol=null,shutterMesh,secDoor,secCol=null,crownG;
+const btnMats={};
+function wallRun(x1,z1,x2,z2,gaps){
+  const horiz=(z1===z2), H=5;
+  const a=horiz?Math.min(x1,x2):Math.min(z1,z2), b=horiz?Math.max(x1,x2):Math.max(z1,z2);
+  const cuts=[a]; (gaps||[]).slice().sort((g1,g2)=>g1.at-g2.at).forEach(g=>{ cuts.push(g.at-g.w/2,g.at+g.w/2); }); cuts.push(b);
+  for(let i=0;i<cuts.length;i+=2){
+    const s=cuts[i],e=cuts[i+1]; if(e-s<0.05) continue;
+    const mid=(s+e)/2,len=e-s;
+    if(horiz){ box(len,H,0.5,M.wallIn,mid,H/2,z1); addColliderBox(mid,z1,len,0.5,0.2); }
+    else{ box(0.5,H,len,M.wallIn,x1,H/2,mid); addColliderBox(x1,mid,0.5,len,0.2); }
+  }
+  (gaps||[]).forEach(g=>{
+    if(horiz) box(g.w,1.3,0.5,M.wallIn,g.at,4.35,z1);
+    else box(0.5,1.3,g.w,M.wallIn,x1,4.35,g.at);
+  });
+}
+(function buildLeersonInterior(){
+  const W=(x)=>LX+x, Z=(z)=>LZ+z;
+  // floors — wooden planks so the ground reads clearly (esp. under red exhibit light)
+  box(8,0.12,5.5,plankMat(),W(0),0.06,Z(13.75)).castShadow=false;     // portico
+  box(20,0.12,17,plankMat(),W(0),0.06,Z(2.5)).castShadow=false;       // gallery
+  box(2.2,0.06,20,M.royal,W(0),0.12,Z(1)).castShadow=false;           // carpet
+  box(10,0.12,10,plankMat(),W(-15),0.06,Z(2)).castShadow=false;       // portrait
+  box(12,0.12,10,plankMatDk(),W(0),0.06,Z(-11)).castShadow=false;     // exhibit (darker oak)
+  box(4,0.12,10,plankMatDk(),W(8),0.06,Z(-11)).castShadow=false;      // passage
+  box(20,0.12,4.5,plankMatDk(),W(0),0.06,Z(-18.25)).castShadow=false; // corridor
+  // ceilings
+  box(8,0.3,5.5,M.ceilIn,W(0),5.15,Z(13.75));
+  box(20,0.3,17,M.ceilIn,W(0),5.15,Z(2.5));
+  box(10,0.3,10,M.ceilIn,W(-15),5.15,Z(2));
+  box(12,0.3,10,M.ceilIn,W(0),5.15,Z(-11));
+  box(4,0.3,10,M.ceilIn,W(8),5.15,Z(-11));
+  box(20,0.3,4.5,M.ceilIn,W(0),5.15,Z(-18.25));
+  // walls
+  wallRun(W(-4),Z(16.5),W(4),Z(16.5),[{at:W(0),w:2.6}]);      // portico south (front door)
+  wallRun(W(-4),Z(11),W(-4),Z(16.5),[]);                      // portico west
+  wallRun(W(4),Z(11),W(4),Z(16.5),[]);                        // portico east
+  wallRun(W(-10),Z(11),W(10),Z(11),[{at:W(0),w:2.6}]);        // gallery south
+  wallRun(W(-10),Z(-6),W(-10),Z(11),[{at:Z(2),w:2.6}]);       // gallery west (to portrait)
+  wallRun(W(-20),Z(-3),W(-20),Z(7),[]);                       // portrait west
+  wallRun(W(-20),Z(-3),W(-10),Z(-3),[]);                      // portrait north
+  wallRun(W(-20),Z(7),W(-10),Z(7),[]);                        // portrait south
+  wallRun(W(10),Z(-16),W(10),Z(11),[]);                       // east outer
+  wallRun(W(-10),Z(-6),W(10),Z(-6),[{at:W(0),w:3.0},{at:W(8),w:2.6}]); // gallery north
+  wallRun(W(-6),Z(-16),W(-6),Z(-6),[]);                       // exhibit west
+  wallRun(W(6),Z(-16),W(6),Z(-6),[]);                         // exhibit east
+  wallRun(W(-10),Z(-20.5),W(10),Z(-20.5),[]);                 // corridor north
+  wallRun(W(-10),Z(-20.5),W(-10),Z(-16),[]);                  // corridor west
+  wallRun(W(10),Z(-20.5),W(10),Z(-16),[]);                    // corridor east
+  wallRun(W(-10),Z(-16),W(-6),Z(-16),[]);                     // corridor south, west of window
+  wallRun(W(6),Z(-16),W(10),Z(-16),[{at:W(8),w:2.6}]);        // corridor south -> passage
+  // exhibit north wall with the SHUTTER WINDOW (x -2..2, y 1.1..3.1)
+  box(4,5,0.5,M.wallIn,W(-4),2.5,Z(-16)); addColliderBox(W(-4),Z(-16),4,0.5,0.2);
+  box(4,5,0.5,M.wallIn,W(4),2.5,Z(-16));  addColliderBox(W(4),Z(-16),4,0.5,0.2);
+  box(4,1.1,0.5,M.wallIn,W(0),0.55,Z(-16));
+  box(4,1.9,0.5,M.wallIn,W(0),4.05,Z(-16));
+  addColliderBox(W(0),Z(-16),4,0.5,0.2);
+  // tags
+  const t1=makeTag('LEERSON GALLERY',false); t1.position.set(W(0),4.1,Z(8)); scene.add(t1);
+  const t2=makeTag('CLOSED EXHIBIT',true); t2.position.set(W(0),4.0,Z(-5.4)); scene.add(t2);
+  const t3=makeTag('STAFF ONLY',true); t3.position.set(W(8),4.0,Z(-5.4)); scene.add(t3);
+  const t4=makeTag('PORTRAIT ROOM',false); t4.position.set(W(-15),3.9,Z(2)); scene.add(t4);
+  // portrait frames
+  [-1.8,2,5.8].forEach((pz,i)=>{
+    box(0.18,2.2,1.5,M.gold,W(-19.7),2.4,Z(pz));
+    box(0.1,1.9,1.2,lam([0x5a4a52,0x4a5560,0x605046][i]),W(-19.6),2.4,Z(pz));
+  });
+  // gallery benches
+  [[-5,3],[5,3]].forEach(([bx,bz])=>{
+    box(2.6,0.22,0.9,M.wood,W(bx),0.72,Z(bz));
+    box(0.22,0.6,0.8,M.wood,W(bx-1.1),0.36,Z(bz));
+    box(0.22,0.6,0.8,M.wood,W(bx+1.1),0.36,Z(bz));
+  });
+  // lights
+  const p1=new THREE.PointLight(0xffe2b8,0.6,18); p1.position.set(W(0),3.8,Z(13.5)); scene.add(p1);
+  const p2=new THREE.PointLight(0xffe2b8,0.8,26); p2.position.set(W(0),4.2,Z(2)); scene.add(p2);
+  const p3=new THREE.PointLight(0xffb199,0.85,22); p3.position.set(W(0),4.2,Z(-11)); scene.add(p3);
+  const p3b=new THREE.PointLight(0xfff0dc,0.5,16); p3b.position.set(W(0),3.2,Z(-9)); scene.add(p3b);
+  const p4=new THREE.PointLight(0xbfd0e0,0.7,16); p4.position.set(W(0),3.4,Z(-18.2)); scene.add(p4);
+  const p5=new THREE.PointLight(0xf4e6cd,0.5,16); p5.position.set(W(-15),3.8,Z(2)); scene.add(p5);
+
+  // ---- the crown, plinth, rope, lasers, cage ----
+  const EC={x:W(0),z:Z(-11)};
+  box(1.5,1.15,1.5,M.marbleSh,EC.x,0.575,EC.z);
+  box(1.7,0.12,1.7,M.marble,EC.x,1.2,EC.z);
+  addColliderBox(EC.x,EC.z,1.9,1.9,0.2);
+  const cush=box(1.05,0.24,1.05,M.velvet,EC.x,1.38,EC.z);
+  [[-0.5,-0.5],[0.5,-0.5],[-0.5,0.5],[0.5,0.5]].forEach(([tx,tz])=>sph(0.05,M.gold,EC.x+tx,1.38,EC.z+tz,scene,6,6));
+  crownG=new THREE.Group(); crownG.position.set(EC.x,1.52,EC.z); scene.add(crownG);
+  const band=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.055,8,20),M.gold);
+  band.rotation.x=Math.PI/2; crownG.add(band);
+  for(let i=0;i<6;i++){ const a=(i/6)*Math.PI*2;
+    box(0.07,0.07,0.05,lam(0xb01f1c),Math.cos(a)*0.33,0,Math.sin(a)*0.33,crownG); }
+  const velv=sph(0.28,M.velvet,0,0.12,0,crownG,12,10); velv.scale.y=0.85;
+  for(let i=0;i<4;i++){
+    const arc=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.04,6,16,Math.PI),M.gold);
+    arc.rotation.y=(i/4)*Math.PI; arc.position.y=0.02; crownG.add(arc);
+  }
+  sph(0.07,M.gold,0,0.34,0,crownG,8,8);
+  const fin=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.2,6),M.gold);
+  fin.position.y=0.48; crownG.add(fin);
+  // rope barrier
+  ropeG=new THREE.Group(); scene.add(ropeG); ropeG.userData.ty=0;
+  const posts=[];
+  for(let i=0;i<6;i++){
+    const a=(i/6)*Math.PI*2+0.3;
+    const px=EC.x+Math.cos(a)*2.7, pz=EC.z+Math.sin(a)*2.7;
+    cyl(0.05,0.07,1.05,8,M.gold,px,0.52,pz,ropeG);
+    sph(0.09,M.gold,px,1.08,pz,ropeG,8,8);
+    posts.push(new THREE.Vector3(px,1.02,pz));
+  }
+  for(let i=0;i<6;i++){
+    const a=posts[i],b=posts[(i+1)%6];
+    const dir=new THREE.Vector3().subVectors(b,a);
+    const len=dir.length();
+    const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,len,6),lam(0x9c2420));
+    rope.position.copy(a).add(b).multiplyScalar(0.5);
+    rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+    ropeG.add(rope);
+  }
+  // laser field
+  laserG=new THREE.Group(); scene.add(laserG);
+  [0.35,0.85,1.35].forEach(hy=>{
+    [[-2,-2,2,-2],[2,-2,2,2],[2,2,-2,2],[-2,2,-2,-2]].forEach(([ax,az,bx,bz])=>{
+      const a=new THREE.Vector3(EC.x+ax,hy,EC.z+az), b=new THREE.Vector3(EC.x+bx,hy,EC.z+bz);
+      const dir=new THREE.Vector3().subVectors(b,a); const len=dir.length();
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,len,5),M.laser);
+      beam.castShadow=false;
+      beam.position.copy(a).add(b).multiplyScalar(0.5);
+      beam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+      laserG.add(beam);
+    });
+  });
+  // cage (starts hidden above)
+  cageG=new THREE.Group(); cageG.position.set(EC.x,7,EC.z); cageG.visible=false; scene.add(cageG);
+  cageG.userData.ty=7;
+  for(let i=0;i<14;i++){
+    const a=(i/14)*Math.PI*2;
+    cyl(0.05,0.05,3.3,6,M.metal,Math.cos(a)*1.35,1.65,Math.sin(a)*1.35,cageG);
+  }
+  const topRing=new THREE.Mesh(new THREE.TorusGeometry(1.35,0.07,6,20),M.metal);
+  topRing.rotation.x=Math.PI/2; topRing.position.y=3.3; cageG.add(topRing);
+  cyl(1.38,1.38,0.1,14,M.metal,0,3.38,0,cageG);
+  // shutter over the window (corridor side)
+  shutterMesh=box(4.3,2.15,0.18,M.metal,W(0),2.1,Z(-16.4));
+  shutterMesh.userData.ty=2.1;
+  // security door (passage, at gallery north wall gap x=8)
+  secDoor=box(2.5,4.4,0.28,M.metal,W(8),2.2,Z(-6));
+  secDoor.userData.tx=W(8);
+  secCol=addColliderBox(W(8),Z(-6),2.6,0.6,0.15);
+  const sdTag=makeTag('SECURITY DOOR',true); sdTag.position.set(W(8),4.6,Z(-6.6)); scene.add(sdTag);
+  // control buttons beside the shutter
+  const BTN=[
+    ['shutter','SHUTTER',3.2],['rope','ROPE',4.5],['lasers','LASERS',5.8],['alarm','ALARM',7.1]
+  ];
+  BTN.forEach(([id,label,bx])=>{
+    const mat=lam(0xb02a24); btnMats[id]=mat;
+    box(0.5,0.5,0.22,mat,W(bx),1.45,Z(-16.15));
+    const tg=makeTag(label,true); tg.scale.set(3.4,0.9,1); tg.position.set(W(bx),2.35,Z(-16.3)); scene.add(tg);
+    interactables.push({x:W(bx),z:Z(-16.8),r:1.6,dead:false,
+      label:id==='shutter'?'toggle the shutter':('disarm: '+label.toLowerCase()),
+      fn:()=>pressButton(id)});
+  });
+  // service hatch back up (corridor west end)
+  box(1.5,0.22,1.5,M.metal,W(-8.5),0.16,Z(-18.25));
+  interactables.push({x:W(-8.5),z:Z(-18.25),r:1.6,dead:false,
+    label:'climb the service hatch',
+    cond:()=>!!tunnelPos,
+    fn:()=>{ if(tunnelPos) fadeTeleport(tunnelPos.x,tunnelPos.z,0); }});
+  // crown interact
+  interactables.push({x:EC.x,z:EC.z,r:2.4,dead:false,
+    label:()=>heist.stolen?'':(heist.caged?'the cage is sealed':'take the crown'),
+    cond:()=>!heist.stolen,
+    fn:()=>tryTakeCrown()});
+})();
+// Leerson front door teleports
+teleports.push({x:-48,z:22.3,r:1.6, tx:LX, tz:LZ+14.6, yaw:0});
+teleports.push({x:LX,  z:LZ+16.0,r:0.9, tx:-48, tz:25.2, yaw:Math.PI});
+
+// ---- heist logic ----
+function allDisarmed(){ return !heist.rope && !heist.lasers && !heist.alarm; }
+function windowActive(){ return heist.winUntil>performance.now(); }
+function pressButton(id){
+  if(heist.stolen) return;
+  if(id==='shutter'){
+    heist.shutter=!heist.shutter;
+    shutterMesh.userData.ty=heist.shutter?4.2:2.1;
+    msg(heist.shutter?'The shutter grinds open. The crown sits just beyond the glassless frame.':'The shutter closes.');
+    return;
+  }
+  if(windowActive()){ msg('Systems are already down \u2014 run for the crown!'); return; }
+  if(id==='rope'&&heist.rope){ heist.rope=false; ropeG.userData.ty=-1.25; btnMats.rope.color.setHex(0x3fae52); msg('Rope barrier lowered. ('+disarmCount()+'/3)'); }
+  else if(id==='lasers'&&heist.lasers){ heist.lasers=false; laserG.visible=false; btnMats.lasers.color.setHex(0x3fae52); msg('Laser field offline. ('+disarmCount()+'/3)'); }
+  else if(id==='alarm'&&heist.alarm){ heist.alarm=false; btnMats.alarm.color.setHex(0x3fae52); msg('Alarm disarmed \u2014 magnetic locks released. ('+disarmCount()+'/3)'); }
+  else{ msg('Already disarmed.'); return; }
+  if(allDisarmed()){
+    heist.winUntil=performance.now()+WINDOW_MS;
+    secDoor.userData.tx=LX+10.3;
+    if(secCol){ removeCollider(secCol); secCol=null; }
+    liftCage();   // if the crown was caged from a mistake, this frees it
+    msg('ALL SYSTEMS DOWN \u2014 round through the security door, quick!');
+  }
+}
+function disarmCount(){ return (heist.rope?0:1)+(heist.lasers?0:1)+(heist.alarm?0:1); }
+function rearm(){
+  heist.winUntil=0;
+  heist.rope=true; ropeG.userData.ty=0;
+  heist.lasers=true; laserG.visible=true;
+  heist.alarm=true;
+  ['rope','lasers','alarm'].forEach(k=>btnMats[k].color.setHex(0xb02a24));
+  secDoor.userData.tx=LX+8;
+  if(!secCol) secCol=addColliderBox(LX+8,LZ-6,2.6,0.6,0.15);
+  msg('The systems re-arm \u2014 the window closed. Disarm them again to reopen it.');
+}
+function dropCage(text){
+  if(heist.caged||heist.stolen) return;
+  heist.caged=true;
+  cageG.visible=true; cageG.userData.ty=0;
+  if(!cageCol) cageCol=addColliderBox(LX,LZ-11,3.1,3.1,0.2);
+  msg(text);
+}
+function liftCage(){
+  if(!heist.caged) return;
+  heist.caged=false;
+  cageG.userData.ty=7;                       // slides back up out of view
+  setTimeout(()=>{ if(!heist.caged) cageG.visible=false; },900);
+  if(cageCol){ removeCollider(cageCol); cageCol=null; }
+}
+function tryTakeCrown(){
+  if(heist.stolen) return;
+  if(windowActive()){
+    heist.stolen=true;
+    crownG.visible=false;
+    crowns+=1;
+    store.set('fenn_crowns',crowns);
+    store.set('fenn_night',night+1);
+    document.getElementById('winSub').textContent='night '+night+' complete';
+    openOverlay(byId('winOverlay'));
+    return;
+  }
+  if(heist.caged){
+    msg('The cage is down. Get behind the exhibit and disarm rope, lasers & alarm to release it.');
+    return;
+  }
+  dropCage('You touch the crown \u2014 a cage slams down. Disarm all three systems from the controls behind the exhibit to release it.');
+}
+
+// =====================================================================
+// UI — overlays, prompt, toast, blueprint, directory
+// =====================================================================
+const byId=id=>document.getElementById(id);
+const promptEl=byId('prompt'), toastEl=byId('msgToast');
+const timerHud=byId('timerHud'), timerVal=byId('timerVal');
+const fadeEl=byId('fade'), interactBtn=byId('interactBtn');
+let uiOpen=false, currentOverlay=null, currentInter=null;
+let toastTimer=null;
+function msg(t){
+  toastEl.textContent=t; toastEl.style.display='block';
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ toastEl.style.display='none'; },2800);
+}
+function openOverlay(el){
+  uiOpen=true; currentOverlay=el; el.style.display='flex';
+  if(document.exitPointerLock) document.exitPointerLock();
+}
+function closeOverlay(){
+  if(!currentOverlay) return;
+  currentOverlay.style.display='none'; currentOverlay=null; uiOpen=false;
+  if(started && !isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
+}
+byId('dirClose').onclick=closeOverlay;
+byId('draftClose').onclick=closeOverlay;
+byId('bpClose').onclick=closeOverlay;
+
+// ---- room directory (title screen curation) ----
+function renderDir(){
+  const list=byId('dirList');
+  let html='';
+  ROOMS.forEach(r=>{
+    let pips='';
+    for(let i=0;i<4;i++) pips+='<span class="pip'+(i<r.d?'':' off')+'"></span>';
+    const on=!dirOff.has(r.id);
+    html+='<div class="dirRow'+(r.sp?' special':'')+'"><span class="rn">'+r.n+'</span>'+
+          '<span>'+pips+'</span>'+
+          '<span class="tog '+(on?'on':'off')+'" data-id="'+r.id+'">'+(on?'In pool':'Out')+'</span></div>';
+  });
+  list.innerHTML=html;
+}
+byId('dirList').onclick=function(e){
+  let el=e.target;
+  while(el && el!==this){ if(el.dataset && el.dataset.id) break; el=el.parentNode; }
+  if(!el || el===this || !el.dataset || !el.dataset.id) return;
+  const id=el.dataset.id;
+  if(dirOff.has(id)) dirOff.delete(id); else dirOff.add(id);
+  store.set('fenn_dir_off',[...dirOff]);
+  renderDir();
+};
+byId('dirBtn').addEventListener('click',function(e){
+  e.stopPropagation(); renderDir(); openOverlay(byId('dirOverlay'));
+});
+
+// ---- draft overlay ----
+let draftCtx=null;
+function openDraft(target){
+  if(grid[target.tr][target.tc]) return;
+  const pool=ROOMS.filter(r=>!dirOff.has(r.id)&&!placed.has(r.id));
+  if(!pool.length){ msg('No rooms left in the draft pool.'); return; }
+  draftCtx=target;
+  let html='';
+  pool.forEach(r=>{
+    let pips='';
+    for(let i=0;i<4;i++) pips+='<span class="pip'+(i<r.d?'':' off')+'"></span>';
+    html+='<div class="roomCard" data-id="'+r.id+'"><div class="rn">'+r.n+'</div>'+
+          '<div class="rd">'+pips+'</div>'+
+          '<div class="rnote">'+(r.note||(r.d?'Empty \u2014 awaiting curation.':''))+'</div></div>';
+  });
+  byId('draftCards').innerHTML=html;
+  byId('draftSub').textContent='choose what lies beyond this door \u00b7 '+pool.length+' in the pool';
+  openOverlay(byId('draftOverlay'));
+}
+byId('draftCards').onclick=function(e){
+  let el=e.target;
+  while(el && el!==this){ if(el.dataset && el.dataset.id) break; el=el.parentNode; }
+  if(!el || el===this || !el.dataset || !el.dataset.id) return;
+  const id=el.dataset.id, ctx=draftCtx;
+  closeOverlay();
+  if(ctx) placeRoom(id,ctx);
+  draftCtx=null;
+};
+
+// ---- blueprint ----
+function drawBP(){
+  const cv=byId('bpCanvas'), c=cv.getContext('2d');
+  c.fillStyle='#efe9dc'; c.fillRect(0,0,640,740);
+  for(let i=0;i<160;i++){ c.fillStyle='rgba(150,130,90,0.05)';
+    c.fillRect(Math.random()*640,Math.random()*740,2+Math.random()*4,2+Math.random()*4); }
+  c.strokeStyle='#b8ab8d'; c.lineWidth=3; c.strokeRect(8,8,624,724);
+  c.fillStyle='#2b2e33'; c.textAlign='left';
+  c.font='bold 26px Georgia'; c.fillText('EAST EXTENSION \u2014 DRAFT',24,42);
+  c.font='16px Georgia'; c.fillStyle='#8a2320'; c.fillText('Night '+night,24,66);
+  const cell=96, ox=(640-GW*cell)/2, oy=88;
+  c.textAlign='center';
+  for(let r=0;r<GH;r++) for(let cc=0;cc<GW;cc++){
+    const x=ox+cc*cell, y=oy+(GH-1-r)*cell;
+    c.strokeStyle='#c6bba0'; c.lineWidth=1.5; c.strokeRect(x,y,cell,cell);
+    const g=grid[r][cc];
+    if(!g) continue;
+    const rm=roomById(g.id);
+    if(g.sealed){
+      c.fillStyle='#b9b6b0'; c.fillRect(x+2,y+2,cell-4,cell-4);
+      c.strokeStyle='#8a8171'; c.lineWidth=1;
+      for(let k=-cell;k<cell;k+=10){
+        c.beginPath(); c.moveTo(x+Math.max(0,k),y+Math.max(0,-k));
+        c.lineTo(x+Math.min(cell,k+cell),y+Math.min(cell,cell-k)); c.stroke();
+      }
+    }else{
+      c.fillStyle=rm.c; c.fillRect(x+2,y+2,cell-4,cell-4);
+      c.fillStyle='#2b2e33'; c.font='12px Georgia';
+      c.fillText(rm.n,x+cell/2,y+cell/2+4,cell-10);
+      c.fillStyle='#8a2320';
+      (g.abs||[]).forEach(s=>{
+        if(s==='N') c.fillRect(x+cell/2-8,y,16,5);
+        if(s==='S') c.fillRect(x+cell/2-8,y+cell-5,16,5);
+        if(s==='E') c.fillRect(x+cell-5,y+cell/2-8,5,16);
+        if(s==='W') c.fillRect(x,y+cell/2-8,5,16);
+      });
+    }
+  }
+  // landing + hall sketch
+  const ly=oy+GH*cell+8;
+  c.fillStyle='#e0d6c2'; c.fillRect(ox+cell,ly,cell*3,44);
+  c.strokeStyle='#c6bba0'; c.strokeRect(ox+cell,ly,cell*3,44);
+  c.fillStyle='#2b2e33'; c.font='12px Georgia'; c.fillText('SOUTH LANDING',ox+cell*2.5,ly+26);
+  c.fillStyle='#8a2320';
+  [1.5,2.5,3.5].forEach(f=>c.fillRect(ox+f*cell-8,ly-3,16,5));
+  c.fillStyle='#d9c9a3'; c.fillRect(ox+cell*1.4,ly+52,cell*2.2,40);
+  c.strokeStyle='#c6bba0'; c.strokeRect(ox+cell*1.4,ly+52,cell*2.2,40);
+  c.fillStyle='#2b2e33'; c.fillText('GRAND ENTRANCE HALL',ox+cell*2.5,ly+76);
+  // status
+  let drafted=0; for(let r=0;r<GH;r++) for(let cc=0;cc<GW;cc++) if(grid[r][cc]) drafted++;
+  c.textAlign='left'; c.font='14px Georgia'; c.fillStyle='#2b2e33';
+  c.fillText('Rooms drafted: '+drafted+' / '+(GW*GH),24,712);
+  c.fillStyle='#8a2320';
+  const crownState=heist.stolen?'SECURED':(heist.caged?'CAGED UNTIL DAWN':'on display \u2014 Closed Exhibit');
+  c.fillText('The crown: '+crownState,300,712);
+}
+function openBP(){ drawBP(); openOverlay(byId('bpOverlay')); }
+byId('endNightBtn').onclick=function(){
+  store.set('fenn_night',night+1);
+  location.reload();
+};
+byId('nextNightBtn').onclick=function(){ location.reload(); };
+interactables.push({x:55,z:14.9,r:2.4,dead:false,label:'study the blueprint',fn:openBP});
+
+// =====================================================================
+// ZONES
+// =====================================================================
+const outdoorZones=[
+  {x:55,z:14,r:13, n:'Grand Entrance Hall', s:'the royal collection awaits'},
+  {x:55,z:30,r:9,  n:'Entrance Vestibule', s:'mind the guards\u2019 rotation'},
+  {x:58,z:-78,r:12,n:'Tiskin Monument', s:'commemorating the war of the fifth era'},
+  {x:58,z:-78,r:36,n:'Tiskin Park', s:'gardens \u00b7 free access'},
+  {x:-24,z:-52,r:15,n:'Moonside Courtyard', s:'quietly hidden on the west end'},
+  {x:-48,z:-2,r:30, n:'Leerson Hall', s:'closed exhibits \u00b7 restricted'},
+  {x:-6,z:-104,r:14,n:'King\u2019s Grotto', s:'gardens'},
+  {x:55,z:22,r:34, n:'Museum \u2014 Main Concourse', s:'art & exhibits \u00b7 ticket entry'},
+  {x:55,z:66,r:18, n:'Museum Entrance', s:'ticket entry'},
+  {x:4,z:32,r:14,  n:'Fountain Plaza', s:'museum grounds'},
+  {x:-96,z:28,r:16,n:'Museum Station Caf\u00e9', s:'the defunct line, now shops'},
+  {x:-96,z:-24,r:20,n:'Parking Lot \u2014 West', s:'overflow parking'},
+  {x:96,z:0,r:30,  n:'East Grounds', s:'museum grounds'},
+  {x:-20,z:8,r:26, n:'South Pathway', s:'gardens \u00b7 free access'},
+];
+function zoneFor(px,pz){
+  if(px>DX-60){
+    if(pz>6&&pz<12.4&&Math.abs(px-DX)<18) return ['South Landing','east extension \u2014 the new wing'];
+    const c=Math.round((px-DX)/CS_)+2, r=Math.round(-pz/CS_);
+    if(c>=0&&c<GW&&r>=0&&r<GH&&grid[r][c]){
+      const rm=roomById(grid[r][c].id);
+      return [rm.n, grid[r][c].sealed?'sealed for the night':'east extension \u2014 drafted'];
+    }
+    return ['The New Wing','east extension'];
+  }
+  if(px<LX+60){
+    const lx=px-LX, lz=pz-LZ;
+    if(lz>11&&lz<=16.5) return ['Portico','leerson hall'];
+    if(lx>=-10&&lx<=10&&lz>-6&&lz<=11) return ['Leerson Gallery','closed exhibits beyond'];
+    if(lx<-10) return ['Portrait Room','leerson hall'];
+    if(lx>=-6&&lx<=6&&lz>-16&&lz<=-6) return ['Closed Exhibit','restricted \u2014 elite patronage only'];
+    if(lx>6&&lz>-16&&lz<=-6) return ['Security Passage','staff only'];
+    if(lz<=-16) return ['Staff Corridor','authorised personnel only'];
+    return ['Leerson Hall',''];
+  }
+  let best=null;
+  for(const z of outdoorZones){
+    const d=Math.hypot(px-z.x,pz-z.z);
+    if(d<z.r&&(!best||z.r<best.r)) best=z;
+  }
+  return best?[best.n,best.s]:['Museum Grounds','open to the general public'];
+}
+const zoneName=byId('zoneName'), zoneSub=byId('zoneSub');
 let curZone='';
 function updateZone(px,pz){
-  let best=null;
-  for(const z of zones){
-    const d=Math.hypot(px-z.x,pz-z.z);
-    if(d<z.r && (!best || z.r<best.r)) best=z;
-  }
-  const n=best?best.n:'Museum Grounds', s=best?best.s:'open to the general public';
+  const [n,s]=zoneFor(px,pz);
   if(n!==curZone){ curZone=n; zoneName.textContent=n; zoneSub.textContent=s; }
 }
 
 // =====================================================================
-// PLAYER CONTROLLER — pointer lock + touch
+// PLAYER, CONTROLS, TELEPORTS, MAIN LOOP
 // =====================================================================
 const player={x:55,z:96,yaw:0,pitch:-0.04,vx:0,vz:0};
 const EYE=1.75, SPEED=11, RUNMULT=1.8;
 const keys={};
+let fading=false, tpCool=0;
+function fadeTeleport(tx,tz,yaw){
+  if(fading) return;
+  fading=true; fadeEl.style.opacity=1;
+  setTimeout(()=>{
+    player.x=tx; player.z=tz; player.yaw=yaw; player.vx=0; player.vz=0;
+    fadeEl.style.opacity=0; tpCool=performance.now()+900; fading=false;
+  },260);
+}
 addEventListener('keydown',e=>{
   keys[e.code]=true;
+  if(e.code==='Escape' && currentOverlay && currentOverlay!==byId('winOverlay')){ closeOverlay(); return; }
+  if(uiOpen) return;
   if(e.code==='KeyH') toggleIntel();
+  if(e.code==='KeyB') openBP();
+  if(e.code==='KeyE' && currentInter) currentInter.fn();
 });
 addEventListener('keyup',e=>keys[e.code]=false);
+interactBtn.addEventListener('click',()=>{ if(currentInter&&!uiOpen) currentInter.fn(); });
 
-const overlay=document.getElementById('startOverlay');
+const overlay=byId('startOverlay');
 const isTouch=matchMedia('(pointer:coarse)').matches;
 let started=false;
 overlay.addEventListener('click',()=>{
+  if(uiOpen) return;
   overlay.style.display='none'; started=true;
   if(!isTouch) canvas.requestPointerLock && canvas.requestPointerLock();
   else initTouch();
 });
 canvas.addEventListener('click',()=>{
-  if(started && !isTouch && document.pointerLockElement!==canvas)
+  if(started && !isTouch && !uiOpen && document.pointerLockElement!==canvas)
     canvas.requestPointerLock && canvas.requestPointerLock();
 });
 addEventListener('mousemove',e=>{
-  if(document.pointerLockElement!==canvas) return;
+  if(document.pointerLockElement!==canvas || uiOpen) return;
   player.yaw   -= e.movementX*0.0023;
   player.pitch -= e.movementY*0.0021;
   player.pitch=Math.max(-1.25,Math.min(1.25,player.pitch));
 });
-
-// ---- touch controls ----
-const stickBase=document.getElementById('stickBase');
-const stickKnob=document.getElementById('stickKnob');
+const stickBase=byId('stickBase'), stickKnob=byId('stickKnob');
 let stick={active:false,id:null,cx:0,cy:0,dx:0,dy:0};
 let look={active:false,id:null,lx:0,ly:0};
 function initTouch(){
@@ -867,9 +1670,9 @@ function initTouch(){
   addEventListener('touchmove',onTM,{passive:false});
   addEventListener('touchend',onTE);
   addEventListener('touchcancel',onTE);
-  // intel toggle: tap title plate ◆? use double-tap right side? simple: tap zone plate
-  document.getElementById('zonePlate').style.pointerEvents='auto';
-  document.getElementById('zonePlate').addEventListener('click',toggleIntel);
+  const zp=byId('zonePlate');
+  zp.style.pointerEvents='auto';
+  zp.addEventListener('click',()=>{ if(!uiOpen) toggleIntel(); });
 }
 function positionKnob(dx,dy){
   const r=stickBase.getBoundingClientRect();
@@ -877,6 +1680,7 @@ function positionKnob(dx,dy){
   stickKnob.style.top =(r.top +r.height/2-24+dy)+'px';
 }
 function onTS(e){
+  if(uiOpen) return;
   for(const t of e.changedTouches){
     if(t.clientX<innerWidth*0.45 && !stick.active){
       stick.active=true; stick.id=t.identifier;
@@ -911,13 +1715,11 @@ function onTE(e){
     if(t.identifier===look.id) look.active=false;
   }
 }
-
 function toggleIntel(){
   intel.visible=!intel.visible;
-  document.getElementById('hint').style.display=intel.visible?'none':'block';
-  document.getElementById('intelPlate').style.display=intel.visible?'block':'none';
+  byId('hint').style.display=intel.visible?'none':'block';
+  byId('intelPlate').style.display=intel.visible?'block':'none';
 }
-
 function resolveCollisions(){
   const R=0.55;
   for(const c of colliders){
@@ -931,56 +1733,112 @@ function resolveCollisions(){
       else player.z=c.maxZ+R;
     }
   }
-  // grounds boundary
-  player.x=Math.max(-150,Math.min(150,player.x));
-  player.z=Math.max(-160,Math.min(120,player.z));
+  // bounds: outdoors vs interior pockets
+  if(player.x>DX-80){
+    player.x=Math.max(DX-40,Math.min(DX+40,player.x));
+    player.z=Math.max(-70,Math.min(20,player.z));
+  }else if(player.x<LX+80){
+    player.x=Math.max(LX-30,Math.min(LX+30,player.x));
+    player.z=Math.max(LZ-28,Math.min(LZ+24,player.z));
+  }else{
+    player.x=Math.max(-150,Math.min(150,player.x));
+    player.z=Math.max(-160,Math.min(120,player.z));
+  }
 }
+function lerpTo(cur,target,dt,rate){ return cur+(target-cur)*Math.min(1,dt*rate); }
 
-// =====================================================================
-// MAIN LOOP
-// =====================================================================
 const clock=new THREE.Clock();
 function tick(){
   requestAnimationFrame(tick);
   const dt=Math.min(0.05,clock.getDelta());
   const t=clock.elapsedTime;
+  const now=performance.now();
 
-  // input → intended velocity in camera space
-  let ix=0, iz=0;
-  if(keys.KeyW||keys.ArrowUp) iz-=1;
-  if(keys.KeyS||keys.ArrowDown) iz+=1;
-  if(keys.KeyA||keys.ArrowLeft) ix-=1;
-  if(keys.KeyD||keys.ArrowRight) ix+=1;
-  ix+=stick.dx; iz+=stick.dy;
-  const il=Math.hypot(ix,iz); if(il>1){ix/=il;iz/=il;}
-  const run=(keys.ShiftLeft||keys.ShiftRight)?RUNMULT:1;
-  // yaw=0 faces -Z (north); forward/right on the ground plane
-  const fwdX=-Math.sin(player.yaw), fwdZ=-Math.cos(player.yaw);
-  const rgtX=-fwdZ, rgtZ=fwdX;
-  const wvx=(fwdX*(-iz)+rgtX*ix)*SPEED*run;
-  const wvz=(fwdZ*(-iz)+rgtZ*ix)*SPEED*run;
-  player.vx+=(wvx-player.vx)*Math.min(1,dt*10);
-  player.vz+=(wvz-player.vz)*Math.min(1,dt*10);
-  player.x+=player.vx*dt; player.z+=player.vz*dt;
-  resolveCollisions();
+  if(!uiOpen && !fading){
+    let ix=0,iz=0;
+    if(keys.KeyW||keys.ArrowUp) iz-=1;
+    if(keys.KeyS||keys.ArrowDown) iz+=1;
+    if(keys.KeyA||keys.ArrowLeft) ix-=1;
+    if(keys.KeyD||keys.ArrowRight) ix+=1;
+    ix+=stick.dx; iz+=stick.dy;
+    const il=Math.hypot(ix,iz); if(il>1){ix/=il;iz/=il;}
+    const run=(keys.ShiftLeft||keys.ShiftRight)?RUNMULT:1;
+    const fwdX=-Math.sin(player.yaw), fwdZ=-Math.cos(player.yaw);
+    const rgtX=-fwdZ, rgtZ=fwdX;
+    const wvx=(fwdX*(-iz)+rgtX*ix)*SPEED*run;
+    const wvz=(fwdZ*(-iz)+rgtZ*ix)*SPEED*run;
+    player.vx+=(wvx-player.vx)*Math.min(1,dt*10);
+    player.vz+=(wvz-player.vz)*Math.min(1,dt*10);
+    player.x+=player.vx*dt; player.z+=player.vz*dt;
+    resolveCollisions();
 
-  // head bob
+    // teleport triggers
+    if(now>tpCool){
+      for(const tp of teleports){
+        if(Math.hypot(player.x-tp.x,player.z-tp.z)<tp.r){ fadeTeleport(tp.tx,tp.tz,tp.yaw); break; }
+      }
+    }
+    // interact prompt
+    let best=null,bestD=1e9;
+    for(const it of interactables){
+      if(it.dead) continue;
+      if(it.cond && !it.cond()) continue;
+      const d=Math.hypot(player.x-it.x,player.z-it.z);
+      if(d<it.r && d<bestD){
+        const lb=(typeof it.label==='function')?it.label():it.label;
+        if(!lb) continue;
+        best=it; bestD=d; best._lb=lb;
+      }
+    }
+    currentInter=best;
+    if(best){
+      promptEl.innerHTML=isTouch?best._lb:('<b>E</b> \u2014 '+best._lb);
+      promptEl.style.display='block';
+      if(isTouch) interactBtn.style.display='flex';
+    }else{
+      promptEl.style.display='none';
+      interactBtn.style.display='none';
+    }
+    // laser tripwire
+    const lx=player.x-LX, lz=player.z-LZ;
+    if(lx>-6&&lx<6&&lz>-16&&lz<-6 && heist.lasers && !heist.caged && !heist.stolen){
+      if(Math.hypot(lx-0,lz+11)<2.15)
+        dropCage('You clip a laser \u2014 a cage crashes down around the crown.');
+    }
+  }else{
+    promptEl.style.display='none';
+    interactBtn.style.display='none';
+  }
+
+  // heist window timer
+  if(heist.winUntil){
+    const rem=heist.winUntil-now;
+    if(rem<=0){ if(!heist.stolen) rearm(); else heist.winUntil=0; timerHud.style.display='none'; }
+    else{
+      timerHud.style.display='block';
+      timerVal.textContent='0:'+String(Math.ceil(rem/1000)).padStart(2,'0');
+    }
+  }else timerHud.style.display='none';
+
+  // heist animations
+  if(ropeG) ropeG.position.y=lerpTo(ropeG.position.y,ropeG.userData.ty,dt,4);
+  if(cageG&&cageG.visible) cageG.position.y=lerpTo(cageG.position.y,cageG.userData.ty,dt,6);
+  if(shutterMesh) shutterMesh.position.y=lerpTo(shutterMesh.position.y,shutterMesh.userData.ty,dt,3);
+  if(secDoor) secDoor.position.x=lerpTo(secDoor.position.x,secDoor.userData.tx,dt,3);
+
   const speedNow=Math.hypot(player.vx,player.vz);
   const bob=Math.sin(t*9)*Math.min(0.06,speedNow*0.006);
-
-  camera.position.set(player.x, EYE+bob, player.z);
+  camera.position.set(player.x,EYE+bob,player.z);
   camera.rotation.order='YXZ';
   camera.rotation.y=player.yaw;
   camera.rotation.x=player.pitch;
 
-  // flags ripple
   for(const f of flags){
     f.rotation.y=Math.sin(t*2.2+f.position.x)*0.28;
     f.rotation.z=Math.sin(t*3.1+f.position.z)*0.06;
   }
-  // intel pins bob & spin
   if(intel.visible){
-    for(const p of intelPins){ p.rotation.y=t*1.6; p.position.y+=Math.sin(t*2+p.position.x)*0.004; }
+    for(const p of intelPins){ p.rotation.y=t*1.6; }
   }
   updateZone(player.x,player.z);
   renderer.render(scene,camera);
