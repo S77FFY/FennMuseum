@@ -40,23 +40,56 @@
     border-radius:2px;padding:7px 18px;font-size:13px;letter-spacing:.05em;max-width:80vw;text-align:center;}
   #startOverlay{ position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
     background:radial-gradient(ellipse at 50% 40%, rgba(30,36,44,.82), rgba(10,12,15,.94));cursor:pointer;}
-  #startCard{ text-align:center;color:#efe9dc;max-width:540px;padding:30px 38px;
+  #startCard{ text-align:center;color:#efe9dc;max-width:560px;padding:26px 34px 22px;
     border:1px solid rgba(194,163,90,.5);background:rgba(18,21,26,.6);border-radius:3px;}
-  #startCard .the{font-size:10px;letter-spacing:.5em;text-transform:uppercase;color:#c2a35a;}
-  #startCard h1{font-variant:small-caps;font-weight:normal;font-size:28px;margin:8px 0 2px;letter-spacing:.05em;}
-  #startCard h1 .strike{text-decoration:line-through;text-decoration-color:#c65550;color:#c98a86;}
-  #startCard .rule{width:120px;height:1px;background:#c2a35a;margin:12px auto;opacity:.7;}
-  #startCard p{font-size:12.5px;line-height:1.75;color:#cfc7b4;margin:0;}
-  #nightLine{margin-top:12px;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:#e0b9b4;}
-  #startCard .go{margin-top:12px;font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:#c2a35a;animation:pulse 2.2s infinite;}
+  #startCard h1{font-variant:small-caps;font-weight:normal;font-size:27px;margin:2px 0 6px;letter-spacing:.05em;}
+  #startCard h1 .sm{font-size:15px;color:#9a917d;}
+  #startCard h1 .scrib{position:relative;display:inline-block;color:#b9a98b;}
+  #startCard h1 .scrib .scribble{position:absolute;left:-8%;top:-18%;width:116%;height:150%;pointer-events:none;overflow:visible;}
+  #startCard .go{margin-top:14px;font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:#c2a35a;animation:pulse 2.2s infinite;}
   @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
-  #verTag{margin-top:12px;font-size:10px;letter-spacing:.3em;color:#7d7663;text-transform:uppercase;}
+  #verTag{margin-top:10px;font-size:10px;letter-spacing:.3em;color:#7d7663;text-transform:uppercase;}
+  .cardBtns{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
   .btn{display:inline-block;pointer-events:auto;cursor:pointer;background:#2a2e35;color:#e8dfc9;
     border:1px solid #c2a35a;border-radius:2px;padding:7px 16px;font-size:11px;
-    letter-spacing:.2em;text-transform:uppercase;font-family:Georgia,serif;}
+    letter-spacing:.2em;text-transform:uppercase;font-family:Georgia,serif;text-decoration:none;}
   .btn:hover{background:#3a3f48;}
   .btn.red{border-color:#d55a50;color:#f0d0ca;}
-  #dirBtn{margin-top:14px;}
+  .btn.donate{border-color:#e0b24a;color:#f3dfa0;}
+  /* ---- the unrolling scroll ---- */
+  #scroll{position:relative;margin:6px auto 2px;width:min(400px,86vw);}
+  #scroll .rollEnd{height:16px;border-radius:8px/10px;
+    background:linear-gradient(180deg,#6a5636,#3f3320);box-shadow:0 2px 6px rgba(0,0,0,.5);
+    border:1px solid #2a2114;}
+  #scroll .rollEnd.top{margin-bottom:-4px;}
+  #scroll .rollEnd.bottom{margin-top:-4px;}
+  #scrollBody{overflow:hidden;background:linear-gradient(180deg,#efe6cf,#e4d8ba);
+    color:#3a2f1c;border-left:2px solid #c9b98f;border-right:2px solid #c9b98f;
+    padding:0 20px;max-height:0;opacity:0;
+    box-shadow:inset 0 0 40px rgba(120,96,50,.25);}
+  #scrollBody.open{animation:unroll 1.1s cubic-bezier(.2,.7,.2,1) forwards;}
+  @keyframes unroll{0%{max-height:0;opacity:0;padding-top:0;padding-bottom:0;}
+    30%{opacity:1;} 100%{max-height:520px;opacity:1;padding-top:16px;padding-bottom:18px;}}
+  #scrollBody .sNight{font-variant:small-caps;letter-spacing:.14em;font-size:24px;color:#5a2018;}
+  #scrollBody .sTime{font-size:11px;letter-spacing:.08em;color:#7a6a4a;margin-top:2px;font-style:italic;}
+  #scrollBody .sRule{height:0;border-top:1px solid #b7a677;margin:12px 26px;opacity:.8;}
+  #scrollBody .sHead{font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;color:#9a713a;margin-bottom:8px;}
+  .sUnlocks{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;}
+  .sUnlocks .slot{width:58px;font-size:8.5px;letter-spacing:.02em;color:#8a7c5c;line-height:1.2;}
+  .sUnlocks .slot .ico{display:flex;align-items:center;justify-content:center;width:38px;height:38px;margin:0 auto 3px;
+    border:1px solid #bfa976;border-radius:6px;background:rgba(255,255,255,.25);font-size:18px;color:#8a6a2a;}
+  .sUnlocks .slot.locked .ico{color:#c3b48f;opacity:.55;border-style:dashed;}
+  .sUnlocks .slot.got .ico{color:#7a4a12;border-color:#8a6a2a;background:rgba(200,160,80,.28);
+    box-shadow:0 0 10px rgba(180,140,60,.4);}
+  .sUnlocks .slot.got{color:#5a4726;font-weight:bold;}
+  .sItems{display:flex;justify-content:center;gap:18px;}
+  .sItems .it{font-size:12px;color:#4a3a1e;display:flex;align-items:center;gap:6px;}
+  .sItems .it .cico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:13px;}
+  .cico.coin{background:radial-gradient(circle at 35% 30%,#f6dd8a,#c79a34);color:#6a4d12;border:1px solid #a37f28;}
+  .cico.manu{color:#6a5230;} .cico.bone{color:#7a6a4a;}
+  .sCrown{min-height:44px;display:flex;align-items:center;justify-content:center;}
+  .sCrown .got{font-size:34px;color:#b3231c;filter:drop-shadow(0 2px 4px rgba(120,20,15,.5));}
+  .sCrown .none{font-size:12px;color:#a99a78;font-style:italic;letter-spacing:.1em;}
   .modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
     background:rgba(8,10,13,.82);}
   .sheet{background:linear-gradient(180deg,#f3eee2,#e7dfcd);color:#2b2e33;border:1px solid #b8ab8d;
@@ -149,16 +182,32 @@
 
 <div id="startOverlay">
   <div id="startCard">
-    <div class="the">The Fenn Job</div>
-    <h1>Royal Museum <span style="font-size:15px;color:#9a917d;">of the</span> <span class="strike">Grand</span> <span style="font-size:15px;color:#9a917d;">City of</span> Fenn</h1>
-    <div class="rule"></div>
-    <p>Two buildings. Leerson Hall keeps its old bones — the Closed Exhibit, the crown, the staff
-       corridor behind it. The East Extension is yours to draft, door by door, night by night.
-       Rooms reset at dawn. Some things don't.</p>
-    <div id="nightLine">Night 1 &nbsp;·&nbsp; Crowns lifted: 0</div>
+    <h1>Royal Museum <span class="sm">of the</span> <span class="scrib">Grand<svg class="scribble" viewBox="0 0 120 46" preserveAspectRatio="none"><path d="M4,30 C22,10 38,12 60,26 C40,34 28,20 12,32 C34,42 70,8 96,22 C74,36 52,16 30,34 C56,44 92,20 116,30" stroke="#c1281f" stroke-width="3.4" fill="none" stroke-linecap="round" opacity="0.92"/><path d="M8,18 C40,40 80,6 112,34" stroke="#a81c14" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.8"/></svg></span> <span class="sm">City of</span> Fenn</h1>
+
+    <div id="scroll">
+      <div class="rollEnd top"></div>
+      <div id="scrollBody">
+        <div class="sNight">NIGHT <span id="sNightNum">0</span></div>
+        <div class="sTime" id="sTime">0h 00m at the museum</div>
+        <div class="sRule"></div>
+        <div class="sHead">Permanent Unlocks</div>
+        <div class="sUnlocks" id="sUnlocks"></div>
+        <div class="sRule"></div>
+        <div class="sHead">Gathered</div>
+        <div class="sItems" id="sItems"></div>
+        <div class="sRule"></div>
+        <div class="sHead">The Crown of Fenn</div>
+        <div class="sCrown" id="sCrown"></div>
+      </div>
+      <div class="rollEnd bottom"></div>
+    </div>
+
     <div class="go">Click / tap to enter the grounds</div>
-    <button class="btn" id="dirBtn">Room Directory</button>
-    <div id="verTag">v1.6.0</div>
+    <div class="cardBtns">
+      <button class="btn" id="dirBtn">Room Directory</button>
+      <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
+    </div>
+    <div id="verTag">v1.7.1</div>
   </div>
 </div>
 
@@ -182,6 +231,7 @@
   <div class="sub" id="bpSub">east extension — drafted layout</div>
   <canvas id="bpCanvas" width="640" height="740"></canvas>
   <div style="margin-top:12px;text-align:right;">
+    <button class="btn" id="reorderBtn" style="display:none;margin-right:8px;">Reorder Pool</button>
     <button class="btn red" id="endNightBtn">End the Night</button>
   </div>
 </div></div>
@@ -218,7 +268,7 @@
 (function(){
 'use strict';
 
-const VERSION='v1.6.0';
+const VERSION='v1.7.1';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -228,14 +278,56 @@ const store={
   set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }
             catch(e){ this.mem[k]=v; } }
 };
-let night=store.get('fenn_night',1);
+let night=store.get('fenn_night',0);
 let crowns=store.get('fenn_crowns',0);
 const dirOff=new Set(store.get('fenn_dir_off',[]));
+// permanent progress
+const unlocks=new Set(store.get('fenn_unlocks',[]));
+let playMs=store.get('fenn_playms',0);
+let allowance=store.get('fenn_allowance',0);
+let manuscripts=store.get('fenn_manuscripts',0);
+let bonesTotal=store.get('fenn_bonesTotal',0);
+function hasUnlock(id){ return unlocks.has(id); }
+function grantUnlock(id,label){
+  if(unlocks.has(id)) return;
+  unlocks.add(id); store.set('fenn_unlocks',[...unlocks]);
+  if(typeof msg==='function') msg('Permanent unlock: '+(label||id));
+}
+// the five permanent-unlock slots shown on the scroll
+const UNLOCK_SLOTS=[
+  {id:'floor0', ic:'\u2460', name:'Ground Floor'},
+  {id:'floor1', ic:'\u2461', name:'Upper Gallery'},
+  {id:'floor2', ic:'\u2462', name:'The Cupola'},
+  {id:'crownroom', ic:'\u265B', name:'Crown Chamber'},
+  {id:'staff', ic:'\u26BF', name:'Staff Access'}
+];
+unlocks.add('floor0'); // ground floor is always available
 
 document.getElementById('verTag').textContent=VERSION+' \u00b7 S77FFY';
-document.getElementById('nightLine').textContent='Night '+night+' \u00b7 Crowns lifted: '+crowns;
 document.getElementById('plateNight').textContent='Night '+night;
 document.title='The Fenn Job \u2014 Night '+night+' '+VERSION;
+
+function fmtTime(ms){ const m=Math.floor(ms/60000); return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'; }
+function buildScroll(){
+  document.getElementById('sNightNum').textContent=night;
+  document.getElementById('sTime').textContent=fmtTime(playMs)+' at the museum';
+  let uh='';
+  UNLOCK_SLOTS.forEach(s=>{ const got=unlocks.has(s.id);
+    uh+='<div class="slot '+(got?'got':'locked')+'"><div class="ico">'+(got?s.ic:'\u2022')+'</div>'+(got?s.name:'\u2014')+'</div>';
+  });
+  document.getElementById('sUnlocks').innerHTML=uh;
+  document.getElementById('sItems').innerHTML=
+    '<div class="it"><span class="cico coin">\u25C9</span>'+allowance+'</div>'+
+    '<div class="it"><span class="cico manu">\u2637</span>'+manuscripts+'</div>'+
+    '<div class="it"><span class="cico bone">\u269D</span>'+bonesTotal+'</div>';
+  document.getElementById('sCrown').innerHTML= crowns>0
+    ? '<span class="got" title="'+crowns+' lifted">\u265B</span>'
+    : '<span class="none">still under guard \u2014 not yet taken</span>';
+  const body=document.getElementById('scrollBody');
+  // trigger the unroll on next frame
+  requestAnimationFrame(()=>body.classList.add('open'));
+}
+buildScroll();
 
 // ---------- palette ----------
 const COL={ sky:0xdfe7ee, fog:0xcfd9e0, grass:0x9db38e, grassDk:0x8aa37c, path:0xc9cdd2,
@@ -1413,6 +1505,7 @@ function buildLift(f,cx,cz){
   interactables.push({x:cx,z:cz,r:1.9,dead:false,
     label:'take the lift up to '+up.name,
     fn:()=>{ fadeTeleport(up.ox, up.oz+10.4, 0);
+             grantUnlock('floor'+up.idx, up.name);
              setTimeout(()=>msg('Arrived: '+up.name+'. Draft on through the doors.'),700); }});
   // descend pad on the upper landing (built now that the lift exists)
   const dz=up.oz+9.2, dx=cellX(up,-0.5);
@@ -1490,6 +1583,7 @@ let ropeG,laserG,cageG,cageCol=null,shutterMesh,secDoor,secCol=null,crownG;
 const btnMats={};
 const switchKnobs={};
 const panelState={open:false,cover:null,ctag:null};
+let crownStolenTonight=false;   // the crown can be taken only once per night
 function wallRun(x1,z1,x2,z2,gaps){
   const horiz=(z1===z2), H=5;
   const a=horiz?Math.min(x1,x2):Math.min(z1,z2), b=horiz?Math.max(x1,x2):Math.max(z1,z2);
@@ -1649,6 +1743,7 @@ function wallRun(x1,z1,x2,z2,gaps){
   secDoor.userData.tx=W(8);
   secCol=addColliderBox(W(8),Z(-6),2.6,0.6,0.15);
   const sdTag=makeTag('SECURITY DOOR',true); sdTag.position.set(W(8),4.6,Z(-6.6)); scene.add(sdTag);
+  if(hasUnlock('staff')) staffDoorOpen();   // permanent direct access after first heist
   // ---- consolidated SECURITY CONTROL panel: slide-open cover + slide switches ----
   (function(){
     const PANX=W(5.7), PANY=1.95, zFace=Z(-16.35), zTrack=Z(-16.46), zCover=Z(-16.56);
@@ -1765,8 +1860,8 @@ function rearm(){
   heist.lasers=true; laserG.visible=true;
   heist.alarm=true;
   ['rope','lasers','alarm'].forEach(k=>slideSwitch(k,false));
-  secDoor.userData.tx=LX+8;
-  if(!secCol) secCol=addColliderBox(LX+8,LZ-6,2.6,0.6,0.15);
+  if(hasUnlock('staff')){ staffDoorOpen(); }   // stays open permanently
+  else{ secDoor.userData.tx=LX+8; if(!secCol) secCol=addColliderBox(LX+8,LZ-6,2.6,0.6,0.15); }
   msg('The systems re-arm \u2014 the window closed. Disarm them again to reopen it.');
 }
 function dropCage(text){
@@ -1783,23 +1878,40 @@ function liftCage(){
   setTimeout(()=>{ if(!heist.caged) cageG.visible=false; },900);
   if(cageCol){ removeCollider(cageCol); cageCol=null; }
 }
+function staffDoorOpen(){        // permanent once Staff Access is unlocked
+  if(!secDoor) return;
+  secDoor.userData.tx=LX+10.3;
+  if(secCol){ removeCollider(secCol); secCol=null; }
+}
 function tryTakeCrown(){
   if(heist.stolen) return;
   if(windowActive()){
     heist.stolen=true;
     crownG.visible=false;
-    crowns+=1;
-    store.set('fenn_crowns',crowns);
-    store.set('fenn_night',night+1);
-    document.getElementById('winSub').textContent='night '+night+' complete';
-    openOverlay(byId('winOverlay'));
+    crowns+=1; store.set('fenn_crowns',crowns);
+    heist.winUntil=0;
+    crownStolenTonight=true;
+    const first=!hasUnlock('staff');
+    grantUnlock('staff','Staff Access \u2014 alarms direct'); // first steal unlocks staff route
+    if(staffDoorOpen) staffDoorOpen();
+    updatePowerUI();
+    msg('THE CROWN OF FENN IS OURS! With it in hand you can now reorder the draft pool \u2014 '+(isTouch?'open the blueprint and tap Reorder Pool.':'press R (or use the blueprint).'));
+    if(first) setTimeout(()=>msg('Staff access unlocked \u2014 the alarm room stays open on future nights.'),3200);
     return;
   }
   if(heist.caged){
-    msg('The cage is down. Get behind the exhibit and disarm rope, lasers & alarm to release it.');
+    msg('The cage is down. Disarm rope, lasers & alarm from the controls to release it.');
     return;
   }
   dropCage('You touch the crown \u2014 a cage slams down. Disarm all three systems from the controls behind the exhibit to release it.');
+}
+// once the crown is taken, its authority lets you re-curate the collection mid-night
+function openPoolReorder(){
+  if(!crownStolenTonight){ msg('Only with the Crown of Fenn in hand can you reorder the collection.'); return; }
+  renderDir(); openOverlay(byId('dirOverlay'));
+}
+function updatePowerUI(){
+  const b=byId('reorderBtn'); if(b) b.style.display=crownStolenTonight?'inline-block':'none';
 }
 
 // =====================================================================
@@ -1863,6 +1975,7 @@ function placeBone(x,z,kind){
       rec.dead=true; scene.remove(g); xrayGroup.remove(mark);
       const i=radioactives.indexOf(rec); if(i>=0) radioactives.splice(i,1);
       bonesFound=Math.min(3,bonesFound+1);
+      bonesTotal+=1; store.set('fenn_bonesTotal',bonesTotal);
       fillNextBone(); renderInv();
       msg('Fossil bone recovered ('+bonesFound+'/3). It belongs to the Jurassic Hall skeleton.');
     },
@@ -2234,7 +2347,8 @@ function drawBP(){
   const crownState=heist.stolen?'SECURED':(heist.caged?'CAGED':'on display');
   c.fillText('Crown: '+crownState,470,712);
 }
-function openBP(){ drawBP(); openOverlay(byId('bpOverlay')); }
+function openBP(){ drawBP(); updatePowerUI(); openOverlay(byId('bpOverlay')); }
+byId('reorderBtn').onclick=function(){ closeOverlay(); openPoolReorder(); };
 byId('endNightBtn').onclick=function(){
   store.set('fenn_night',night+1);
   location.reload();
@@ -2295,6 +2409,7 @@ function updateZone(px,pz){
   const [n,s]=zoneFor(px,pz);
   if(n!==curZone){
     curZone=n; zoneName.textContent=n; zoneSub.textContent=s;
+    if(n==='Closed Exhibit') grantUnlock('crownroom','Crown Chamber');
     zonePlateEl.style.opacity='1';
     if(zoneDimTimer) clearTimeout(zoneDimTimer);
     zoneDimTimer=setTimeout(()=>{ zonePlateEl.style.opacity='0.28'; },3400);
@@ -2322,6 +2437,7 @@ addEventListener('keydown',e=>{
   if(uiOpen) return;
   if(e.code==='KeyH') toggleIntel();
   if(e.code==='KeyG') toggleGoggles();
+  if(e.code==='KeyR') openPoolReorder();
   if(e.code==='KeyB') openBP();
   if(e.code==='KeyE' && currentInter) currentInter.fn();
 });
@@ -2460,6 +2576,8 @@ function resolveCollisions(){
 }
 function lerpTo(cur,target,dt,rate){ return cur+(target-cur)*Math.min(1,dt*rate); }
 
+let playSaveAcc=0;
+addEventListener('beforeunload',()=>{ try{ store.set('fenn_playms',Math.round(playMs)); }catch(e){} });
 const clock=new THREE.Clock();
 function tick(){
   requestAnimationFrame(tick);
@@ -2562,6 +2680,8 @@ function tick(){
   }
   updateZone(player.x,player.z);
   updateTools(dt,t);
+  if(started){ playMs+=dt*1000; playSaveAcc+=dt;
+    if(playSaveAcc>10){ playSaveAcc=0; store.set('fenn_playms',Math.round(playMs)); } }
   renderer.render(scene,camera);
 }
 tick();
