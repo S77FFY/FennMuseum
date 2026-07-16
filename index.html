@@ -21,11 +21,16 @@
     border-radius:2px;padding:5px 18px 6px;backdrop-filter:blur(3px);transition:opacity .7s;}
   #zoneName{font-variant:small-caps;letter-spacing:.14em;font-size:15px;}
   #zoneSub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#c2a35a;margin-top:1px;}
-  #hint{ top:14px;right:14px;text-align:right;background:rgba(21,24,28,.55);color:#d9d2c2;
+  #hint{ top:58px;right:14px;text-align:right;background:rgba(21,24,28,.55);color:#d9d2c2;
     border:1px solid rgba(255,255,255,.12);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;transition:opacity .8s;}
   #hint b{color:#c2a35a;font-weight:normal;}
-  #intelPlate{ top:14px;right:14px;display:none;text-align:right;background:rgba(60,14,12,.72);color:#f0dcd4;
+  #intelPlate{ top:58px;right:14px;display:none;text-align:right;background:rgba(60,14,12,.72);color:#f0dcd4;
     border:1px solid rgba(213,90,80,.6);border-radius:2px;padding:7px 10px;font-size:11px;line-height:1.6;letter-spacing:.04em;}
+  #cogBtn{position:fixed;z-index:13;top:12px;right:14px;width:40px;height:40px;border-radius:50%;
+    display:none;align-items:center;justify-content:center;font-size:22px;color:#e8dfc9;cursor:pointer;
+    background:rgba(21,24,28,.72);border:1px solid rgba(194,163,90,.7);pointer-events:auto;
+    font-family:Georgia,serif;line-height:1;}
+  #cogBtn:hover{background:rgba(40,44,52,.85);}
   #prompt{ bottom:76px;left:50%;transform:translateX(-50%);display:none;
     background:rgba(21,24,28,.78);color:#efe9dc;border:1px solid #c2a35a;border-radius:2px;
     padding:6px 16px;font-size:13px;letter-spacing:.06em;}
@@ -207,7 +212,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v1.7.1</div>
+    <div id="verTag">v1.9.0</div>
   </div>
 </div>
 
@@ -243,10 +248,23 @@
   <div style="margin-top:16px;"><button class="btn" id="nextNightBtn">Begin the Next Night</button></div>
 </div></div>
 
+<div class="modal" id="settingsOverlay"><div class="sheet" style="width:min(340px,90vw);text-align:center;">
+  <span class="close" id="setClose">Close</span>
+  <h2>Settings</h2>
+  <div class="sub">the night&rsquo;s tools</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
+    <button class="btn" id="setMap">Room Map</button>
+    <button class="btn" id="setDir">Room Directory</button>
+    <button class="btn red" id="setEndNight">End the Night</button>
+    <a class="btn donate" id="setDonate" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
+  </div>
+</div></div>
+
 <div class="stick" id="stickBase"></div>
 <div class="stick" id="stickKnob"></div>
 <div id="interactBtn">◈</div>
 <div id="goggleBtn" class="toolBtn">☾</div>
+<div id="cogBtn">⚙</div>
 <div id="invHud"></div>
 <div id="geiger">
   <div id="geigerLabel">GEIGER</div>
@@ -268,7 +286,7 @@
 (function(){
 'use strict';
 
-const VERSION='v1.7.1';
+const VERSION='v1.9.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -458,7 +476,7 @@ const M={
   mountain:lam(COL.mountain), statue:pho(COL.statue,{shininess:14,specular:0x331a15}),
   rock:lam(COL.rock), dark:lam(0x3a4048), window:lam(0x2a2415,{emissive:0xdca24a}),
   darkWood:lam(0x4a3626), metal:lam(0x6a7076), laser:new THREE.MeshBasicMaterial({color:0xff2a1a}),
-  velvet:lam(0x8e1f1c),
+  velvet:lam(0x8e1f1c), concrete:lam(0x4b4f54),
   floorIn:lam(0xd8d2c2,{emissive:0x2a2a24}), wallIn:lam(0xe6e1d4,{emissive:0x2e2a20}), ceilIn:lam(0xcfc9ba,{emissive:0x242018})
 };
 
@@ -638,6 +656,16 @@ function makeGravelTexture(base){
   M.mountain.color.setHex(0x232c40);
   M.leaf.color.setHex(0x445a41); M.leafDk.color.setHex(0x374b36);
   M.water.color.setHex(0x2a3d52);
+  // 9x5 pane grid on the outer windows (warm glow behind dark muntins)
+  const wc=document.createElement('canvas'); wc.width=180; wc.height=100; const wx=wc.getContext('2d');
+  const wg=wx.createLinearGradient(0,0,0,100); wg.addColorStop(0,'#ffe6ad'); wg.addColorStop(1,'#e9b968');
+  wx.fillStyle=wg; wx.fillRect(0,0,180,100);
+  wx.strokeStyle='#2a2113'; wx.lineWidth=3;
+  for(let i=0;i<=9;i++){ const x=i*20; wx.beginPath(); wx.moveTo(x,0); wx.lineTo(x,100); wx.stroke(); }
+  for(let j=0;j<=5;j++){ const y=j*20; wx.beginPath(); wx.moveTo(0,y); wx.lineTo(180,y); wx.stroke(); }
+  wx.strokeStyle='#1c160c'; wx.lineWidth=5; wx.strokeRect(0,0,180,100);
+  const wtex=new THREE.CanvasTexture(wc);
+  M.window.map=wtex; M.window.color.setHex(0xffffff); M.window.emissive.setHex(0x6a4e1e); M.window.needsUpdate=true;
 })();
 
 // blue checkerboard floor tiles — clearly reads as "floor"
@@ -664,38 +692,70 @@ let _tileMat=null;
 function tileMat(){ if(!_tileMat) _tileMat=new THREE.MeshLambertMaterial({map:makeTileTexture(0x9fc2e8,0x35507e),emissive:0x1a2436,emissiveIntensity:0.6}); return _tileMat; }
 
 // ornate damask wallpaper — clearly reads as "wall"
-function makeWallpaperTexture(base,motif){
-  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+// ornate damask wallpaper, drawn to mimic the reference swatches (half-drop repeat)
+function makeWallpaperTexture(bgHex,motifHex){
+  const S=512, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
   const c=cv.getContext('2d');
-  c.fillStyle='#'+('000000'+base.toString(16)).slice(-6); c.fillRect(0,0,256,256);
-  // vertical damask stripes
-  c.fillStyle='rgba(255,255,255,0.05)';
-  for(let x=0;x<256;x+=32) c.fillRect(x,0,16,256);
-  const mo='#'+('000000'+motif.toString(16)).slice(-6);
-  c.strokeStyle=mo; c.fillStyle=mo; c.lineWidth=2;
-  // repeating fleur/diamond motif on a 2x2 lattice
-  function fleur(cx,cy){
+  const bg='#'+('000000'+bgHex.toString(16)).slice(-6);
+  const mo='#'+('000000'+motifHex.toString(16)).slice(-6);
+  c.fillStyle=bg; c.fillRect(0,0,S,S);
+  // faint tonal ground variation
+  const gg=c.createLinearGradient(0,0,0,S); gg.addColorStop(0,'rgba(255,255,255,0.05)'); gg.addColorStop(1,'rgba(0,0,0,0.10)');
+  c.fillStyle=gg; c.fillRect(0,0,S,S);
+  c.fillStyle=mo; c.strokeStyle=mo;
+  // one damask motif, mirror-symmetric about its vertical axis, centred at (cx,cy)
+  function leaf(cx,cy,dir,len,wid,curl){
     c.beginPath();
-    c.moveTo(cx,cy-16);
-    c.bezierCurveTo(cx+12,cy-10,cx+12,cy+6,cx,cy+14);
-    c.bezierCurveTo(cx-12,cy+6,cx-12,cy-10,cx,cy-16);
-    c.stroke();
-    c.beginPath(); c.arc(cx,cy,3,0,Math.PI*2); c.fill();
-    // side scrolls
-    c.beginPath(); c.moveTo(cx-14,cy); c.quadraticCurveTo(cx-20,cy-8,cx-14,cy-14); c.stroke();
-    c.beginPath(); c.moveTo(cx+14,cy); c.quadraticCurveTo(cx+20,cy-8,cx+14,cy-14); c.stroke();
+    c.moveTo(cx,cy);
+    c.bezierCurveTo(cx+dir*wid, cy-len*0.35, cx+dir*wid*1.1, cy-len*0.75, cx+dir*curl, cy-len);
+    c.bezierCurveTo(cx+dir*wid*0.2, cy-len*0.7, cx+dir*wid*0.2, cy-len*0.3, cx, cy);
+    c.fill();
   }
-  fleur(64,64); fleur(192,64); fleur(64,192); fleur(192,192);
-  fleur(128,128); fleur(0,128); fleur(256,128); fleur(128,0); fleur(128,256);
-  // border pinstripes
-  c.strokeStyle='rgba(0,0,0,0.10)'; c.lineWidth=1;
-  for(let y=0;y<256;y+=8){ c.beginPath();c.moveTo(0,y);c.lineTo(256,y);c.stroke(); }
+  function motif(cx,cy,sc){
+    c.save(); c.translate(cx,cy); c.scale(sc,sc);
+    // central palmette core
+    c.beginPath(); c.moveTo(0,-52);
+    c.bezierCurveTo(26,-40,26,-6,0,26); c.bezierCurveTo(-26,-6,-26,-40,0,-52); c.fill();
+    // crown tuft
+    for(let i=-2;i<=2;i++){ leaf(0,-46,1,26+Math.abs(i)*4,8, i*10); }
+    // big side fronds (mirror)
+    [1,-1].forEach(d=>{
+      leaf(0,-6,d,54,30,d*30);
+      leaf(0,2,d,40,20,d*36);
+      leaf(0,16,d,30,14,d*30);
+      // scrolling tail
+      c.beginPath(); c.moveTo(0,20);
+      c.bezierCurveTo(d*24,30,d*44,26,d*46,6);
+      c.bezierCurveTo(d*40,20,d*26,20,0,26); c.fill();
+      // small dot accents
+      c.beginPath(); c.arc(d*40,10,3.2,0,Math.PI*2); c.fill();
+      c.beginPath(); c.arc(d*30,-30,2.6,0,Math.PI*2); c.fill();
+    });
+    // lower pendant
+    c.beginPath(); c.moveTo(0,24);
+    c.bezierCurveTo(12,40,12,64,0,80); c.bezierCurveTo(-12,64,-12,40,0,24); c.fill();
+    c.beginPath(); c.arc(0,86,4,0,Math.PI*2); c.fill();
+    c.restore();
+  }
+  // half-drop tiling: full motifs on a grid, offset rows drop by half
+  const stepX=S/2, stepY=S/2, sc=1.7;
+  for(let ry=-1;ry<=2;ry++) for(let rx=-1;rx<=2;rx++){
+    const off=(ry%2!==0)?stepX/2:0;
+    motif(rx*stepX+off, ry*stepY, sc);
+  }
+  // subtle weave
+  c.globalAlpha=0.06; c.strokeStyle='#000';
+  for(let y=0;y<S;y+=4){ c.beginPath(); c.moveTo(0,y); c.lineTo(S,y); c.stroke(); }
+  c.globalAlpha=1;
   const tex=new THREE.CanvasTexture(cv);
-  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(2,1);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(2,2);
   return tex;
 }
-let _wallpaperMat=null;
-function wallpaperMat(){ if(!_wallpaperMat) _wallpaperMat=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(0xe7ddc4,0xb69a5e),emissive:0x2a2418,emissiveIntensity:0.55}); return _wallpaperMat; }
+let _wallpaperMat=null,_wallpaperGold=null;
+// deep red ground, black damask (reference #1)
+function wallpaperMat(){ if(!_wallpaperMat) _wallpaperMat=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(0x6e1113,0x140a0b),emissive:0x2a0d0e,emissiveIntensity:0.4}); return _wallpaperMat; }
+// black ground, gold damask (reference #2)
+function wallpaperGold(){ if(!_wallpaperGold) _wallpaperGold=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(0x14110c,0xb8963f),emissive:0x1a160b,emissiveIntensity:0.35}); return _wallpaperGold; }
 
 function makeBlueprintMaterial(){
   const cv=document.createElement('canvas'); cv.width=768; cv.height=512;
@@ -1011,9 +1071,9 @@ function tree(x,z,sc){
   });
   plaza(cx,cz,10,M.pathEdge);
   [[-6,-4],[6,-4],[-6,4],[6,4]].forEach(([ox,oz])=>{
-    box(2.6,0.25,0.9,M.wood,cx+ox,0.7,cz+oz);
-    box(0.25,0.7,0.9,M.wood,cx+ox-1,0.35,cz+oz);
-    box(0.25,0.7,0.9,M.wood,cx+ox+1,0.35,cz+oz);
+    box(2.6,0.26,0.9,M.concrete,cx+ox,0.7,cz+oz);
+    box(0.3,0.7,0.9,M.concrete,cx+ox-1,0.35,cz+oz);
+    box(0.3,0.7,0.9,M.concrete,cx+ox+1,0.35,cz+oz);
   });
   tree(cx,cz-5,1.1); tree(cx-9,cz+1,0.8); tree(cx+9,cz+1,0.8);
 })();
@@ -1212,10 +1272,10 @@ const treeSpots=[
 treeSpots.forEach(([x,z])=>tree(x,z,0.85+Math.random()*0.7));
 [[24,52,-0.5],[-18,6,0.5],[70,58,0.2],[96,10,Math.PI/2]].forEach(([x,z,r])=>{
   const b=new THREE.Group(); b.position.set(x,0,z); b.rotation.y=r; scene.add(b);
-  box(2.8,0.22,0.9,M.wood,0,0.72,0,b);
-  box(2.8,0.8,0.18,M.wood,0,1.2,-0.42,b);
-  box(0.22,0.72,0.8,M.wood,-1.15,0.36,0,b);
-  box(0.22,0.72,0.8,M.wood,1.15,0.36,0,b);
+  box(2.8,0.24,0.9,M.concrete,0,0.72,0,b);
+  box(2.8,0.8,0.2,M.concrete,0,1.2,-0.42,b);
+  box(0.28,0.72,0.86,M.concrete,-1.2,0.36,0,b);
+  box(0.28,0.72,0.86,M.concrete,1.2,0.36,0,b);
 });
 [-1,1].forEach(sx=>{
   box(1.6,4.6,1.6,M.stone,55+sx*8,2.3,88);
@@ -1351,6 +1411,7 @@ ROOMS.push(R('orrery','Orrery',1,P1,CO,'Clockwork planets turn overhead.'));
 // --- museum exhibits (prequel: the RLCF crown job) ---
 ROOMS.push(R('egyptology','Egyptian Archaeology',2,P2L,'#d8c69a','Sarcophagus, pyramid models, the Valley of the Kings.','egypt'));
 ROOMS.push(R('jurassic','Jurassic Hall',3,P3T,'#cfc8bd','A great skeleton \u2014 but several bones are missing.','jurassic'));
+ROOMS.push(R('planetarium','Planetarium',2,P2I,'#20263a','The five worlds of the Fenn sky, charted on the walls.','planetarium'));
 // floor tags: 0=ground, 1=upper, 2=cupola. default ground.
 ROOMS.forEach(r=>{ r.fl=[0]; });
 const UPPER=new Set(['whisperinghall','scholarsstair','fiftherawing','archive','conservationlab',
@@ -1401,7 +1462,7 @@ function edgeInfo(f,c,r,side){
 }
 function buildEdgeWall(f,info,gap){
   const rec={gap:gap,cols:[],panelMesh:null,panelCol:null,inter:null,sealed:false};
-  const H=4.6, WM=wallpaperMat();
+  const H=4.6, WM=(f.idx%2)?wallpaperGold():wallpaperMat();
   if(!gap){
     if(info.horiz){ box(12,H,0.5,WM,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,12,0.5,0.25)); }
     else{ box(0.5,H,12,WM,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.5,12,0.25)); }
@@ -1426,7 +1487,7 @@ function buildEdgeWall(f,info,gap){
 function addDoorPanel(f,rec,info,target){
   const p=info.horiz? box(2.5,3.4,0.16,M.darkWood,info.x,1.7,info.z)
                     : box(0.16,3.4,2.5,M.darkWood,info.x,1.7,info.z);
-  sph(0.09,M.gold,info.horiz?info.x+0.8:info.x+0.11,1.6,info.horiz?info.z+0.11:info.z+0.8,scene,8,8);
+  rec.knob=sph(0.09,M.gold,info.horiz?info.x+0.8:info.x+0.11,1.6,info.horiz?info.z+0.11:info.z+0.8,scene,8,8);
   rec.panelMesh=p;
   rec.panelCol=info.horiz? addColliderBox(info.x,info.z,2.6,0.5,0.15)
                          : addColliderBox(info.x,info.z,0.5,2.6,0.15);
@@ -1436,6 +1497,7 @@ function addDoorPanel(f,rec,info,target){
 }
 function clearPanel(rec){
   if(rec.panelMesh){ scene.remove(rec.panelMesh); rec.panelMesh=null; }
+  if(rec.knob){ scene.remove(rec.knob); rec.knob=null; }
   if(rec.panelCol){ removeCollider(rec.panelCol); rec.panelCol=null; }
   if(rec.inter){ rec.inter.dead=true; rec.inter=null; }
 }
@@ -1466,7 +1528,10 @@ function buildRoomGeom(f,c,r,room,abs){
       if(meDoor){
         const [dc,dr]=SIDE_D[side];
         const nc=c+dc,nr=r+dr;
-        if(nc<0||nc>=f.gw||nr<0||nr>=f.gh){ sealEdgeGap(rec,info); }
+        if(nc<0||nc>=f.gw||nr<0||nr>=f.gh){
+          if(f.idx===0 && r===0 && side==='S'){ /* open doorway back to the Grand Entrance */ }
+          else sealEdgeGap(rec,info);
+        }
         else{ addDoorPanel(f,rec,info,{f:f,tc:nc,tr:nr,entry:oppSide(side)}); }
       }
     }
@@ -1484,6 +1549,7 @@ function buildRoomGeom(f,c,r,room,abs){
   if(room.sp==='lift'){ buildLift(f,cx,cz); }
   if(room.sp==='egypt'){ buildEgyptRoom(cx,cz); }
   if(room.sp==='jurassic'){ buildJurassicRoom(cx,cz); }
+  if(room.sp==='planetarium'){ buildPlanetariumRoom(cx,cz,abs); }
 }
 function buildLift(f,cx,cz){
   const up=FLOORS[f.idx+1];
@@ -1563,15 +1629,26 @@ function buildLanding(f){
     addDoorPanel(f,rec,info,{f:f,tc:c,tr:0,entry:'S'}); });
   const L1=new THREE.PointLight(0xffe2b8,0.85,40); L1.position.set(f.ox,4.0,f.oz+2); scene.add(L1);
 }
-FLOORS.forEach(buildLanding);
-// entrance-hall doors <-> GROUND landing
+// upper floors keep their lift-served landings; the ground floor drafts from the Grand Entrance
+FLOORS.forEach(f=>{ if(f.idx>=1) buildLanding(f); });
 const G=FLOORS[0];
-teleports.push({x:55,z:7.4,r:1.5, tx:G.ox,   tz:10.4, yaw:0});
-teleports.push({x:43.3,z:14,r:1.3, tx:G.ox-12,tz:10.4, yaw:0});
-teleports.push({x:66.7,z:14,r:1.3, tx:G.ox+12,tz:10.4, yaw:0});
-teleports.push({x:G.ox,   z:12.0,r:1.0, tx:55,  tz:10.4, yaw:Math.PI});
-teleports.push({x:G.ox-12,z:12.0,r:1.0, tx:44.9,tz:14, yaw:-Math.PI/2});
-teleports.push({x:G.ox+12,z:12.0,r:1.0, tx:65.1,tz:14, yaw: Math.PI/2});
+(function buildGroundEntry(){
+  const f=G, cells=entryCells(f);   // three middle cells of the 8-wide ground grid
+  const stations=[
+    {x:55,   z:7.6,  yaw:Math.PI, c:cells[1]},   // north door  -> centre cell
+    {x:43.3, z:13.4, yaw:Math.PI, c:cells[0]},   // west door   -> left cell
+    {x:66.7, z:13.4, yaw:Math.PI, c:cells[2]},   // east door   -> right cell
+  ];
+  stations.forEach(st=>{
+    interactables.push({x:st.x,z:st.z,r:1.9,dead:false,
+      label:()=> f.grid[0][st.c] ? ('enter '+roomById(f.grid[0][st.c].id).n) : 'draft a room',
+      fn:()=>{ if(f.grid[0][st.c]) fadeTeleport(cellX(f,st.c), cellZ(f,0)+4, 0);
+               else openDraft({f:f,tc:st.c,tr:0,entry:'S'}); }});
+    // walking out the south side of a row-0 room returns you to the Grand Entrance
+    teleports.push({x:cellX(f,st.c), z:cellZ(f,0)+6.7, r:1.6, tx:st.x, tz:st.z, yaw:st.yaw});
+  });
+  const L=new THREE.PointLight(0xffe2b8,0.7,44); L.position.set(f.ox,4.2,f.oz-8); scene.add(L);
+})();
 
 // =====================================================================
 // LEERSON HALL interior — fixed layout + CLOSED EXHIBIT heist
@@ -1940,6 +2017,7 @@ function renderInv(){
   if(hasItem('goggles')) h+='<div class="item'+(gogglesOn?' active':'')+'"><span class="ic">\u25C9</span>Goggles</div>';
   if(hasItem('geiger'))  h+='<div class="item"><span class="ic">\u2301</span>Geiger</div>';
   if(hasItem('geiger')||bonesFound>0) h+='<div class="item"><span class="ic">\u269D</span>Bones '+bonesFound+'/3</div>';
+  if(manuscripts>0) h+='<div class="item"><span class="ic">\u2637</span>Manuscripts '+manuscripts+'</div>';
   el.innerHTML=h;
 }
 function toggleGoggles(){
@@ -2207,6 +2285,128 @@ function geigerClick(inten){
 }
 
 // =====================================================================
+// PLANETARIUM — the five worlds of the Fenn sky (Blue Prince orrery lore)
+// =====================================================================
+const PLANETS=[
+  {n:'FENNMORA', t:'The Red Stone',      col:0xb0231c, rim:0xe06050, tc:'#c0392b', sc:'#b9b2a8', body:'one APPLE',      ic:'#c0392b', ring:false},
+  {n:'MORA',     t:'Our Colorful World', col:0x51607e, rim:0x9fb0c8, tc:'#c3d0e2', sc:'#aeb8c6', body:'a PRISM KEY',   ic:'rainbow', ring:false, patches:0x4a6a48},
+  {n:'VEIA',     t:'Dark Shadow',        col:0x13131c, rim:0x5a5f86, tc:'#cbb8e6', sc:'#b9a9d6', body:'one DIRT PILE',  ic:'#9a8f7a', ring:false},
+  {n:'DAUJA',    t:'The Untamed',        col:0x1b2236, rim:0x8fa0c0, tc:'#dcd39a', sc:'#a9c0d8', body:'one TRUNK',      ic:'#cdb98a', ring:true},
+  {n:'MAMORA',   t:'Guiding Light',      col:0xe9e6dd, rim:0xffffff, tc:'#e8dfb0', sc:'#7fa8c8', body:'the guiding light', ic:'#d7e4f0', ring:false}
+];
+const celestial=[];   // {mesh, speed} orbit arms, spun in tick
+
+function drawPlanet(c,cx,cy,r,p){
+  // body
+  const g=c.createRadialGradient(cx-r*0.35,cy-r*0.35,r*0.15,cx,cy,r);
+  g.addColorStop(0,'#'+('000000'+p.rim.toString(16)).slice(-6));
+  g.addColorStop(0.5,'#'+('000000'+p.col.toString(16)).slice(-6));
+  g.addColorStop(1,'#'+('000000'+(Math.max(0,p.col-0x0a0a0a)).toString(16)).slice(-6));
+  c.fillStyle=g; c.beginPath(); c.arc(cx,cy,r,0,Math.PI*2); c.fill();
+  if(p.patches){ c.fillStyle='rgba('+((p.patches>>16)&255)+','+((p.patches>>8)&255)+','+(p.patches&255)+',0.6)';
+    [[0.2,-0.1,0.35],[-0.3,0.25,0.28],[0.35,0.4,0.2]].forEach(([dx,dy,rr])=>{
+      c.beginPath(); c.ellipse(cx+dx*r,cy+dy*r,rr*r,rr*r*0.7,0.4,0,Math.PI*2); c.fill(); }); }
+  if(p.ring){ c.strokeStyle='#e8e4dc'; c.lineWidth=r*0.14; c.save();
+    c.translate(cx,cy); c.rotate(-0.5); c.beginPath(); c.ellipse(0,0,r*1.5,r*0.5,0,0,Math.PI*2); c.stroke(); c.restore(); }
+}
+function makePlanetSignMat(p){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=304; const c=cv.getContext('2d');
+  const bg=c.createLinearGradient(0,0,0,304); bg.addColorStop(0,'#0b111b'); bg.addColorStop(1,'#05070d');
+  c.fillStyle=bg; c.fillRect(0,0,512,304);
+  for(let i=0;i<120;i++){ c.fillStyle='rgba(255,255,255,'+(0.2+Math.random()*0.5)+')';
+    c.fillRect(Math.random()*512,Math.random()*304,1,1); }
+  drawPlanet(c,120,152,78,p);
+  c.textAlign='left';
+  c.fillStyle=p.tc; c.font='bold 40px Georgia';
+  c.fillText(p.n.split('').join('\u2009'),240,110);
+  c.fillStyle=p.sc; c.font='italic 22px Georgia'; c.fillText(p.t,244,142);
+  c.fillStyle='#d7d2c6'; c.font='16px Georgia';
+  c.fillText('Starting tomorrow, each',244,188);
+  c.fillText('PLANETARIUM will contain',244,210);
+  // body line with highlighted item
+  c.fillText('',244,232);
+  const pre=''; c.fillStyle='#d7d2c6'; c.fillText('\u2192 '+(p.body.split(' ')[0]),244,236);
+  const rest=p.body.substring(p.body.indexOf(' ')+1);
+  const wx=244+c.measureText('\u2192 '+p.body.split(' ')[0]+' ').width;
+  if(p.ic==='rainbow'){ const cols=['#e04b4b','#e0a04b','#e0e04b','#4be06a','#4ba0e0','#8a4be0'];
+    let xx=wx; rest.split('').forEach((ch,i)=>{ c.fillStyle=cols[i%cols.length]; c.fillText(ch,xx,236); xx+=c.measureText(ch).width; }); }
+  else { c.fillStyle=p.ic; c.font='bold 16px Georgia'; c.fillText(rest,wx,236); }
+  c.strokeStyle='#3a4658'; c.lineWidth=4; c.strokeRect(6,6,500,292);
+  const tex=new THREE.CanvasTexture(cv); return new THREE.MeshLambertMaterial({map:tex,emissive:0x202832,emissiveIntensity:0.7});
+}
+function planetSignOnWall(cx,cz,side,offset,p){
+  let x,z,ry;
+  if(side==='N'){ x=cx+offset; z=cz-5.72; ry=0; }
+  else if(side==='S'){ x=cx+offset; z=cz+5.72; ry=Math.PI; }
+  else if(side==='W'){ x=cx-5.72; z=cz+offset; ry=Math.PI/2; }
+  else { x=cx+5.72; z=cz+offset; ry=-Math.PI/2; }
+  const g=new THREE.Group(); g.position.set(x,2.7,z); g.rotation.y=ry; scene.add(g);
+  box(3.5,2.15,0.12,lam(0x2a2f36),0,0,0,g);
+  const pane=new THREE.Mesh(new THREE.PlaneGeometry(3.3,1.98),makePlanetSignMat(p));
+  pane.position.z=0.08; g.add(pane);
+  // little planet orb bracket-mounted beside the sign
+}
+function buildPlanetariumRoom(cx,cz,abs){
+  // dark star ceiling (hides the warm fixture for a night-sky feel)
+  const sc=document.createElement('canvas'); sc.width=256; sc.height=256; const sx=sc.getContext('2d');
+  const sg=sx.createRadialGradient(128,128,10,128,128,180); sg.addColorStop(0,'#141d33'); sg.addColorStop(1,'#05060c');
+  sx.fillStyle=sg; sx.fillRect(0,0,256,256);
+  for(let i=0;i<400;i++){ sx.fillStyle='rgba(255,255,255,'+(0.2+Math.random()*0.7)+')';
+    const s=Math.random()*1.6; sx.fillRect(Math.random()*256,Math.random()*256,s,s); }
+  const sky=new THREE.Mesh(new THREE.PlaneGeometry(11.6,11.6),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc)}));
+  sky.rotation.x=Math.PI/2; sky.position.set(cx,4.52,cz); scene.add(sky);
+  { const et=makeTag('PLANETARIUM',false); et.position.set(cx,3.4,cz); scene.add(et); }
+  // signs on the two solid walls (whichever aren't doors)
+  const solid=['N','E','S','W'].filter(s=>!abs.has(s));
+  const layout=[];
+  if(solid.length>=2){
+    [-3.8,0,3.8].forEach(o=>layout.push([solid[0],o]));
+    [-2.4,2.4].forEach(o=>layout.push([solid[1],o]));
+  } else { // fallback: spread on all walls
+    ['N','E','S','W','N'].forEach((s,i)=>layout.push([s,(i%2?2.4:-2.4)]));
+  }
+  PLANETS.forEach((p,i)=>{ const [side,off]=layout[i]; planetSignOnWall(cx,cz,side,off,p); });
+  // central orrery
+  cyl(0.9,1.1,0.4,12,M.marbleSh,cx,0.2,cz); addColliderBox(cx,cz,2.0,2.0,0.1);
+  cyl(0.12,0.14,3.0,8,M.gold,cx,1.7,cz);
+  // Mamora = the guiding light at the crown of the orrery
+  const sun=sph(0.42,new THREE.MeshBasicMaterial({color:0xfff2d2}),cx,3.35,cz,scene,16,12); sun.castShadow=false;
+  const sunL=new THREE.PointLight(0xfff0d0,0.9,16); sunL.position.set(cx,3.2,cz); scene.add(sunL);
+  // the four orbiting worlds
+  [[0,1.6,0.5,2.05],[1,2.3,0.34,2.25],[2,2.9,0.26,2.0],[3,3.4,0.2,2.4]].forEach(([pi,rad,pr,y])=>{
+    const p=PLANETS[pi];
+    const arm=new THREE.Group(); arm.position.set(cx,y,cz); scene.add(arm);
+    const rod=cyl(0.03,0.03,rad,5,M.gold,rad/2,0,0,arm); rod.rotation.z=Math.PI/2;
+    const orb=sph(pr,lam(p.col,{emissive:(p.col&0x3f3f3f)}),rad,0,0,arm,14,10);
+    if(p.ring){ const rng=new THREE.Mesh(new THREE.TorusGeometry(pr*1.5,pr*0.1,6,20),lam(0xe8e4dc));
+      rng.rotation.x=1.1; orb.add(rng); }
+    arm.rotation.y=Math.random()*Math.PI*2;
+    celestial.push({mesh:arm,speed:0.5-pi*0.09});
+  });
+  // a manuscript to collect — ties to the fan's planet book
+  const mx=cx-3.4, mz=cz+3.0;
+  cyl(0.5,0.62,1.0,8,M.marbleSh,mx,0.5,mz); addColliderBox(mx,mz,1.1,1.1,0.05);
+  const bk=box(0.5,0.12,0.66,lam(0x6a2018),mx,1.12,mz); bk.rotation.y=0.3;
+  box(0.44,0.14,0.58,lam(0xd8cdb0),mx,1.16,mz).rotation.y=0.3;
+  interactables.push({x:mx,z:mz,r:1.7,dead:false,
+    label:()=>hasManuscript('almanac')?'':'take the star almanac',
+    cond:()=>!hasManuscript('almanac'),
+    fn:()=>{ giveManuscript('almanac'); scene.remove(bk);
+      msg('Manuscript: \u201CThe Fixed Stars\u201D \u2014 an almanac of the five worlds. (+1 manuscript)'); }});
+}
+
+// ---------- manuscripts (gathered items on the scroll) ----------
+const manuscriptsSet=new Set(store.get('fenn_manuscript_ids',[]));
+function hasManuscript(id){ return manuscriptsSet.has(id); }
+function giveManuscript(id){
+  if(manuscriptsSet.has(id)) return;
+  manuscriptsSet.add(id); store.set('fenn_manuscript_ids',[...manuscriptsSet]);
+  manuscripts=manuscriptsSet.size; store.set('fenn_manuscripts',manuscripts);
+  renderInv();
+}
+
+// =====================================================================
 // UI — overlays, prompt, toast, blueprint, directory
 // =====================================================================
 const byId=id=>document.getElementById(id);
@@ -2265,11 +2465,15 @@ let draftCtx=null;
 function openDraft(target){
   const f=target.f;
   if(f.grid[target.tr][target.tc]) return;
-  const pool=poolFor(f);
+  let pool=poolFor(f);
   if(!pool.length){ msg('No rooms left in this floor\u2019s draft pool.'); return; }
+  // offer 3 random choices (Blue Prince style)
+  pool=pool.slice();
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+  const choices=pool.slice(0,Math.min(3,pool.length));
   draftCtx=target;
   let html='';
-  pool.forEach(r=>{
+  choices.forEach(r=>{
     let pips='';
     for(let i=0;i<4;i++) pips+='<span class="pip'+(i<r.d?'':' off')+'"></span>';
     html+='<div class="roomCard" data-id="'+r.id+'"><div class="rn">'+r.n+'</div>'+
@@ -2277,7 +2481,7 @@ function openDraft(target){
           '<div class="rnote">'+(r.note||(r.d?'Empty \u2014 awaiting curation.':''))+'</div></div>';
   });
   byId('draftCards').innerHTML=html;
-  byId('draftSub').textContent=f.name+' \u00b7 '+pool.length+' rooms in the pool';
+  byId('draftSub').textContent=f.name+' \u00b7 draw a room';
   openOverlay(byId('draftOverlay'));
 }
 byId('draftCards').onclick=function(e){
@@ -2349,11 +2553,20 @@ function drawBP(){
 }
 function openBP(){ drawBP(); updatePowerUI(); openOverlay(byId('bpOverlay')); }
 byId('reorderBtn').onclick=function(){ closeOverlay(); openPoolReorder(); };
-byId('endNightBtn').onclick=function(){
-  store.set('fenn_night',night+1);
-  location.reload();
-};
+function endTheNight(){ store.set('fenn_night',night+1); location.reload(); }
+byId('endNightBtn').onclick=endTheNight;
 byId('nextNightBtn').onclick=function(){ location.reload(); };
+// settings cog menu
+function openSettings(){ renderInv&&renderInv(); openOverlay(byId('settingsOverlay')); }
+byId('setClose').onclick=closeOverlay;
+byId('setMap').onclick=function(){ closeOverlay(); openBP(); };
+byId('setDir').onclick=function(){ closeOverlay(); openPoolReorder(); };
+byId('setEndNight').onclick=endTheNight;
+(function(){ const cb=byId('cogBtn');
+  cb.addEventListener('click',()=>{ if(uiOpen){ if(currentOverlay===byId('settingsOverlay')) closeOverlay(); } else openSettings(); });
+  cb.addEventListener('touchstart',function(e){ e.preventDefault(); e.stopPropagation();
+    if(uiOpen){ if(currentOverlay===byId('settingsOverlay')) closeOverlay(); } else openSettings(); },{passive:false});
+})();
 interactables.push({x:55,z:14.9,r:2.4,dead:false,label:'study the blueprint',fn:openBP});
 
 // =====================================================================
@@ -2434,6 +2647,7 @@ function fadeTeleport(tx,tz,yaw){
 addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(e.code==='Escape' && currentOverlay && currentOverlay!==byId('winOverlay')){ closeOverlay(); return; }
+  if(e.code==='Escape' && !currentOverlay && started){ openSettings(); return; }
   if(uiOpen) return;
   if(e.code==='KeyH') toggleIntel();
   if(e.code==='KeyG') toggleGoggles();
@@ -2462,6 +2676,7 @@ overlay.addEventListener('click',()=>{
   else initTouch();
   // restore any permanently-owned tools into the HUD
   renderInv();
+  byId('cogBtn').style.display='flex';
   if(hasItem('geiger')) byId('geiger').style.display='block';
   if(hasItem('goggles')&&isTouch) byId('goggleBtn').style.display='flex';
   // let the onboarding chrome fade so the view stays clear
@@ -2675,6 +2890,7 @@ function tick(){
   for(let i=0;i<lampGlows.length;i++){
     lampGlows[i].material.opacity=0.5+Math.sin(t*3+i*1.7)*0.06+Math.random()*0.02;
   }
+  for(let i=0;i<celestial.length;i++){ celestial[i].mesh.rotation.y+=celestial[i].speed*dt; }
   if(intel.visible){
     for(const p of intelPins){ p.rotation.y=t*1.6; }
   }
