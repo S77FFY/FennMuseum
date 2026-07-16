@@ -93,6 +93,30 @@
   #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;}
   @media (pointer:coarse){ .desktop{display:none} }
   @media (pointer:fine){ .touch{display:none} }
+  .toolBtn{position:fixed;z-index:12;width:54px;height:54px;border-radius:50%;display:none;
+    align-items:center;justify-content:center;font-size:26px;color:#cfe6cf;
+    background:rgba(30,50,34,.5);border:1px solid rgba(120,200,140,.7);font-family:Georgia,serif;}
+  #goggleBtn{right:26px;bottom:180px;}
+  #goggleBtn.on{background:rgba(60,150,80,.6);color:#eaffe9;box-shadow:0 0 16px rgba(90,220,120,.6);}
+  #invHud{position:fixed;z-index:11;left:14px;bottom:70px;display:flex;gap:6px;pointer-events:none;}
+  #invHud .item{background:rgba(21,24,28,.72);border:1px solid rgba(194,163,90,.6);border-radius:4px;
+    padding:5px 9px;color:#efe9dc;font-family:Georgia,serif;font-size:12px;letter-spacing:.04em;
+    display:flex;align-items:center;gap:5px;}
+  #invHud .item .ic{font-size:15px;}
+  #invHud .item.active{border-color:#7fdca0;color:#daffda;}
+  #geiger{position:fixed;z-index:11;right:14px;bottom:70px;width:150px;display:none;
+    background:rgba(14,20,16,.8);border:1px solid rgba(120,200,140,.55);border-radius:5px;
+    padding:8px 10px;font-family:Georgia,serif;color:#bfe6c4;}
+  #geigerLabel{font-size:10px;letter-spacing:.28em;color:#7fdca0;}
+  #geigerBar{height:8px;background:rgba(255,255,255,.08);border-radius:4px;margin:5px 0;overflow:hidden;}
+  #geigerFill{display:block;height:100%;width:0%;background:linear-gradient(90deg,#3fae52,#e2c04a,#d64a3a);transition:width .1s;}
+  #geigerCps{font-size:11px;letter-spacing:.1em;}
+  #geigerDot{position:absolute;top:8px;right:10px;width:9px;height:9px;border-radius:50%;background:#7fffa0;opacity:0;}
+  #goggleFx{position:fixed;inset:0;z-index:9;pointer-events:none;display:none;
+    background:radial-gradient(ellipse at 50% 45%, rgba(40,255,120,.10), rgba(0,25,8,.55) 80%);
+    mix-blend-mode:screen;}
+  #goggleFx::after{content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg, rgba(0,50,0,.0) 0px, rgba(0,60,0,.12) 2px, rgba(0,50,0,0) 4px);}
 </style>
 </head>
 <body>
@@ -134,7 +158,7 @@
     <div id="nightLine">Night 1 &nbsp;·&nbsp; Crowns lifted: 0</div>
     <div class="go">Click / tap to enter the grounds</div>
     <button class="btn" id="dirBtn">Room Directory</button>
-    <div id="verTag">v1.5.0</div>
+    <div id="verTag">v1.6.0</div>
   </div>
 </div>
 
@@ -172,6 +196,15 @@
 <div class="stick" id="stickBase"></div>
 <div class="stick" id="stickKnob"></div>
 <div id="interactBtn">◈</div>
+<div id="goggleBtn" class="toolBtn">☾</div>
+<div id="invHud"></div>
+<div id="geiger">
+  <div id="geigerLabel">GEIGER</div>
+  <div id="geigerBar"><span id="geigerFill"></span></div>
+  <div id="geigerCps">0 cps</div>
+  <div id="geigerDot"></div>
+</div>
+<div id="goggleFx"></div>
 <div id="fade"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -185,7 +218,7 @@
 (function(){
 'use strict';
 
-const VERSION='v1.5.0';
+const VERSION='v1.6.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -1223,6 +1256,9 @@ ROOMS.push(R('gallerylong','Skylight Gallery',3,P3F,CA,'Upper gallery beneath th
 ROOMS.push(R('domechamber','Dome Chamber',2,P2I,CO,'Directly under the great cupola.'));
 ROOMS.push(R('belvedere','Belvedere',1,P1,CO,'A room with a view over Fenn.'));
 ROOMS.push(R('orrery','Orrery',1,P1,CO,'Clockwork planets turn overhead.'));
+// --- museum exhibits (prequel: the RLCF crown job) ---
+ROOMS.push(R('egyptology','Egyptian Archaeology',2,P2L,'#d8c69a','Sarcophagus, pyramid models, the Valley of the Kings.','egypt'));
+ROOMS.push(R('jurassic','Jurassic Hall',3,P3T,'#cfc8bd','A great skeleton \u2014 but several bones are missing.','jurassic'));
 // floor tags: 0=ground, 1=upper, 2=cupola. default ground.
 ROOMS.forEach(r=>{ r.fl=[0]; });
 const UPPER=new Set(['whisperinghall','scholarsstair','fiftherawing','archive','conservationlab',
@@ -1354,6 +1390,8 @@ function buildRoomGeom(f,c,r,room,abs){
       dead:false});
   }
   if(room.sp==='lift'){ buildLift(f,cx,cz); }
+  if(room.sp==='egypt'){ buildEgyptRoom(cx,cz); }
+  if(room.sp==='jurassic'){ buildJurassicRoom(cx,cz); }
 }
 function buildLift(f,cx,cz){
   const up=FLOORS[f.idx+1];
@@ -1765,6 +1803,297 @@ function tryTakeCrown(){
 }
 
 // =====================================================================
+// EXHIBITS, TOOLS & COLLECTIBLES  (RLCF crown-job prequel content)
+// =====================================================================
+const inventory=new Set(store.get('fenn_items',[]));
+let bonesFound=0;            // per-night; the skeleton and scattered bones reset each night
+let gogglesOn=false;
+const radioactives=[];                 // {x,z,mesh,dead}
+const xrayGroup=new THREE.Group(); xrayGroup.visible=false; scene.add(xrayGroup);
+const jurassicSlots=[];                // ghost/solid bone meshes on the mounted skeleton
+const boneMat=lam(0xe9e0c8,{emissive:0x2a2418});
+const goldMat=M.gold, sandMat=lam(0xcdb483), sandDk=lam(0xb59a68);
+
+function hasItem(id){ return inventory.has(id); }
+function giveItem(id){
+  if(inventory.has(id)) return;
+  inventory.add(id);
+  store.set('fenn_items',[...inventory]);
+  renderInv();
+  if(id==='geiger') byId('geiger').style.display='block';
+  if(id==='goggles') byId('goggleBtn').style.display=isTouch?'flex':'none';
+}
+function renderInv(){
+  const el=byId('invHud'); let h='';
+  if(hasItem('goggles')) h+='<div class="item'+(gogglesOn?' active':'')+'"><span class="ic">\u25C9</span>Goggles</div>';
+  if(hasItem('geiger'))  h+='<div class="item"><span class="ic">\u2301</span>Geiger</div>';
+  if(hasItem('geiger')||bonesFound>0) h+='<div class="item"><span class="ic">\u269D</span>Bones '+bonesFound+'/3</div>';
+  el.innerHTML=h;
+}
+function toggleGoggles(){
+  if(!hasItem('goggles')){ msg('You need the survey goggles.'); return; }
+  gogglesOn=!gogglesOn;
+  byId('goggleFx').style.display=gogglesOn?'block':'none';
+  byId('goggleBtn').classList.toggle('on',gogglesOn);
+  xrayGroup.visible=gogglesOn;
+  renderInv();
+  msg(gogglesOn?'Goggles on \u2014 night-vision engaged. Radioactive traces glow.':'Goggles off.');
+}
+// pulsing highlight ring shown through the goggles
+function xrayMark(x,z){
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.1,0.08,6,20),
+    new THREE.MeshBasicMaterial({color:0x64ff96,transparent:true,opacity:0.85,fog:false}));
+  ring.rotation.x=-Math.PI/2; ring.position.set(x,0.4,z); xrayGroup.add(ring);
+  return ring;
+}
+// a collectible radioactive dinosaur bone (found inside & outside the museum)
+function placeBone(x,z,kind){
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  // a stylised long-bone
+  cyl(0.12,0.12,1.0,7,boneMat,0,0.5,0,g);
+  sph(0.2,boneMat,0,1.0,0,g,8,6); sph(0.2,boneMat,0.14,1.0,0,g,8,6);
+  sph(0.2,boneMat,0,0,0,g,8,6);   sph(0.2,boneMat,-0.14,0,0,g,8,6);
+  g.rotation.z=0.5; g.position.y=0.15;
+  const mark=xrayMark(x,z);
+  const rec={x:x,z:z,mesh:g,dead:false};
+  radioactives.push(rec);
+  interactables.push({x:x,z:z,r:1.7,dead:false,
+    label:()=>'collect the fossil bone'+(hasItem('geiger')?' (radioactive)':''),
+    fn:()=>{
+      rec.dead=true; scene.remove(g); xrayGroup.remove(mark);
+      const i=radioactives.indexOf(rec); if(i>=0) radioactives.splice(i,1);
+      bonesFound=Math.min(3,bonesFound+1);
+      fillNextBone(); renderInv();
+      msg('Fossil bone recovered ('+bonesFound+'/3). It belongs to the Jurassic Hall skeleton.');
+    },
+    cond:()=>!rec.dead});
+}
+function fillNextBone(){
+  // reveal solid bones up to bonesFound, hide their ghosts
+  for(let i=0;i<jurassicSlots.length;i++){
+    const filled=i<bonesFound;
+    if(jurassicSlots[i].solid) jurassicSlots[i].solid.visible=filled;
+    if(jurassicSlots[i].ghost) jurassicSlots[i].ghost.visible=!filled;
+  }
+}
+
+// ---------- picture-on-canvas helper for exhibit walls ----------
+function makePictureMat(kind){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=192; const c=cv.getContext('2d');
+  if(kind==='valley'){
+    const g=c.createLinearGradient(0,0,0,192); g.addColorStop(0,'#e7b96a'); g.addColorStop(1,'#c98a44');
+    c.fillStyle=g; c.fillRect(0,0,256,192);
+    c.fillStyle='#b06f34'; c.beginPath(); c.moveTo(0,150); c.lineTo(70,80); c.lineTo(140,150); c.fill();
+    c.beginPath(); c.moveTo(110,150); c.lineTo(180,70); c.lineTo(256,150); c.fill();
+    c.fillStyle='#8a5326'; c.fillRect(0,150,256,42);
+    // tomb entrances
+    c.fillStyle='#2a1c10'; c.fillRect(60,132,16,18); c.fillRect(150,128,16,22);
+    c.fillStyle='#3a2a18'; c.font='12px Georgia'; c.fillText('VALLEY OF THE KINGS',44,180);
+  }else if(kind==='hiero'){
+    c.fillStyle='#d8c48c'; c.fillRect(0,0,256,192);
+    c.strokeStyle='#5a4326'; c.lineWidth=2;
+    for(let i=0;i<5;i++){ c.strokeRect(14,14+i*34,228,28);
+      for(let j=0;j<7;j++){ c.fillStyle='#6a4e2a';
+        c.fillRect(22+j*32,20+i*34,10,16); c.beginPath(); c.arc(40+j*32,28+i*34,5,0,6.28); c.fill(); } }
+  }
+  const tex=new THREE.CanvasTexture(cv); return new THREE.MeshLambertMaterial({map:tex,emissive:0x201a10});
+}
+function framedPicture(x,y,z,ry,kind,w,h){
+  const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=ry; scene.add(g);
+  box(w+0.3,h+0.3,0.12,goldMat,0,0,0,g);
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),makePictureMat(kind));
+  p.position.z=0.08; g.add(p);
+  return g;
+}
+// engraved metal plaque
+function makePlaqueMat(lines){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=256; const c=cv.getContext('2d');
+  const g=c.createLinearGradient(0,0,0,256); g.addColorStop(0,'#8f8a7c'); g.addColorStop(1,'#5f5b4f');
+  c.fillStyle=g; c.fillRect(0,0,512,256);
+  c.strokeStyle='#4c483d'; c.lineWidth=6; c.strokeRect(12,12,488,232);
+  c.fillStyle='#2b2820'; c.textAlign='center';
+  lines.forEach((ln,i)=>{ c.font=(i===0?'bold 30px':'20px')+' Georgia'; c.fillText(ln,256,74+i*46); });
+  const tex=new THREE.CanvasTexture(cv); return new THREE.MeshLambertMaterial({map:tex,emissive:0x14130e});
+}
+function plaque(x,y,z,ry,lines,w,h){
+  const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=ry; scene.add(g);
+  box(w+0.16,h+0.16,0.1,lam(0x3a382f),0,0,0,g);
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),makePlaqueMat(lines));
+  p.position.z=0.07; g.add(p);
+  return g;
+}
+// small pedestal that displays a tool
+function toolPedestal(x,z,color){
+  cyl(0.6,0.75,1.1,10,M.marbleSh,x,0.55,z); cyl(0.7,0.7,0.14,10,M.marble,x,1.15,z);
+  const glow=sph(0.42,new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.28,fog:false}),x,1.6,z,scene,10,8);
+  glow.castShadow=false;
+  addColliderBox(x,z,1.3,1.3,0.1);
+}
+
+// ---------- EGYPTIAN ARCHAEOLOGY ROOM ----------
+function buildEgyptRoom(cx,cz){
+  const p=new THREE.PointLight(0xffdca0,0.7,20); p.position.set(cx,4.0,cz); scene.add(p);
+  // sarcophagus on a plinth
+  const sg=new THREE.Group(); sg.position.set(cx-1.6,0,cz-1.2); sg.rotation.y=0.35; scene.add(sg);
+  box(3.0,0.5,1.4,sandDk,0,0.25,0,sg);                 // plinth
+  box(2.4,0.7,1.0,sandMat,0,0.85,0,sg);                // case body
+  const lid=box(2.2,0.35,0.9,goldMat,0,1.32,0,sg); lid.scale.set(1,1,1);
+  sph(0.42,goldMat,0.8,1.5,0,sg,10,8);                 // head/mask
+  box(0.9,0.5,0.6,goldMat,0.8,1.62,0,sg);              // nemes headdress
+  box(0.14,0.5,0.14,lam(0x2a3a6a),0.62,1.55,0,sg);     // beard stripe
+  addColliderBox(cx-1.6,cz-1.2,3.2,1.6,0.1);
+  // three pyramid models on a table
+  const px=cx+2.6, pz=cz+2.4;
+  box(1.8,0.7,1.8,sandDk,px,0.35,pz); addColliderBox(px,pz,1.9,1.9,0.05);
+  [[-0.5,-0.4,0.7],[0.4,0.2,1.0],[0.0,0.5,0.5]].forEach(([ox,oz,s])=>{
+    const py=new THREE.Mesh(new THREE.ConeGeometry(s,s*1.3,4),sandMat);
+    py.position.set(px+ox,0.7+s*0.65,pz+oz); py.rotation.y=Math.PI/4; py.castShadow=true; scene.add(py);
+  });
+  // Anubis statue (nods to the Mount Holly vault)
+  const an=new THREE.Group(); an.position.set(cx+2.4,0,cz-2.6); an.rotation.y=-0.5; scene.add(an);
+  const black=lam(0x1c1c22,{emissive:0x0a0a10});
+  box(0.8,0.4,0.8,black,0,0.2,0,an);
+  cyl(0.28,0.34,1.7,8,black,0,1.25,0,an);
+  box(0.5,0.5,0.35,black,0,2.15,0.05,an);              // jackal head
+  const ear1=new THREE.Mesh(new THREE.ConeGeometry(0.1,0.4,4),black); ear1.position.set(-0.14,2.5,0); an.add(ear1);
+  const ear2=new THREE.Mesh(new THREE.ConeGeometry(0.1,0.4,4),black); ear2.position.set(0.14,2.5,0); an.add(ear2);
+  box(0.2,0.18,0.4,black,0,2.05,0.28,an);              // snout
+  sph(0.06,goldMat,0,2.2,0.42,an,6,6);
+  addColliderBox(cx+2.4,cz-2.6,1,1,0.05);
+  { const et=makeTag('EGYPTIAN ARCHAEOLOGY',false); et.position.set(cx,3.3,cz); scene.add(et); }
+  // wall pictures — Valley of the Kings + hieroglyphs (on inner faces of two walls)
+  framedPicture(cx,2.6,cz-5.7,0,'valley',3.0,1.9);
+  framedPicture(cx-5.7,2.6,cz+1.5,Math.PI/2,'hiero',2.4,1.7);
+  framedPicture(cx-5.7,2.6,cz-2.0,Math.PI/2,'valley',2.4,1.6);
+  // the SURVEY GOGGLES on a pedestal
+  const gx=cx+0.2, gz=cz+3.0;
+  toolPedestal(gx,gz,0x64ff96);
+  const gg=new THREE.Group(); gg.position.set(gx,1.5,gz); scene.add(gg);
+  box(0.7,0.28,0.26,lam(0x2c3a2e),0,0,0,gg);
+  cyl(0.16,0.16,0.14,10,new THREE.MeshBasicMaterial({color:0x8fffb0}),-0.2,0,0.14,gg).rotation.x=Math.PI/2;
+  cyl(0.16,0.16,0.14,10,new THREE.MeshBasicMaterial({color:0x8fffb0}),0.2,0,0.14,gg).rotation.x=Math.PI/2;
+  box(0.9,0.08,0.06,lam(0x1c241e),0,0,-0.12,gg);
+  gg.userData.spin=true; toolSpin.push(gg);
+  interactables.push({x:gx,z:gz,r:1.8,dead:false,
+    label:()=>hasItem('goggles')?'':'take the survey goggles',
+    cond:()=>!hasItem('goggles'),
+    fn:()=>{ giveItem('goggles'); scene.remove(gg);
+      msg('Survey goggles acquired. Toggle with '+(isTouch?'the \u263E button':'G')+' \u2014 night-vision & radioactive traces.'); }});
+}
+
+// ---------- JURASSIC HALL ----------
+function buildJurassicRoom(cx,cz){
+  const p=new THREE.PointLight(0xeaf0ff,0.55,22); p.position.set(cx,4.2,cz); scene.add(p);
+  { const jt=makeTag('JURASSIC HALL',false); jt.position.set(cx,3.3,cz); scene.add(jt); }
+  jurassicSlots.length=0;
+  // mounted skeleton on a base, facing +x, spanning the room
+  const base=box(7.5,0.3,2.2,lam(0x3c3a34),cx,0.15,cz-0.5); addColliderBox(cx,cz-0.5,7.7,2.4,0.1);
+  const S=new THREE.Group(); S.position.set(cx-2.6,0.3,cz-0.5); scene.add(S);
+  // support pole
+  cyl(0.1,0.12,2.4,8,M.metal,2.6,1.2,0,S);
+  // spine (present)
+  for(let i=0;i<9;i++){ const vx=0.55*i;
+    const v=cyl(0.16,0.16,0.34,8,boneMat,vx,2.2-0.02*i,0,S); v.rotation.z=Math.PI/2;
+    sph(0.2,boneMat,vx,2.2-0.02*i,0,S,8,6);
+  }
+  // ribs (present, a couple missing later)
+  for(let i=1;i<7;i++){ const rx=0.55*i;
+    [-1,1].forEach(sgn=>{ const rib=new THREE.Mesh(new THREE.TorusGeometry(0.55,0.05,6,12,Math.PI*0.9),boneMat);
+      rib.position.set(rx,1.75,0); rib.rotation.set(Math.PI/2,0,sgn>0?0.5:Math.PI-0.5); S.add(rib); });
+  }
+  // tail (present) tapering
+  for(let i=1;i<7;i++){ const tx=-0.5*i; const s=Math.max(0.05,0.16-0.02*i);
+    const v=cyl(s,s,0.3,7,boneMat,tx,2.2+0.06*i,0,S); v.rotation.z=Math.PI/2+0.12; sph(s+0.03,boneMat,tx,2.2+0.06*i,0,S,6,5);
+  }
+  // hind legs (present)
+  [-0.3,0.3].forEach(sgn=>{
+    const th=cyl(0.14,0.16,1.3,8,boneMat,0.4,1.4,sgn,S); th.rotation.z=0.5;
+    const sh=cyl(0.1,0.13,1.2,8,boneMat,0.9,0.6,sgn,S); sh.rotation.z=-0.4;
+    box(0.4,0.12,0.2,boneMat,1.25,0.06,sgn,S);
+  });
+  // ---- MISSING BONES (ghost until found): skull, forelimb, tail-tip ----
+  function ghostSolid(build){
+    const solid=new THREE.Group(); const ghost=new THREE.Group();
+    build(solid,boneMat);
+    build(ghost,new THREE.MeshBasicMaterial({color:0x66ffcc,transparent:true,opacity:0.22,wireframe:true,fog:false}));
+    solid.visible=false; S.add(solid); S.add(ghost);
+    jurassicSlots.push({solid:solid,ghost:ghost});
+  }
+  // skull at the front of the spine
+  ghostSolid((grp,mat)=>{ const sk=new THREE.Group(); sk.position.set(5.1,2.15,0);
+    const head=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.6,0.5),mat); sk.add(head);
+    const jaw=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.18,0.42),mat); jaw.position.set(0.05,-0.34,0); sk.add(jaw);
+    const snout=new THREE.Mesh(new THREE.ConeGeometry(0.24,0.7,6),mat); snout.rotation.z=-Math.PI/2; snout.position.set(0.75,0,0); sk.add(snout);
+    grp.add(sk); });
+  // a forelimb
+  ghostSolid((grp,mat)=>{ const fl=new THREE.Group(); fl.position.set(3.4,1.5,0.35);
+    const a=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.11,0.9,7),mat); a.rotation.z=0.7; fl.add(a);
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,0.7,7),mat); b.position.set(0.35,-0.6,0); b.rotation.z=-0.3; fl.add(b);
+    grp.add(fl); });
+  // tail tip
+  ghostSolid((grp,mat)=>{ const tt=new THREE.Group(); tt.position.set(-3.4,2.55,0);
+    for(let i=0;i<4;i++){ const s=Math.max(0.03,0.07-0.012*i);
+      const seg=new THREE.Mesh(new THREE.CylinderGeometry(s,s,0.28,6),mat); seg.rotation.z=Math.PI/2+0.2; seg.position.set(-0.28*i,0.05*i,0); tt.add(seg); }
+    grp.add(tt); });
+  fillNextBone();  // reflect any bones already collected
+  // metal donor plaque
+  plaque(cx,1.5,cz+5.7,Math.PI,
+    ['DONATED BY LADY AURAVEI, 1912','Recovered near the Tunguska event.','Note: specimen remains faintly radioactive.'],
+    3.2,1.5);
+  // the GEIGER COUNTER on a pedestal
+  const gx=cx-3.0, gz=cz+2.6; toolPedestal(gx,gz,0xffe27a);
+  const gc=new THREE.Group(); gc.position.set(gx,1.5,gz); scene.add(gc);
+  box(0.5,0.7,0.28,lam(0x3a2f22),0,0,0,gc);
+  box(0.36,0.26,0.06,new THREE.MeshBasicMaterial({color:0x9fe6a0}),0,0.16,0.16,gc);
+  cyl(0.05,0.05,0.5,6,M.metal,0.34,0.1,0,gc).rotation.z=-0.5;
+  sph(0.09,M.metal,0.6,0.32,0,gc,6,6);
+  gc.userData.spin=true; toolSpin.push(gc);
+  interactables.push({x:gx,z:gz,r:1.8,dead:false,
+    label:()=>hasItem('geiger')?'':'take the geiger counter',
+    cond:()=>!hasItem('geiger'),
+    fn:()=>{ giveItem('geiger'); scene.remove(gc);
+      msg('Geiger counter acquired. It clicks faster near radioactive finds \u2014 like the missing bones.'); }});
+}
+const toolSpin=[];
+
+// ---------- bones scattered inside & outside the museum ----------
+placeBone(66,-58,'out');             // Tiskin Park lawn
+placeBone(-8,-100,'out');            // King's Grotto
+placeBone(LX-15,LZ+4,'in');          // inside Leerson — Portrait Room
+
+// ---------- geiger + goggle update loop ----------
+let clickAcc=0;
+function updateTools(dt,t){
+  for(const g of toolSpin) g.rotation.y=t*1.2;
+  if(!hasItem('geiger')) return;
+  let nearest=1e9;
+  for(const r of radioactives){ if(r.dead) continue;
+    const d=Math.hypot(player.x-r.x,player.z-r.z); if(d<nearest) nearest=d; }
+  // intensity: strong within ~2m, fades out by ~40m
+  const inten=nearest>40?0:Math.max(0,Math.min(1,1-(nearest-1.5)/38));
+  byId('geigerFill').style.width=Math.round(inten*100)+'%';
+  const cps=Math.round(inten*inten*40);
+  byId('geigerCps').textContent=cps+' cps';
+  clickAcc+=dt*cps;
+  const dot=byId('geigerDot');
+  if(clickAcc>=1){ clickAcc-=Math.floor(clickAcc);
+    dot.style.opacity='1'; setTimeout(()=>{dot.style.opacity='0';},60);
+    if(navigator.vibrate && inten>0.6) navigator.vibrate(8);
+    geigerClick(inten);
+  }
+}
+// tiny WebAudio click (visual is primary; muted phones simply stay silent)
+let actx=null;
+function geigerClick(inten){
+  try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type='square'; o.frequency.value=1600+Math.random()*400;
+    g.gain.value=0.04*inten; o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime+0.012);
+  }catch(e){}
+}
+
+// =====================================================================
 // UI — overlays, prompt, toast, blueprint, directory
 // =====================================================================
 const byId=id=>document.getElementById(id);
@@ -1992,6 +2321,7 @@ addEventListener('keydown',e=>{
   if(e.code==='Escape' && currentOverlay && currentOverlay!==byId('winOverlay')){ closeOverlay(); return; }
   if(uiOpen) return;
   if(e.code==='KeyH') toggleIntel();
+  if(e.code==='KeyG') toggleGoggles();
   if(e.code==='KeyB') openBP();
   if(e.code==='KeyE' && currentInter) currentInter.fn();
 });
@@ -2001,6 +2331,10 @@ interactBtn.addEventListener('click',fireInteract);
 interactBtn.addEventListener('touchstart',function(e){
   e.preventDefault(); e.stopPropagation(); fireInteract();
 },{passive:false});
+(function(){ const gb=byId('goggleBtn');
+  gb.addEventListener('click',()=>{ if(!uiOpen) toggleGoggles(); });
+  gb.addEventListener('touchstart',function(e){ e.preventDefault(); e.stopPropagation(); if(!uiOpen) toggleGoggles(); },{passive:false});
+})();
 
 const overlay=byId('startOverlay');
 const isTouch=matchMedia('(pointer:coarse)').matches;
@@ -2010,6 +2344,10 @@ overlay.addEventListener('click',()=>{
   overlay.style.display='none'; started=true;
   if(!isTouch) canvas.requestPointerLock && canvas.requestPointerLock();
   else initTouch();
+  // restore any permanently-owned tools into the HUD
+  renderInv();
+  if(hasItem('geiger')) byId('geiger').style.display='block';
+  if(hasItem('goggles')&&isTouch) byId('goggleBtn').style.display='flex';
   // let the onboarding chrome fade so the view stays clear
   setTimeout(()=>{ const h=byId('hint'); if(!intel.visible) h.style.opacity='0'; },9000);
   setTimeout(()=>{ byId('titlePlate').style.opacity='0'; },7000);
@@ -2223,6 +2561,7 @@ function tick(){
     for(const p of intelPins){ p.rotation.y=t*1.6; }
   }
   updateZone(player.x,player.z);
+  updateTools(dt,t);
   renderer.render(scene,camera);
 }
 tick();
