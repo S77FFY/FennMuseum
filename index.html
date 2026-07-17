@@ -119,7 +119,7 @@
   .dirRow .tog.on{background:#2a2e35;color:#e8dfc9;}
   .dirRow .tog.off{background:transparent;color:#8a8171;}
   .dirRow.special .rn{color:#8a2320;}
-  #bpCanvas{display:block;width:100%;background:#efe9dc;border:1px solid #b8ab8d;}
+  #bpCanvas{display:block;width:100%;background:#0d2c4d;border:1px solid #b8ab8d;}
   #winCard{text-align:center;}
   #winCard h2{color:#8a2320;font-size:26px;}
   .stick{position:fixed;z-index:12;border-radius:50%;display:none;touch-action:none;}
@@ -212,7 +212,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v1.9.0</div>
+    <div id="verTag">v2.0.0</div>
   </div>
 </div>
 
@@ -286,7 +286,7 @@
 (function(){
 'use strict';
 
-const VERSION='v1.9.0';
+const VERSION='v2.0.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -656,14 +656,14 @@ function makeGravelTexture(base){
   M.mountain.color.setHex(0x232c40);
   M.leaf.color.setHex(0x445a41); M.leafDk.color.setHex(0x374b36);
   M.water.color.setHex(0x2a3d52);
-  // 9x5 pane grid on the outer windows (warm glow behind dark muntins)
-  const wc=document.createElement('canvas'); wc.width=180; wc.height=100; const wx=wc.getContext('2d');
-  const wg=wx.createLinearGradient(0,0,0,100); wg.addColorStop(0,'#ffe6ad'); wg.addColorStop(1,'#e9b968');
-  wx.fillStyle=wg; wx.fillRect(0,0,180,100);
+  // 5x9 pane grid on the outer windows (tall windows: 5 across, 9 down)
+  const wc=document.createElement('canvas'); wc.width=100; wc.height=180; const wx=wc.getContext('2d');
+  const wg=wx.createLinearGradient(0,0,0,180); wg.addColorStop(0,'#ffe6ad'); wg.addColorStop(1,'#e9b968');
+  wx.fillStyle=wg; wx.fillRect(0,0,100,180);
   wx.strokeStyle='#2a2113'; wx.lineWidth=3;
-  for(let i=0;i<=9;i++){ const x=i*20; wx.beginPath(); wx.moveTo(x,0); wx.lineTo(x,100); wx.stroke(); }
-  for(let j=0;j<=5;j++){ const y=j*20; wx.beginPath(); wx.moveTo(0,y); wx.lineTo(180,y); wx.stroke(); }
-  wx.strokeStyle='#1c160c'; wx.lineWidth=5; wx.strokeRect(0,0,180,100);
+  for(let i=0;i<=5;i++){ const x=i*20; wx.beginPath(); wx.moveTo(x,0); wx.lineTo(x,180); wx.stroke(); }
+  for(let j=0;j<=9;j++){ const y=j*20; wx.beginPath(); wx.moveTo(0,y); wx.lineTo(100,y); wx.stroke(); }
+  wx.strokeStyle='#1c160c'; wx.lineWidth=5; wx.strokeRect(0,0,100,180);
   const wtex=new THREE.CanvasTexture(wc);
   M.window.map=wtex; M.window.color.setHex(0xffffff); M.window.emissive.setHex(0x6a4e1e); M.window.needsUpdate=true;
 })();
@@ -1403,7 +1403,7 @@ const ROOMS=[
 function roomById(id){ for(const r of ROOMS) if(r.id===id) return r; return null; }
 // lift + stair specials, and floor-specific draft pools
 ROOMS.push(R('lift','Lift',2,P2I,CO,'A cage lift. Once built it carries you up a floor.','lift'));
-ROOMS.push(R('grandstair','Grand Staircase',2,P2L,CG,'Sweeping stair to the level above.','lift'));
+ROOMS.push(R('grandstair','Grand Staircase',2,P2L,CG,'A spiral stair \u2014 step on and rise to the floor above.','stair'));
 ROOMS.push(R('gallerylong','Skylight Gallery',3,P3F,CA,'Upper gallery beneath the glass.'));
 ROOMS.push(R('domechamber','Dome Chamber',2,P2I,CO,'Directly under the great cupola.'));
 ROOMS.push(R('belvedere','Belvedere',1,P1,CO,'A room with a view over Fenn.'));
@@ -1485,9 +1485,9 @@ function buildEdgeWall(f,info,gap){
   f.edges.set(info.key,rec); return rec;
 }
 function addDoorPanel(f,rec,info,target){
-  const p=info.horiz? box(2.5,3.4,0.16,M.darkWood,info.x,1.7,info.z)
-                    : box(0.16,3.4,2.5,M.darkWood,info.x,1.7,info.z);
-  rec.knob=sph(0.09,M.gold,info.horiz?info.x+0.8:info.x+0.11,1.6,info.horiz?info.z+0.11:info.z+0.8,scene,8,8);
+  const p=info.horiz? box(2.85,3.75,0.2,M.darkWood,info.x,1.85,info.z)
+                    : box(0.2,3.75,2.85,M.darkWood,info.x,1.85,info.z);
+  rec.knob=sph(0.09,M.gold,info.horiz?info.x+0.8:info.x+0.12,1.7,info.horiz?info.z+0.12:info.z+0.8,scene,8,8);
   rec.panelMesh=p;
   rec.panelCol=info.horiz? addColliderBox(info.x,info.z,2.6,0.5,0.15)
                          : addColliderBox(info.x,info.z,0.5,2.6,0.15);
@@ -1528,10 +1528,8 @@ function buildRoomGeom(f,c,r,room,abs){
       if(meDoor){
         const [dc,dr]=SIDE_D[side];
         const nc=c+dc,nr=r+dr;
-        if(nc<0||nc>=f.gw||nr<0||nr>=f.gh){
-          if(f.idx===0 && r===0 && side==='S'){ /* open doorway back to the Grand Entrance */ }
-          else sealEdgeGap(rec,info);
-        }
+        if(nc<0||nc>=f.gw||nr<0||nr>=f.gh){ sealEdgeGap(rec,info); }
+        else if(f.grid[nr][nc] && f.grid[nr][nc].entrance){ /* open passage back to the Grand Entrance */ }
         else{ addDoorPanel(f,rec,info,{f:f,tc:nc,tr:nr,entry:oppSide(side)}); }
       }
     }
@@ -1547,8 +1545,9 @@ function buildRoomGeom(f,c,r,room,abs){
       dead:false});
   }
   if(room.sp==='lift'){ buildLift(f,cx,cz); }
+  if(room.sp==='stair'){ buildStair(f,cx,cz); }
   if(room.sp==='egypt'){ buildEgyptRoom(cx,cz); }
-  if(room.sp==='jurassic'){ buildJurassicRoom(cx,cz); }
+  if(room.sp==='jurassic'){ buildJurassicRoom(cx,cz,abs); }
   if(room.sp==='planetarium'){ buildPlanetariumRoom(cx,cz,abs); }
 }
 function buildLift(f,cx,cz){
@@ -1583,6 +1582,41 @@ function buildLift(f,cx,cz){
     label:'take the lift down to '+f.name,
     fn:()=>fadeTeleport(cx,cz,0)});
 }
+function buildStair(f,cx,cz){
+  const up=FLOORS[f.idx+1];
+  // spiral staircase — central newel + winding treads + rail
+  cyl(0.28,0.34,4.7,10,M.gold,cx,2.35,cz);
+  const steps=16;
+  for(let i=0;i<steps;i++){
+    const a=i*0.52, r=1.55;
+    const sx=cx+Math.cos(a)*r, sz=cz+Math.sin(a)*r;
+    const st=box(1.7,0.16,0.72,M.marbleSh,sx,0.28+i*0.27,sz); st.rotation.y=-a;
+    const post=cyl(0.05,0.05,0.9,6,M.gold,cx+Math.cos(a)*2.25,0.7+i*0.27,cz+Math.sin(a)*2.25);
+  }
+  addColliderBox(cx,cz,1.0,1.0,0.1);   // newel only; treads are walk-on-to-teleport
+  if(!up){
+    const tg=makeTag('STAIRCASE \u2014 TOP FLOOR',true); tg.position.set(cx,3.6,cz); scene.add(tg);
+    return;
+  }
+  f.liftUpPos={x:cx,z:cz};
+  up.unlocked=true;
+  const tg=makeTag('SPIRAL STAIR \u2014 STEP ON TO RISE',true); tg.scale.set(7,1.2,1); tg.position.set(cx,3.7,cz); scene.add(tg);
+  // step-on ascent: proximity trigger on the stair, arriving beside the hole above
+  const upX=up.ox, upHoleZ=up.oz+6.5;
+  teleports.push({x:cx,z:cz,r:1.7, tx:upX, tz:upHoleZ+2.4, yaw:0,
+    onArrive:()=>{ grantUnlock('floor'+up.idx, up.name);
+                   setTimeout(()=>msg('You climb the spiral to '+up.name+'.'),650); }});
+  // the hole in the floor above (with rail) — step in to return down
+  const holeX=upX, holeZ=upHoleZ;
+  box(3.2,0.12,3.2,lam(0x0a0c10),holeX,0.02,holeZ);   // dark opening
+  const hr=new THREE.Mesh(new THREE.TorusGeometry(1.7,0.06,6,20),M.gold);
+  hr.rotation.x=-Math.PI/2; hr.position.set(holeX,0.5,holeZ); scene.add(hr);
+  [[-1.5,-1.5],[1.5,-1.5],[-1.5,1.5],[1.5,1.5]].forEach(([ox,oz])=>{
+    cyl(0.06,0.06,1.0,6,M.gold,holeX+ox,0.5,holeZ+oz); });
+  const htg=makeTag('DOWN \u2014 the stair below',true); htg.position.set(holeX,2.2,holeZ); scene.add(htg);
+  teleports.push({x:holeX,z:holeZ,r:1.3, tx:cx+3.0, tz:cz, yaw:-Math.PI/2,
+    onArrive:()=>setTimeout(()=>msg('Down to '+f.name+'.'),650)});
+}
 function placeRoom(id,ctx){
   const f=ctx.f, room=roomById(id); if(!room) return;
   f.placed.add(id);
@@ -1612,17 +1646,16 @@ function buildLanding(f){
   box(0.5,4.6,6.8,wallpaperMat(),f.ox-half-4,2.3,f.oz+9.2); addColliderBox(f.ox-half-4,f.oz+9.2,0.5,6.8,0.25);
   box(0.5,4.6,6.8,wallpaperMat(),f.ox+half+4,2.3,f.oz+9.2); addColliderBox(f.ox+half+4,f.oz+9.2,0.5,6.8,0.25);
   const cells=entryCells(f), zS=f.oz+12.4;
-  // south wall segments between door gaps
   const gapX=cells.map(c=>cellX(f,c));
-  let xL=f.ox-half-4;
-  const segEnds=[];
-  gapX.forEach(gx=>{ segEnds.push([xL,gx-1.3]); xL=gx+1.3; });
-  segEnds.push([xL,f.ox+half+4]);
-  segEnds.forEach(([a,b])=>{ const len=b-a; if(len<0.2) return; const mid=(a+b)/2;
-    box(len,4.6,0.5,wallpaperMat(),mid,2.3,zS); addColliderBox(mid,zS,len,0.5,0.25); });
-  gapX.forEach(gx=>{ box(2.6,1.05,0.5,wallpaperMat(),gx,4.07,zS);
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(1.35,0.09,8,18,Math.PI),M.gold);
-    ring.position.set(gx,3.4,zS); scene.add(ring); });
+  // SOUTH wall — fully solid (no walking out into the void)
+  box(W+8,4.6,0.5,wallpaperMat(),f.ox,2.3,zS); addColliderBox(f.ox,zS,W+8,0.5,0.25);
+  // NORTH edge fillers — solid wall everywhere except the entry doorways
+  const zN=f.oz+6;
+  let xL=f.ox-half-4; const nSeg=[];
+  gapX.forEach(gx=>{ nSeg.push([xL,gx-6]); xL=gx+6; });
+  nSeg.push([xL,f.ox+half+4]);
+  nSeg.forEach(([a,b])=>{ const len=b-a; if(len<0.3) return; const mid=(a+b)/2;
+    box(len,4.6,0.5,wallpaperMat(),mid,2.3,zN); addColliderBox(mid,zN,len,0.5,0.25); });
   const lt=makeTag(f.name.toUpperCase()+' LANDING',true); lt.position.set(f.ox,3.7,f.oz+9.2); scene.add(lt);
   // draftable doorways into row 0
   cells.forEach(c=>{ const info=edgeInfo(f,c,0,'S'); const rec=buildEdgeWall(f,info,true);
@@ -1633,19 +1666,28 @@ function buildLanding(f){
 FLOORS.forEach(f=>{ if(f.idx>=1) buildLanding(f); });
 const G=FLOORS[0];
 (function buildGroundEntry(){
-  const f=G, cells=entryCells(f);   // three middle cells of the 8-wide ground grid
+  const f=G, Ec=Math.floor(f.gw/2);        // bottom-middle cell = the Entrance Hall
+  f.grid[0][Ec]={id:'entrancehall',entrance:true};  // fixed marker (shown on the blueprint)
   const stations=[
-    {x:55,   z:7.6,  yaw:Math.PI, c:cells[1]},   // north door  -> centre cell
-    {x:43.3, z:13.4, yaw:Math.PI, c:cells[0]},   // west door   -> left cell
-    {x:66.7, z:13.4, yaw:Math.PI, c:cells[2]},   // east door   -> right cell
+    // LEFT door  -> the cell to the west (its east door faces the entrance)
+    {door:{x:43.3,z:13.4,yaw:Math.PI}, c:Ec-1, r:0, entry:'E',
+     enter:{x:cellX(f,Ec-1)+4, z:cellZ(f,0),   yaw:Math.PI/2},
+     ret:{x:cellX(f,Ec-1)+6.3, z:cellZ(f,0)}},
+    // STRAIGHT door -> the cell to the north
+    {door:{x:55,z:7.6,yaw:Math.PI}, c:Ec, r:1, entry:'S',
+     enter:{x:cellX(f,Ec),     z:cellZ(f,1)+4, yaw:0},
+     ret:{x:cellX(f,Ec),       z:cellZ(f,1)+6.3}},
+    // RIGHT door -> the cell to the east
+    {door:{x:66.7,z:13.4,yaw:Math.PI}, c:Ec+1, r:0, entry:'W',
+     enter:{x:cellX(f,Ec+1)-4, z:cellZ(f,0),   yaw:-Math.PI/2},
+     ret:{x:cellX(f,Ec+1)-6.3, z:cellZ(f,0)}},
   ];
   stations.forEach(st=>{
-    interactables.push({x:st.x,z:st.z,r:1.9,dead:false,
-      label:()=> f.grid[0][st.c] ? ('enter '+roomById(f.grid[0][st.c].id).n) : 'draft a room',
-      fn:()=>{ if(f.grid[0][st.c]) fadeTeleport(cellX(f,st.c), cellZ(f,0)+4, 0);
-               else openDraft({f:f,tc:st.c,tr:0,entry:'S'}); }});
-    // walking out the south side of a row-0 room returns you to the Grand Entrance
-    teleports.push({x:cellX(f,st.c), z:cellZ(f,0)+6.7, r:1.6, tx:st.x, tz:st.z, yaw:st.yaw});
+    interactables.push({x:st.door.x,z:st.door.z,r:1.9,dead:false,
+      label:()=> f.grid[st.r][st.c] ? ('enter '+roomById(f.grid[st.r][st.c].id).n) : 'draft a room',
+      fn:()=>{ if(f.grid[st.r][st.c]) fadeTeleport(st.enter.x,st.enter.z,st.enter.yaw);
+               else openDraft({f:f,tc:st.c,tr:st.r,entry:st.entry}); }});
+    teleports.push({x:st.ret.x,z:st.ret.z,r:1.6, tx:st.door.x,tz:st.door.z,yaw:st.door.yaw});
   });
   const L=new THREE.PointLight(0xffe2b8,0.7,44); L.position.set(f.ox,4.2,f.oz-8); scene.add(L);
 })();
@@ -2026,6 +2068,7 @@ function toggleGoggles(){
   byId('goggleFx').style.display=gogglesOn?'block':'none';
   byId('goggleBtn').classList.toggle('on',gogglesOn);
   xrayGroup.visible=gogglesOn;
+  fillNextBone();   // ghost bones follow the goggles
   renderInv();
   msg(gogglesOn?'Goggles on \u2014 night-vision engaged. Radioactive traces glow.':'Goggles off.');
 }
@@ -2060,11 +2103,11 @@ function placeBone(x,z,kind){
     cond:()=>!rec.dead});
 }
 function fillNextBone(){
-  // reveal solid bones up to bonesFound, hide their ghosts
+  // reveal solid bones up to bonesFound; ghosts of missing bones show only through the goggles
   for(let i=0;i<jurassicSlots.length;i++){
     const filled=i<bonesFound;
     if(jurassicSlots[i].solid) jurassicSlots[i].solid.visible=filled;
-    if(jurassicSlots[i].ghost) jurassicSlots[i].ghost.visible=!filled;
+    if(jurassicSlots[i].ghost) jurassicSlots[i].ghost.visible=(!filled && gogglesOn);
   }
 }
 
@@ -2103,7 +2146,13 @@ function makePlaqueMat(lines){
   c.fillStyle=g; c.fillRect(0,0,512,256);
   c.strokeStyle='#4c483d'; c.lineWidth=6; c.strokeRect(12,12,488,232);
   c.fillStyle='#2b2820'; c.textAlign='center';
-  lines.forEach((ln,i)=>{ c.font=(i===0?'bold 30px':'20px')+' Georgia'; c.fillText(ln,256,74+i*46); });
+  const maxW=452;   // keep text well inside the border
+  lines.forEach((ln,i)=>{
+    let size=(i===0?30:20);
+    c.font=(i===0?'bold ':'')+size+'px Georgia';
+    while(c.measureText(ln).width>maxW && size>10){ size-=1; c.font=(i===0?'bold ':'')+size+'px Georgia'; }
+    c.fillText(ln,256,74+i*46);
+  });
   const tex=new THREE.CanvasTexture(cv); return new THREE.MeshLambertMaterial({map:tex,emissive:0x14130e});
 }
 function plaque(x,y,z,ry,lines,w,h){
@@ -2173,7 +2222,7 @@ function buildEgyptRoom(cx,cz){
 }
 
 // ---------- JURASSIC HALL ----------
-function buildJurassicRoom(cx,cz){
+function buildJurassicRoom(cx,cz,abs){
   const p=new THREE.PointLight(0xeaf0ff,0.55,22); p.position.set(cx,4.2,cz); scene.add(p);
   { const jt=makeTag('JURASSIC HALL',false); jt.position.set(cx,3.3,cz); scene.add(jt); }
   jurassicSlots.length=0;
@@ -2227,10 +2276,19 @@ function buildJurassicRoom(cx,cz){
       const seg=new THREE.Mesh(new THREE.CylinderGeometry(s,s,0.28,6),mat); seg.rotation.z=Math.PI/2+0.2; seg.position.set(-0.28*i,0.05*i,0); tt.add(seg); }
     grp.add(tt); });
   fillNextBone();  // reflect any bones already collected
-  // metal donor plaque
-  plaque(cx,1.5,cz+5.7,Math.PI,
-    ['DONATED BY LADY AURAVEI, 1912','Recovered near the Tunguska event.','Note: specimen remains faintly radioactive.'],
-    3.2,1.5);
+  // metal donor plaque — on a wall without a door
+  (function(){
+    const solid=['N','E','S','W'].filter(s=>!(abs&&abs.has(s)));
+    const side=solid.length?solid[0]:'S';
+    let px=cx,pz=cz,ry=Math.PI;
+    if(side==='N'){ pz=cz-5.72; ry=0; }
+    else if(side==='S'){ pz=cz+5.72; ry=Math.PI; }
+    else if(side==='W'){ px=cx-5.72; ry=Math.PI/2; }
+    else { px=cx+5.72; ry=-Math.PI/2; }
+    plaque(px,2.3,pz,ry,
+      ['Donated by Lady Auravei, 1912','Recovered near the Tunguska event.','The specimen remains faintly radioactive.'],
+      3.0,1.5);
+  })();
   // the GEIGER COUNTER on a pedestal
   const gx=cx-3.0, gz=cz+2.6; toolPedestal(gx,gz,0xffe27a);
   const gc=new THREE.Group(); gc.position.set(gx,1.5,gz); scene.add(gc);
@@ -2318,19 +2376,10 @@ function makePlanetSignMat(p){
   drawPlanet(c,120,152,78,p);
   c.textAlign='left';
   c.fillStyle=p.tc; c.font='bold 40px Georgia';
-  c.fillText(p.n.split('').join('\u2009'),240,110);
-  c.fillStyle=p.sc; c.font='italic 22px Georgia'; c.fillText(p.t,244,142);
-  c.fillStyle='#d7d2c6'; c.font='16px Georgia';
-  c.fillText('Starting tomorrow, each',244,188);
-  c.fillText('PLANETARIUM will contain',244,210);
-  // body line with highlighted item
-  c.fillText('',244,232);
-  const pre=''; c.fillStyle='#d7d2c6'; c.fillText('\u2192 '+(p.body.split(' ')[0]),244,236);
-  const rest=p.body.substring(p.body.indexOf(' ')+1);
-  const wx=244+c.measureText('\u2192 '+p.body.split(' ')[0]+' ').width;
-  if(p.ic==='rainbow'){ const cols=['#e04b4b','#e0a04b','#e0e04b','#4be06a','#4ba0e0','#8a4be0'];
-    let xx=wx; rest.split('').forEach((ch,i)=>{ c.fillStyle=cols[i%cols.length]; c.fillText(ch,xx,236); xx+=c.measureText(ch).width; }); }
-  else { c.fillStyle=p.ic; c.font='bold 16px Georgia'; c.fillText(rest,wx,236); }
+  c.fillText(p.n.split('').join('\u2009'),240,124);
+  c.fillStyle=p.sc; c.font='italic 22px Georgia'; c.fillText(p.t,244,158);
+  c.fillStyle='#d7d2c6'; c.font='italic 18px Georgia';
+  c.fillText('Starting tomorrow\u2026',244,206);
   c.strokeStyle='#3a4658'; c.lineWidth=4; c.strokeRect(6,6,500,292);
   const tex=new THREE.CanvasTexture(cv); return new THREE.MeshLambertMaterial({map:tex,emissive:0x202832,emissiveIntensity:0.7});
 }
@@ -2462,12 +2511,26 @@ byId('dirBtn').addEventListener('click',function(e){
 
 // ---- draft overlay ----
 let draftCtx=null;
+// would placing this room here put a door on the building's outer edge?
+function touchesPerimeter(room,f,c,r,entry){
+  if(room.d===0) return false;
+  let rot=0; for(let k=0;k<4;k++){ if(room.s.some(s=>rotSide(s,k)===entry)){ rot=k; break; } }
+  const abs=room.s.map(s=>rotSide(s,rot));
+  for(const s of abs){
+    if(s===entry) continue;                       // entry side connects back to where we came from
+    const [dc,dr]=SIDE_D[s]; const nc=c+dc,nr=r+dr;
+    if(nc<0||nc>=f.gw||nr<0||nr>=f.gh) return true;
+  }
+  return false;
+}
 function openDraft(target){
   const f=target.f;
   if(f.grid[target.tr][target.tc]) return;
   let pool=poolFor(f);
   if(!pool.length){ msg('No rooms left in this floor\u2019s draft pool.'); return; }
-  // offer 3 random choices (Blue Prince style)
+  // prefer rooms that won't leave a door opening onto the building's edge
+  const fits=pool.filter(r=>!touchesPerimeter(r,f,target.tc,target.tr,target.entry));
+  if(fits.length) pool=fits;
   pool=pool.slice();
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
   const choices=pool.slice(0,Math.min(3,pool.length));
@@ -2497,59 +2560,104 @@ byId('draftCards').onclick=function(e){
 // ---- blueprint ----
 function drawBP(){
   const cv=byId('bpCanvas'), c=cv.getContext('2d');
-  c.fillStyle='#efe9dc'; c.fillRect(0,0,640,740);
-  for(let i=0;i<160;i++){ c.fillStyle='rgba(150,130,90,0.05)';
-    c.fillRect(Math.random()*640,Math.random()*740,2+Math.random()*4,2+Math.random()*4); }
-  c.strokeStyle='#b8ab8d'; c.lineWidth=3; c.strokeRect(8,8,624,724);
+  const INK='#dfeaf6', DIM='rgba(200,220,240,0.55)', FAINT='rgba(150,180,215,0.28)';
+  // blueprint ground
+  const bgg=c.createLinearGradient(0,0,0,740); bgg.addColorStop(0,'#123a63'); bgg.addColorStop(1,'#0d2c4d');
+  c.fillStyle=bgg; c.fillRect(0,0,640,740);
+  // faint construction grid
+  c.strokeStyle='rgba(180,205,235,0.10)'; c.lineWidth=1;
+  for(let x=0;x<640;x+=20){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,740); c.stroke(); }
+  for(let y=0;y<740;y+=20){ c.beginPath(); c.moveTo(0,y); c.lineTo(640,y); c.stroke(); }
+  c.strokeStyle=INK; c.lineWidth=2; c.strokeRect(10,10,620,720);
   const f=(typeof player!=='undefined' ? activeFloor(player.x) : null)||FLOORS[0];
-  c.fillStyle='#2b2e33'; c.textAlign='left';
-  c.font='bold 24px Georgia'; c.fillText('EAST EXTENSION \u2014 '+f.name.toUpperCase(),24,42);
-  c.font='15px Georgia'; c.fillStyle='#8a2320'; c.fillText('Night '+night+'  \u00b7  floor '+(f.idx+1)+' of '+FLOORS.length,24,64);
-  const cell=Math.min(92,Math.floor((640-60)/f.gw)), gwpx=f.gw*cell, ox=(640-gwpx)/2, oy=84;
+  c.fillStyle=INK; c.textAlign='left';
+  c.font='bold 22px Georgia'; c.fillText('EAST EXTENSION \u2014 '+f.name.toUpperCase(),24,42);
+  c.font='13px Georgia'; c.fillStyle=DIM; c.fillText('Night '+night+'   \u00b7   floor '+(f.idx+1)+' of '+FLOORS.length+'   \u00b7   work in progress',24,62);
+  const cell=Math.min(84,Math.floor((640-70)/f.gw)), gwpx=f.gw*cell, ox=(640-gwpx)/2, oy=96;
+  const entrance = f.idx===0 ? Math.floor(f.gw/2) : -1;
   c.textAlign='center';
   for(let r=0;r<f.gh;r++) for(let cc=0;cc<f.gw;cc++){
     const x=ox+cc*cell, y=oy+(f.gh-1-r)*cell;
-    c.strokeStyle='#c6bba0'; c.lineWidth=1.5; c.strokeRect(x,y,cell,cell);
+    c.strokeStyle=FAINT; c.setLineDash([3,3]); c.lineWidth=1; c.strokeRect(x,y,cell,cell); c.setLineDash([]);
     const g=f.grid[r][cc];
     if(!g) continue;
+    if(g.entrance){
+      c.fillStyle='rgba(220,235,250,0.14)'; c.fillRect(x+2,y+2,cell-4,cell-4);
+      c.strokeStyle=INK; c.lineWidth=2; c.strokeRect(x+2,y+2,cell-4,cell-4);
+      c.fillStyle=INK; c.font='bold '+(cell<80?'9px':'10px')+' Georgia';
+      c.fillText('ENTRANCE',x+cell/2,y+cell/2-2); c.fillText('HALL',x+cell/2,y+cell/2+11);
+      // three doors: left / straight / right
+      c.fillStyle='#ffd36a';
+      c.fillRect(x,y+cell/2-8,4,16);            // left (west)
+      c.fillRect(x+cell-4,y+cell/2-8,4,16);     // right (east)
+      c.fillRect(x+cell/2-8,y,16,4);            // straight (north)
+      continue;
+    }
     const rm=roomById(g.id);
     if(g.sealed){
-      c.fillStyle='#b9b6b0'; c.fillRect(x+2,y+2,cell-4,cell-4);
-      c.strokeStyle='#8a8171'; c.lineWidth=1;
-      for(let k=-cell;k<cell;k+=10){
-        c.beginPath(); c.moveTo(x+Math.max(0,k),y+Math.max(0,-k));
-        c.lineTo(x+Math.min(cell,k+cell),y+Math.min(cell,cell-k)); c.stroke();
-      }
+      c.strokeStyle=DIM; c.lineWidth=1;
+      for(let k=-cell;k<cell;k+=8){ c.beginPath();
+        c.moveTo(x+Math.max(0,k),y+Math.max(0,-k)); c.lineTo(x+Math.min(cell,k+cell),y+Math.min(cell,cell-k)); c.stroke(); }
+      c.strokeStyle=INK; c.lineWidth=1.5; c.strokeRect(x+3,y+3,cell-6,cell-6);
     }else{
-      c.fillStyle=rm.c; c.fillRect(x+2,y+2,cell-4,cell-4);
-      c.fillStyle='#2b2e33'; c.font=(cell<80?'10px':'12px')+' Georgia';
-      c.fillText(rm.n,x+cell/2,y+cell/2+4,cell-8);
-      c.fillStyle='#8a2320';
+      c.fillStyle='rgba(220,235,250,0.10)'; c.fillRect(x+3,y+3,cell-6,cell-6);
+      c.strokeStyle=INK; c.lineWidth=1.6; c.strokeRect(x+3,y+3,cell-6,cell-6);
+      c.fillStyle=INK; c.font=(cell<80?'9px':'11px')+' Georgia';
+      c.fillText(rm?rm.n:'',x+cell/2,y+cell/2+4,cell-8);
+      c.fillStyle='#ffd36a';
       (g.abs||[]).forEach(s=>{
-        if(s==='N') c.fillRect(x+cell/2-8,y,16,5);
-        if(s==='S') c.fillRect(x+cell/2-8,y+cell-5,16,5);
-        if(s==='E') c.fillRect(x+cell-5,y+cell/2-8,5,16);
-        if(s==='W') c.fillRect(x,y+cell/2-8,5,16);
+        if(s==='N') c.fillRect(x+cell/2-7,y,14,4);
+        if(s==='S') c.fillRect(x+cell/2-7,y+cell-4,14,4);
+        if(s==='E') c.fillRect(x+cell-4,y+cell/2-7,4,14);
+        if(s==='W') c.fillRect(x,y+cell/2-7,4,14);
       });
     }
   }
-  // landing strip
-  const ly=oy+f.gh*cell+8;
-  c.fillStyle='#e0d6c2'; c.fillRect(ox,ly,gwpx,40);
-  c.strokeStyle='#c6bba0'; c.strokeRect(ox,ly,gwpx,40);
-  c.fillStyle='#2b2e33'; c.font='12px Georgia'; c.fillText(f.name.toUpperCase()+' LANDING',ox+gwpx/2,ly+25);
-  c.fillStyle='#8a2320';
-  entryCells(f).forEach(cc=>c.fillRect(ox+cc*cell+cell/2-8,ly-3,16,5));
-  // floor list down the side
+  // dimension arrows measuring a box (blueprint-in-progress feel)
+  c.strokeStyle=DIM; c.fillStyle=DIM; c.lineWidth=1; c.setLineDash([4,3]);
+  const dy=oy+f.gh*cell+14;
+  c.beginPath(); c.moveTo(ox,dy); c.lineTo(ox+cell,dy); c.stroke(); c.setLineDash([]);
+  function arrow(x1,x2,y){ c.beginPath(); c.moveTo(x1,y); c.lineTo(x1+5,y-3); c.moveTo(x1,y); c.lineTo(x1+5,y+3);
+    c.moveTo(x2,y); c.lineTo(x2-5,y-3); c.moveTo(x2,y); c.lineTo(x2-5,y+3); c.stroke(); }
+  arrow(ox,ox+cell,dy);
+  c.textAlign='center'; c.font='italic 11px Georgia'; c.fillText('12 ft',ox+cell/2,dy-6);
+  // vertical dim on the right of the grid
+  c.setLineDash([4,3]); c.beginPath(); c.moveTo(ox+gwpx+14,oy); c.lineTo(ox+gwpx+14,oy+f.gh*cell); c.stroke(); c.setLineDash([]);
+  c.save(); c.translate(ox+gwpx+26,oy+f.gh*cell/2); c.rotate(-Math.PI/2);
+  c.fillText(f.gh*12+' ft',0,0); c.restore();
+  // floor list
   c.textAlign='left'; c.font='13px Georgia';
   FLOORS.forEach((ff,i)=>{
-    let d=0; for(let r=0;r<ff.gh;r++) for(let cc=0;cc<ff.gw;cc++) if(ff.grid[r][cc]) d++;
-    c.fillStyle=(ff===f)?'#8a2320':'#7a715d';
-    c.fillText((ff===f?'\u25B8 ':'   ')+ff.name+'  '+d+'/'+(ff.gw*ff.gh)+(ff.unlocked?'':'  (locked)'),24,700+i*18);
+    let d=0; for(let r=0;r<ff.gh;r++) for(let cc=0;cc<ff.gw;cc++) if(ff.grid[r][cc]&&!ff.grid[r][cc].entrance) d++;
+    c.fillStyle=(ff===f)?'#ffd36a':DIM;
+    c.fillText((ff===f?'\u25B8 ':'   ')+ff.name+'  '+d+'/'+(ff.gw*ff.gh)+(ff.unlocked?'':'  (locked)'),24,616+i*18);
   });
-  c.textAlign='left'; c.font='13px Georgia'; c.fillStyle='#8a2320';
+  c.fillStyle=DIM; c.font='13px Georgia';
   const crownState=heist.stolen?'SECURED':(heist.caged?'CAGED':'on display');
-  c.fillText('Crown: '+crownState,470,712);
+  c.fillText('Crown: '+crownState,24,680);
+  // ---- inventory sketches (white line-art) ----
+  c.strokeStyle=INK; c.fillStyle=INK; c.lineWidth=1.6; c.textAlign='left';
+  c.font='10px Georgia';
+  c.fillText('SATCHEL',430,596);
+  let ix=436;
+  if(hasItem('goggles')){
+    const gy=636;
+    c.beginPath(); c.arc(ix,gy,10,0,Math.PI*2); c.arc(ix+26,gy,10,0,Math.PI*2); c.stroke();
+    c.beginPath(); c.moveTo(ix+10,gy-2); c.lineTo(ix+16,gy-2); c.stroke();
+    c.beginPath(); c.moveTo(ix-10,gy-4); c.lineTo(ix-18,gy-10); c.moveTo(ix+36,gy-4); c.lineTo(ix+44,gy-10); c.stroke();
+    c.font='9px Georgia'; c.fillText('goggles',ix-6,gy+22);
+    ix+=78;
+  }
+  if(hasItem('geiger')){
+    const gy=628;
+    c.strokeRect(ix,gy,20,26);                      // body
+    c.strokeRect(ix+3,gy+3,14,9);                   // dial
+    c.beginPath(); c.moveTo(ix+20,gy+6); c.lineTo(ix+40,gy-6); c.stroke();  // wand
+    c.beginPath(); c.arc(ix+42,gy-8,3,0,Math.PI*2); c.stroke();
+    c.font='9px Georgia'; c.fillText('geiger',ix-2,gy+40);
+    ix+=70;
+  }
+  if(!hasItem('goggles')&&!hasItem('geiger')){ c.fillStyle=DIM; c.font='italic 10px Georgia'; c.fillText('empty',436,636); }
 }
 function openBP(){ drawBP(); updatePowerUI(); openOverlay(byId('bpOverlay')); }
 byId('reorderBtn').onclick=function(){ closeOverlay(); openPoolReorder(); };
@@ -2593,7 +2701,7 @@ function zoneFor(px,pz){
   if(f){
     if(pz>f.oz+6&&pz<f.oz+12.6) return [f.name+' Landing','east extension'];
     const c=Math.round((px-f.ox)/CS_+(f.gw-1)/2), r=Math.round(-(pz-f.oz)/CS_);
-    if(c>=0&&c<f.gw&&r>=0&&r<f.gh&&f.grid[r][c]){
+    if(c>=0&&c<f.gw&&r>=0&&r<f.gh&&f.grid[r][c]&&!f.grid[r][c].entrance){
       const rm=roomById(f.grid[r][c].id);
       return [rm.n, f.grid[r][c].sealed?'sealed for the night':f.name];
     }
@@ -2821,7 +2929,7 @@ function tick(){
     // teleport triggers
     if(now>tpCool){
       for(const tp of teleports){
-        if(Math.hypot(player.x-tp.x,player.z-tp.z)<tp.r){ fadeTeleport(tp.tx,tp.tz,tp.yaw); break; }
+        if(Math.hypot(player.x-tp.x,player.z-tp.z)<tp.r){ fadeTeleport(tp.tx,tp.tz,tp.yaw); if(tp.onArrive) tp.onArrive(); break; }
       }
     }
     // interact prompt
