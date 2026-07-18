@@ -131,6 +131,27 @@
   #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;}
   @media (pointer:coarse){ .desktop{display:none} }
   @media (pointer:fine){ .touch{display:none} }
+  #moraGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:260px;margin:14px auto 0;}
+  .mtile{aspect-ratio:1;border-radius:6px;cursor:pointer;position:relative;border:2px solid rgba(0,0,0,.35);
+    box-shadow:inset 0 2px 6px rgba(255,255,255,.15),inset 0 -3px 6px rgba(0,0,0,.3);transition:transform .08s;}
+  .mtile:hover{transform:scale(1.05);}
+  .mtile.corner{border-width:3px;}
+  .mtile .tgt{position:absolute;inset:14%;opacity:.85;pointer-events:none;display:block;}
+  .mtile.lit{box-shadow:0 0 14px 3px rgba(255,235,150,.8),inset 0 0 8px rgba(255,255,255,.5);}
+  #moraLocks{display:flex;justify-content:center;gap:26px;margin:12px auto 0;width:260px;}
+  .mlock{width:44px;height:30px;border:2px solid #c2a35a;border-radius:4px;background:rgba(20,22,26,.6);
+    color:#e8dfc9;font-family:Georgia,serif;font-size:11px;cursor:pointer;letter-spacing:.05em;}
+  .mlock.lit{background:rgba(200,170,80,.35);color:#fff;}
+  #moraMsg{text-align:center;font-size:12.5px;margin-top:10px;color:#c2a35a;min-height:16px;font-family:Georgia,serif;}
+  #potteryCanvas{display:block;margin:12px auto 0;width:260px;height:312px;border-radius:6px;
+    background:#1a120c;border:1px solid rgba(200,160,90,.4);touch-action:none;cursor:crosshair;}
+  #potteryControls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px;}
+  .potmeter{font-family:Georgia,serif;font-size:14px;color:#e0b040;letter-spacing:.05em;}
+  .potpal{display:flex;gap:6px;}
+  .potpal .pcol{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.3);}
+  .potpal .pcol.sel{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.6);}
+  #potteryMsg{text-align:center;font-size:12px;margin-top:8px;color:#c2a35a;min-height:15px;font-family:Georgia,serif;}
+  .btn[disabled]{opacity:.4;cursor:not-allowed;}
   .toolBtn{position:fixed;z-index:12;width:54px;height:54px;border-radius:50%;display:none;
     align-items:center;justify-content:center;font-size:26px;color:#cfe6cf;
     background:rgba(30,50,34,.5);border:1px solid rgba(120,200,140,.7);font-family:Georgia,serif;}
@@ -212,7 +233,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v2.0.0</div>
+    <div id="verTag">v2.4.0</div>
   </div>
 </div>
 
@@ -228,6 +249,28 @@
   <h2>Draft a Room</h2>
   <div class="sub" id="draftSub">choose what lies beyond this door</div>
   <div class="cards" id="draftCards"></div>
+</div></div>
+
+<div class="modal" id="moraOverlay"><div class="sheet" style="max-width:360px;text-align:center;">
+  <span class="close" id="moraClose">Close</span>
+  <h2 id="moraTitle">Mora Jai Box</h2>
+  <div class="sub">press tiles to work the box \u00b7 make the corners match, then lock them</div>
+  <div id="moraGrid"></div>
+  <div id="moraLocks"></div>
+  <div id="moraMsg"></div>
+  <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+    <button class="btn" id="moraHintBtn">Hint</button>
+    <button class="btn" id="moraResetBtn">Reset Box</button>
+  </div>
+</div></div>
+
+<div class="modal" id="potteryOverlay"><div class="sheet" style="max-width:340px;text-align:center;">
+  <span class="close" id="potteryClose">Close</span>
+  <h2 id="potteryTitle">The Wheel</h2>
+  <div class="sub">shape the clay to match the dashed outline</div>
+  <canvas id="potteryCanvas" width="300" height="360"></canvas>
+  <div id="potteryControls"></div>
+  <div id="potteryMsg"></div>
 </div></div>
 
 <div class="modal" id="bpOverlay"><div class="sheet">
@@ -286,7 +329,7 @@
 (function(){
 'use strict';
 
-const VERSION='v2.0.0';
+const VERSION='v2.4.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -1412,6 +1455,32 @@ ROOMS.push(R('orrery','Orrery',1,P1,CO,'Clockwork planets turn overhead.'));
 ROOMS.push(R('egyptology','Egyptian Archaeology',2,P2L,'#d8c69a','Sarcophagus, pyramid models, the Valley of the Kings.','egypt'));
 ROOMS.push(R('jurassic','Jurassic Hall',3,P3T,'#cfc8bd','A great skeleton \u2014 but several bones are missing.','jurassic'));
 ROOMS.push(R('planetarium','Planetarium',2,P2I,'#20263a','The five worlds of the Fenn sky, charted on the walls.','planetarium'));
+// --- the eight realms of the Mora Jai boxes + the cursed Black Bridge ---
+const MORA_COL={gray:'#8a8a8a',black:'#1a1a1a',red:'#cc2200',yellow:'#e8c020',purple:'#7020b0',orange:'#e06010',white:'#f0eeee',pink:'#e060a0',green:'#20a040',blue:'#2060c0'};
+const MORA_HEX={gray:0x8a8a8a,black:0x1a1a1a,red:0xcc2200,yellow:0xe8c020,purple:0x7020b0,orange:0xe06010,white:0xf0eeee,pink:0xe060a0,green:0x20a040,blue:0x2060c0};
+const MORA_REGIONS=[
+ {id:'orinda',   name:'Orinda Aries', col:'black',  emblem:'diamond',  pat:P2L,d:2,
+   lore:['The obsidian march of Orinda Aries,','where night-ravens roost on black glass.']},
+ {id:'fennaries',name:'Fenn Aries',   col:'red',    emblem:'shield',   pat:P2I,d:2,
+   lore:['The crimson homeland \u2014 birthplace','of the Crown of Fenn itself.']},
+ {id:'archaries',name:'Arch Aries',   col:'yellow', emblem:'arch',     pat:P2L,d:2,
+   lore:['Golden Arch Aries, keeper of the','sunlit archives of the eight realms.']},
+ {id:'eraja',    name:'Eraja',        col:'purple', emblem:'crescent', pat:P2I,d:2,
+   lore:['Eraja of the old tongue \u2014 \u201CMora\u201D','is an Erajan word meaning world.']},
+ {id:'corarica', name:'Corarica',     col:'orange', emblem:'turtle',   pat:P2L,d:2,
+   lore:['Warm Corarica of the amber coast,','where great turtles come ashore to nest.']},
+ {id:'morajai',  name:'Mora Jai',     col:'white',  emblem:'boxes',    pat:P2I,d:2,
+   lore:['Mora Jai \u2014 origin of the puzzle boxes.','Its white-marble artisans guard the craft.']},
+ {id:'verra',    name:'Verra',        col:'pink',   emblem:'dirigible',pat:P2L,d:2,
+   lore:['Verra of the rose skies, famed for','the dirigibles that drift between its spires.']},
+ {id:'nuance',   name:'Nuance',       col:'green',  emblem:'leaf',     pat:P1,d:1,
+   lore:['Verdant Nuance, the eighth realm \u2014','gardens without end beneath a green canopy.']},
+];
+MORA_REGIONS.forEach(rg=>{
+  ROOMS.push(R('mora_'+rg.id, rg.name, rg.d, rg.pat, MORA_COL[rg.col], 'A Mora Jai box of '+rg.name+'.', 'morajai'));
+});
+ROOMS.push(R('blackbridge','The Black Bridge',2,P2I,'#141414','The cursed effigy, sealed under glass.','blackbridge'));
+ROOMS.push(R('pottery','Pottery Studio',2,P2L,'#b07a4a','A wheel, a kiln, and clay to throw.','pottery'));
 // floor tags: 0=ground, 1=upper, 2=cupola. default ground.
 ROOMS.forEach(r=>{ r.fl=[0]; });
 const UPPER=new Set(['whisperinghall','scholarsstair','fiftherawing','archive','conservationlab',
@@ -1549,6 +1618,9 @@ function buildRoomGeom(f,c,r,room,abs){
   if(room.sp==='egypt'){ buildEgyptRoom(cx,cz); }
   if(room.sp==='jurassic'){ buildJurassicRoom(cx,cz,abs); }
   if(room.sp==='planetarium'){ buildPlanetariumRoom(cx,cz,abs); }
+  if(room.sp==='morajai'){ buildMoraRoom(cx,cz,abs,MORA_REGIONS.find(r=>'mora_'+r.id===room.id)); }
+  if(room.sp==='blackbridge'){ buildBlackBridgeRoom(cx,cz,abs); }
+  if(room.sp==='pottery'){ buildPotteryRoom(cx,cz,abs); }
 }
 function buildLift(f,cx,cz){
   const up=FLOORS[f.idx+1];
@@ -2060,6 +2132,7 @@ function renderInv(){
   if(hasItem('geiger'))  h+='<div class="item"><span class="ic">\u2301</span>Geiger</div>';
   if(hasItem('geiger')||bonesFound>0) h+='<div class="item"><span class="ic">\u269D</span>Bones '+bonesFound+'/3</div>';
   if(manuscripts>0) h+='<div class="item"><span class="ic">\u2637</span>Manuscripts '+manuscripts+'</div>';
+  if(allowance>0) h+='<div class="item"><span class="ic">\u25C9</span>Coins '+allowance+'</div>';
   el.innerHTML=h;
 }
 function toggleGoggles(){
@@ -2353,6 +2426,27 @@ const PLANETS=[
   {n:'MAMORA',   t:'Guiding Light',      col:0xe9e6dd, rim:0xffffff, tc:'#e8dfb0', sc:'#7fa8c8', body:'the guiding light', ic:'#d7e4f0', ring:false}
 ];
 const celestial=[];   // {mesh, speed} orbit arms, spun in tick
+// the real realm emblems (32x32 paths, from the Mora Jai reference)
+const MORA_SHAPE={
+ orinda:'M14 3 L18 3 L21 9 L23 9 L23 23 L21 23 L18 29 L14 29 L11 23 L9 23 L9 9 L11 9 Z',
+ fennaries:'M16 3 L28 11 L23 27 L9 27 L4 11 Z',
+ archaries:'M4 27 L11 9 L16.5 19 L22 5 L29 27 Z',
+ eraja:'M6 4 L26 4 L18 16 L26 28 L6 28 L14 16 Z',
+ corarica:'M4.7 16 L10.3 10.3 L16 16 L21.7 10.3 L27.3 16 L16 27.3 Z',
+ morajai:'M3.05 21.93 A13 13 0 1 1 28.95 21.93 L18 21.93 L18 19.13 L14 19.13 L14 21.93 Z',
+ verra:'M12.11 4.33 L27.67 19.89 L19.89 27.67 L16 23.78 A5.5 5.5 0 0 1 8.22 16 L4.33 12.11 Z',
+ nuance:'M16 2 L25 16 L16 30 L7 16 Z'
+};
+function moraShapeSVG(id,fill,stroke){
+  return '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="'+MORA_SHAPE[id]+'" fill="'+(fill||'none')+'"'+(stroke?' stroke="'+stroke+'" stroke-width="1.6"':'')+'/></svg>';
+}
+function drawShapePath(c,x,y,s,id,fill,stroke){
+  if(typeof Path2D==='undefined'){ drawEmblem(c,x,y,s,'diamond',fill||stroke); return; }
+  const p=new Path2D(MORA_SHAPE[id]); c.save(); c.translate(x-s/2,y-s/2); c.scale(s/32,s/32);
+  if(fill){ c.fillStyle=fill; c.fill(p); }
+  if(stroke){ c.strokeStyle=stroke; c.lineWidth=1.6*32/s; c.stroke(p); }
+  c.restore();
+}
 
 function drawPlanet(c,cx,cy,r,p){
   // body
@@ -2456,6 +2550,399 @@ function giveManuscript(id){
 }
 
 // =====================================================================
+// MORA JAI BOXES — the eight realms + the Black Bridge
+// =====================================================================
+// rule engine (ported from the reference box)
+function mMirror(i){return 8-i;}
+function mRing(idx){ const r=Math.floor(idx/3),c=idx%3;
+  const dirs=[[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]];
+  return dirs.map(([dr,dc])=>{const nr=r+dr,nc=c+dc; return (nr>=0&&nr<3&&nc>=0&&nc<3)?nr*3+nc:null;}).filter(i=>i!==null); }
+function mGreen(g,i){const m=mMirror(i);const t=g[i];g[i]=g[m];g[m]=t;}
+function mYellow(g,i){if(Math.floor(i/3)>0){const a=i-3;const t=g[i];g[i]=g[a];g[a]=t;}}
+function mPurple(g,i){if(Math.floor(i/3)<2){const b=i+3;const t=g[i];g[i]=g[b];g[b]=t;}}
+function mRed(g){for(let i=0;i<9;i++){if(g[i]==='white')g[i]='black';else if(g[i]==='black')g[i]='red';}}
+function mPink(g,i){const r=mRing(i);if(!r.length)return;const v=r.map(x=>g[x]);const rot=[v[v.length-1]].concat(v.slice(0,-1));r.forEach((x,j)=>g[x]=rot[j]);}
+function mBlack(g,i){const b=Math.floor(i/3)*3;const v=[g[b],g[b+1],g[b+2]];g[b]=v[2];g[b+1]=v[0];g[b+2]=v[1];}
+function mOrange(g,i){const r=Math.floor(i/3),c=i%3;const nb=[];if(r>0)nb.push(i-3);if(c<2)nb.push(i+1);if(r<2)nb.push(i+3);if(c>0)nb.push(i-1);
+  const cnt={};nb.forEach(x=>{if(g[x]==='gray')return;cnt[g[x]]=(cnt[g[x]]||0)+1;});let best=null,bc=1;for(const k in cnt){if(cnt[k]>bc){bc=cnt[k];best=k;}}if(best)g[i]=best;}
+function mWhite(g,i,act){act=act||'white';const r=Math.floor(i/3),c=i%3;const cells=[i];if(r>0)cells.push(i-3);if(r<2)cells.push(i+3);if(c>0)cells.push(i-1);if(c<2)cells.push(i+1);
+  cells.forEach(x=>{if(g[x]===act)g[x]='gray';else if(g[x]==='gray')g[x]=act;});}
+function mPress(g,i,col){switch(col){case 'green':mGreen(g,i);break;case 'yellow':mYellow(g,i);break;case 'purple':mPurple(g,i);break;case 'red':mRed(g,i);break;case 'pink':mPink(g,i);break;case 'black':mBlack(g,i);break;case 'orange':mOrange(g,i);break;case 'white':mWhite(g,i);break;}}
+function mBlue(g,i){const cen=g[4];if(i===4)return;if(cen==='blue'||cen==='gray')return;if(cen==='white'){mWhite(g,i,'blue');return;}if(cen==='orange'){mOrange(g,i);return;}mPress(g,i,cen);}
+function moraApply(g,i){const col=g[i];if(col==='gray')return;if(col==='blue'){mBlue(g,i);return;}mPress(g,i,col);}
+const MORA_INIT={
+ orinda:   ['black','black','black','blue','black','gray','black','yellow','gray'],
+ fennaries:['blue','red','red','red','red','pink','purple','red','pink'],
+ archaries:['pink','pink','yellow','yellow','pink','yellow','yellow','blue','gray'],
+ eraja:    ['purple','purple','orange','pink','gray','blue','pink','pink','purple'],
+ corarica: ['orange','green','orange','orange','pink','orange','orange','blue','gray'],
+ morajai:  ['gray','blue','gray','gray','gray','white','yellow','gray','yellow'],
+ verra:    ['orange','blue','purple','pink','pink','pink','gray','orange','pink'],
+ nuance:   ['purple','blue','green','green','gray','green','green','white','gray']
+};
+function moraInitial(rg){
+  if(MORA_INIT[rg.id]) return MORA_INIT[rg.id].slice();
+  const g=Array(9).fill('gray'); [0,2,6,8].forEach(i=>g[i]=rg.col); g[1]='blue'; return g;  // fallback
+}
+// live solver (BFS) — used for the Hint button, always from the current board
+function moraSolve(start,target){
+  const key=g=>g.join(''); const goal=g=>g[0]===target&&g[2]===target&&g[6]===target&&g[8]===target;
+  if(goal(start)) return [];
+  const seen=new Set([key(start)]); let frontier=[[start,[]]]; let ex=0;
+  for(let d=0;d<6;d++){ const nxt=[];
+    for(const fr of frontier){ const g=fr[0],path=fr[1];
+      for(let i=0;i<9;i++){ const ng=g.slice(); moraApply(ng,i); const k=key(ng); ex++;
+        if(ex>140000) return null;
+        if(seen.has(k)) continue; if(goal(ng)) return path.concat(i); seen.add(k); nxt.push([ng,path.concat(i)]); } }
+    frontier=nxt; if(!frontier.length) break; }
+  return null;
+}
+
+// draw a realm emblem on a 2d context centred at (x,y) size s
+function drawEmblem(c,x,y,s,kind,col){
+  c.save(); c.translate(x,y); c.strokeStyle=col; c.fillStyle=col; c.lineWidth=Math.max(2,s*0.06); c.lineJoin='round';
+  const p=s/2;
+  if(kind==='diamond'){ c.beginPath(); c.moveTo(0,-p); c.lineTo(p,0); c.lineTo(0,p); c.lineTo(-p,0); c.closePath(); c.stroke(); }
+  else if(kind==='shield'){ c.beginPath(); c.moveTo(-p*0.8,-p); c.lineTo(p*0.8,-p); c.lineTo(p*0.8,p*0.2); c.quadraticCurveTo(0,p*1.1,0,p*1.1); c.quadraticCurveTo(0,p*1.1,-p*0.8,p*0.2); c.closePath(); c.stroke(); }
+  else if(kind==='arch'){ c.beginPath(); c.moveTo(-p*0.8,p); c.lineTo(-p*0.8,-p*0.2); c.arc(0,-p*0.2,p*0.8,Math.PI,0); c.lineTo(p*0.8,p); c.stroke(); }
+  else if(kind==='crescent'){ c.beginPath(); c.arc(0,0,p,0.5,Math.PI*2-0.5); c.stroke(); c.beginPath(); c.arc(p*0.4,0,p*0.85,0.9,Math.PI*2-0.9,true); c.stroke(); }
+  else if(kind==='turtle'){ c.beginPath(); c.ellipse(0,0,p,p*0.78,0,0,Math.PI*2); c.stroke();
+    c.beginPath(); c.moveTo(0,-p*0.78); c.lineTo(0,p*0.78); c.moveTo(-p,0); c.lineTo(p,0); c.stroke();
+    [[-0.5,-0.4],[0.5,-0.4],[-0.5,0.4],[0.5,0.4]].forEach(([dx,dy])=>{c.beginPath();c.arc(dx*p,dy*p,p*0.12,0,7);c.stroke();}); }
+  else if(kind==='boxes'){ c.strokeRect(-p,-p,s,s); c.strokeRect(-p*0.5,-p*0.5,s*0.5,s*0.5); }
+  else if(kind==='dirigible'){ c.beginPath(); c.ellipse(0,-p*0.2,p,p*0.5,0,0,Math.PI*2); c.stroke();
+    c.beginPath(); c.moveTo(-p*0.4,p*0.28); c.lineTo(p*0.4,p*0.28); c.lineTo(p*0.2,p*0.6); c.lineTo(-p*0.2,p*0.6); c.closePath(); c.stroke();
+    c.beginPath(); c.moveTo(-p*0.3,p*0.05); c.lineTo(-p*0.3,p*0.28); c.moveTo(p*0.3,p*0.05); c.lineTo(p*0.3,p*0.28); c.stroke(); }
+  else if(kind==='leaf'){ c.beginPath(); c.moveTo(0,p); c.quadraticCurveTo(p,0,0,-p); c.quadraticCurveTo(-p,0,0,p); c.stroke();
+    c.beginPath(); c.moveTo(0,p); c.lineTo(0,-p); c.stroke(); }
+  c.restore();
+}
+function makeMoraPlacard(rg){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=320; const c=cv.getContext('2d');
+  const bg=c.createLinearGradient(0,0,0,320); bg.addColorStop(0,'#1a1712'); bg.addColorStop(1,'#0d0b08');
+  c.fillStyle=bg; c.fillRect(0,0,512,320);
+  c.strokeStyle=MORA_COL[rg.col]; c.lineWidth=4; c.strokeRect(8,8,496,304);
+  drawShapePath(c,110,150,150,rg.id,MORA_COL[rg.col],'#efe6d2');
+  c.textAlign='left'; c.fillStyle='#efe6d2'; c.font='bold 34px Georgia'; c.fillText(rg.name,210,120);
+  c.fillStyle=MORA_COL[rg.col]; c.fillRect(210,138,120,6);
+  c.fillStyle='#cfc6b2'; c.font='18px Georgia';
+  rg.lore.forEach((ln,i)=>c.fillText(ln,210,178+i*28));
+  c.fillStyle='#8a806a'; c.font='italic 15px Georgia'; c.fillText('Target hue: '+rg.col,210,278);
+  const tex=new THREE.CanvasTexture(cv); return new THREE.MeshLambertMaterial({map:tex,emissive:0x14110b});
+}
+
+// a physical Mora Jai box on a pedestal; examining it opens the puzzle
+function buildMoraBox(cx,cz,rg){
+  // tall slim plinth (like the tool pedestals) with a SMALL box on top
+  cyl(0.5,0.62,1.1,10,M.marbleSh,cx,0.55,cz); cyl(0.58,0.58,0.12,10,M.marble,cx,1.16,cz);
+  addColliderBox(cx,cz,1.2,1.2,0.1);
+  const BY=1.30;                       // box sits on the plinth top
+  const BS=0.42;                       // ~ the footprint of the geiger counter base
+  box(BS,0.20,BS,M.darkWood,cx,BY,cz);
+  box(BS+0.04,0.03,BS+0.04,M.gold,cx,BY+0.115,cz);
+  const bs={rg:rg, grid:moraInitial(rg), initial:moraInitial(rg), cornersLit:[false,false,false,false], tiles:[]};
+  const step=BS/3;                     // 3x3 tiles across the tiny lid
+  for(let i=0;i<9;i++){ const r=Math.floor(i/3),c=i%3;
+    const tx=cx+(c-1)*step, tz=cz+(r-1)*step;
+    const t=box(step*0.84,0.03,step*0.84,lam(MORA_HEX[bs.grid[i]]),tx,BY+0.14,tz); t.castShadow=false; bs.tiles.push(t);
+  }
+  bs.solved=false;
+  interactables.push({x:cx,z:cz+1.1,r:1.7,dead:false,
+    label:()=>bs.solved?'the '+rg.name+' box lies open':'examine the '+rg.name+' box',
+    fn:()=>openMora(bs)});
+  return bs;
+}
+function updateBox3D(bs){ for(let i=0;i<9;i++){ bs.tiles[i].material=lam(MORA_HEX[bs.grid[i]]); } }
+
+function buildMoraRoom(cx,cz,abs,rg){
+  if(!rg) return;
+  const p=new THREE.PointLight(0xffe6c0,0.6,20); p.position.set(cx,4.0,cz); scene.add(p);
+  { const et=makeTag(rg.name.toUpperCase(),false); et.position.set(cx,3.4,cz); scene.add(et); }
+  // realm placard on a door-less wall
+  const solid=['N','E','S','W'].filter(s=>!(abs&&abs.has(s)));
+  const side=solid.length?solid[0]:'N';
+  let px=cx,pz=cz,ry=0;
+  if(side==='N'){ pz=cz-5.72; ry=0; } else if(side==='S'){ pz=cz+5.72; ry=Math.PI; }
+  else if(side==='W'){ px=cx-5.72; ry=Math.PI/2; } else { px=cx+5.72; ry=-Math.PI/2; }
+  const pg=new THREE.Group(); pg.position.set(px,2.7,pz); pg.rotation.y=ry; scene.add(pg);
+  box(3.4,2.1,0.12,lam(0x2a241a),0,0,0,pg);
+  const pane=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.0),makeMoraPlacard(rg)); pane.position.z=0.08; pg.add(pane);
+  // themed accent light column in the realm's colour
+  const col=MORA_HEX[rg.col];
+  [[-4,-4],[4,-4],[-4,4],[4,4]].forEach(([ox,oz])=>{
+    const g=sph(0.22,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.5,fog:false}),cx+ox,3.4,cz+oz,scene,8,6); g.castShadow=false;
+  });
+  // a couple of realm-flavour props
+  if(rg.emblem==='turtle'){ // Corarica: a stone turtle
+    const tb=new THREE.Group(); tb.position.set(cx-3,0,cz+3); scene.add(tb);
+    sph(0.6,lam(0x5a6a3a),0,0.5,0,tb,10,8); [[-0.5,-0.4],[0.5,-0.4],[-0.5,0.4],[0.5,0.4]].forEach(([a,b])=>cyl(0.1,0.1,0.4,6,lam(0x6a7a4a),a,0.2,b,tb));
+    sph(0.2,lam(0x6a7a4a),0.7,0.35,0,tb,8,6); }
+  if(rg.emblem==='dirigible'){ // Verra: a hanging airship model
+    const air=new THREE.Group(); air.position.set(cx+3,3.2,cz-3); scene.add(air);
+    const hull=sph(0.7,lam(0xd8a0b8),0,0,0,air,12,8); hull.scale.set(1.6,0.7,0.7);
+    box(0.5,0.22,0.3,M.darkWood,0,-0.6,0,air); cyl(0.02,0.02,0.5,4,M.gold,0,-0.32,0,air); }
+  buildMoraBox(cx,cz,rg);
+}
+
+function buildBlackBridgeRoom(cx,cz,abs){
+  const p=new THREE.PointLight(0x9fb0d0,0.4,20); p.position.set(cx,4.0,cz); scene.add(p);
+  { const et=makeTag('THE BLACK BRIDGE',false); et.position.set(cx,3.4,cz); scene.add(et); }
+  // a model of the cursed black bridge (a dark arch over a plinth)
+  const bg=new THREE.Group(); bg.position.set(cx,0,cz-2.5); scene.add(bg);
+  box(4.5,0.4,1.4,lam(0x2a2a2e),0,0.2,0,bg);
+  const arch=new THREE.Mesh(new THREE.TorusGeometry(1.6,0.22,8,20,Math.PI),lam(0x111114));
+  arch.position.set(0,0.4,0); bg.add(arch);
+  box(0.4,1.2,1.2,lam(0x15151a),-1.8,1.0,0,bg); box(0.4,1.2,1.2,lam(0x15151a),1.8,1.0,0,bg);
+  addColliderBox(cx,cz-2.5,4.6,1.5,0.1);
+  // glass display cabinet with a cursed effigy — a squat stone helm-figure
+  const ex=cx, ez=cz+2.6;
+  cyl(0.7,0.85,1.0,4,M.marbleSh,ex,0.5,ez);
+  const eff=new THREE.Group(); eff.position.set(ex,1.06,ez); eff.rotation.y=-0.35; scene.add(eff);
+  const stone=lam(0x4a4e55,{emissive:0x101216}), stoneDk=lam(0x33373d,{emissive:0x0a0c0f});
+  // tapered plinth-like body (carved bust, wider at the shoulders)
+  const body=box(0.46,0.62,0.34,stone,0,0.31,0,eff);
+  box(0.40,0.10,0.30,stoneDk,0,0.02,0,eff);           // foot
+  // banded chest plates
+  [0.28,0.40,0.52].forEach(y=>box(0.48,0.05,0.36,stoneDk,0,y,0.005,eff));
+  // shoulders
+  box(0.62,0.16,0.36,stone,0,0.66,0,eff);
+  // head: angular helm with a pointed crest and a narrow visor
+  const head=box(0.34,0.30,0.30,stone,0,0.89,0,eff);
+  const crest=new THREE.Mesh(new THREE.ConeGeometry(0.19,0.26,4),stone);
+  crest.rotation.y=Math.PI/4; crest.position.set(0,1.14,0); eff.add(crest);
+  box(0.36,0.05,0.32,stoneDk,0,0.995,0,eff);          // helm brow band
+  box(0.06,0.07,0.02,lam(0x111114),0.0,0.92,0.16,eff);// visor slit
+  sph(0.045,new THREE.MeshBasicMaterial({color:0xcc2200}),0.0,0.92,0.155,eff,6,6); // cursed eye glow
+  box(0.30,0.10,0.06,stoneDk,0,0.76,0.14,eff);        // gorget
+  // wing-like fins swept back off the right shoulder
+  [[0.30,0.72,-0.06,0.5],[0.34,0.60,-0.10,0.9]].forEach(([wx,wy,wz,rot])=>{
+    const wing=new THREE.Mesh(new THREE.ConeGeometry(0.10,0.34,3),stone);
+    wing.position.set(wx,wy,wz); wing.rotation.set(0.2,0,-rot); eff.add(wing);
+  });
+  // sword held across the body, blade upright
+  const sw=new THREE.Group(); sw.position.set(-0.30,0.42,0.14); sw.rotation.z=0.18; eff.add(sw);
+  box(0.07,0.44,0.04,stoneDk,0,0.16,0,sw);            // blade
+  box(0.20,0.05,0.05,stone,0,-0.08,0,sw);             // crossguard
+  box(0.05,0.12,0.05,stoneDk,0,-0.17,0,sw);           // grip
+  box(0.12,0.16,0.16,stone,-0.06,0.02,0,sw);          // carved fist
+  eff.scale.set(1.15,1.15,1.15);
+  // glass case
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.7,1.1),
+    new THREE.MeshPhongMaterial({color:0xaaccff,transparent:true,opacity:0.16,shininess:90,side:THREE.DoubleSide}));
+  glass.position.set(ex,1.9,ez); scene.add(glass);
+  box(1.2,0.1,1.2,M.gold,ex,1.06,ez); box(1.2,0.1,1.2,M.gold,ex,2.72,ez);
+  addColliderBox(ex,ez,1.3,1.3,0.1);
+  // curse placard
+  const solid=['N','E','S','W'].filter(s=>!(abs&&abs.has(s)));
+  const side=solid.length?solid[0]:'N'; let plx=cx,plz=cz,ry=0;
+  if(side==='N'){ plz=cz-5.72; ry=0; } else if(side==='S'){ plz=cz+5.72; ry=Math.PI; }
+  else if(side==='W'){ plx=cx-5.72; ry=Math.PI/2; } else { plx=cx+5.72; ry=-Math.PI/2; }
+  plaque(plx,2.5,plz,ry,
+    ['The Curse of the Black Bridge','None who cross by moonlight return the same.','This effigy is a replica \u2014 the original was lost.'],
+    3.2,1.6);
+  interactables.push({x:ex,z:ez+1.2,r:1.7,dead:false,label:'read the curse of the Black Bridge',
+    fn:()=>msg('\u201CCross not the Black Bridge under a devoted moon, lest your shadow stay behind.\u201D')});
+}
+
+// ---- Mora Jai puzzle overlay ----
+const mora={box:null};
+function openMora(bs){ mora.box=bs; byId('moraTitle').textContent=bs.rg.name+' \u2014 Mora Jai Box';
+  byId('moraMsg').textContent=''; renderMora(); openOverlay(byId('moraOverlay')); }
+function renderMora(){
+  const bs=mora.box; const corners=[0,2,6,8];
+  let h='';
+  for(let i=0;i<9;i++){ const ci=corners.indexOf(i);
+    const lit = ci>=0 && bs.cornersLit[ci];
+    h+='<div class="mtile'+(ci>=0?' corner':'')+(lit?' lit':'')+'" data-i="'+i+'" style="background:'+MORA_COL[bs.grid[i]]+'">'+
+       (ci>=0?'<span class="tgt">'+moraShapeSVG(bs.rg.id,'none',MORA_COL[bs.rg.col])+'</span>':'')+'</div>';
+  }
+  byId('moraGrid').innerHTML=h;
+  byId('moraGrid').querySelectorAll('.mtile').forEach(t=>t.onclick=()=>moraTap(parseInt(t.dataset.i)));
+  // corner-lock row
+  let lh='';
+  corners.forEach((gi,ci)=>{ const ok=bs.grid[gi]===bs.rg.col;
+    lh+='<button class="mlock'+(bs.cornersLit[ci]?' lit':'')+'" data-c="'+ci+'" style="border-color:'+MORA_COL[bs.rg.col]+'">'+(bs.cornersLit[ci]?'\u2713':(ok?'lock':'\u00b7'))+'</button>'; });
+  byId('moraLocks').innerHTML=lh;
+  byId('moraLocks').querySelectorAll('.mlock').forEach(b=>b.onclick=()=>moraLock(parseInt(b.dataset.c)));
+}
+function moraTap(i){ const bs=mora.box; moraApply(bs.grid,i); updateBox3D(bs); byId('moraMsg').textContent=''; renderMora(); }
+function moraLock(ci){
+  const bs=mora.box, gi=[0,2,6,8][ci]; if(bs.cornersLit[ci]) return;
+  if(bs.grid[gi]===bs.rg.col){ bs.cornersLit[ci]=true; renderMora();
+    if(bs.cornersLit.every(Boolean)){ byId('moraMsg').textContent='\u2713 The '+bs.rg.name+' box opens \u2014 a coin lies inside.';
+      if(!bs.solved){ bs.solved=true;
+        allowance+=1; store.set('fenn_allowance',allowance);
+        const done=new Set(store.get('fenn_mora_solved',[])); done.add(bs.rg.id); store.set('fenn_mora_solved',[...done]);
+        renderInv(); msg('The '+bs.rg.name+' box yields a coin. (Allowance '+allowance+')');
+      }
+    }
+  } else { bs.grid=bs.initial.slice(); bs.cornersLit=[false,false,false,false]; updateBox3D(bs); renderMora();
+    byId('moraMsg').textContent='\u2717 A corner was wrong \u2014 the box resets.'; }
+}
+function moraReset(){ const bs=mora.box; bs.grid=bs.initial.slice(); bs.cornersLit=[false,false,false,false]; updateBox3D(bs); byId('moraMsg').textContent=''; renderMora(); }
+function moraHint(){
+  const bs=mora.box; const sol=moraSolve(bs.grid.slice(),bs.rg.col);
+  if(sol===null){ byId('moraMsg').textContent='No quick path found \u2014 try Reset.'; return; }
+  if(!sol.length){ byId('moraMsg').textContent='The corners already match \u2014 lock them.'; return; }
+  const i=sol[0]; byId('moraMsg').textContent='Hint: press tile '+(i+1)+' ('+bs.grid[i]+').';
+  const t=byId('moraGrid').querySelector('.mtile[data-i="'+i+'"]');
+  if(t){ t.style.outline='3px solid #ffe08a'; setTimeout(()=>{ if(t) t.style.outline=''; },900); }
+}
+
+// =====================================================================
+// POTTERY STUDIO — throw, decorate & fire three pots
+// =====================================================================
+const POT_SHAPES={
+  vase:  {name:'Vase',         kf:[[0,0.42],[0.08,0.40],[0.2,0.72],[0.35,0.95],[0.5,0.85],[0.68,0.5],[0.8,0.32],[0.9,0.36],[1,0.48]]},
+  tazza: {name:'Tazza',        kf:[[0,0.5],[0.08,0.55],[0.16,0.2],[0.4,0.16],[0.55,0.25],[0.65,0.7],[0.78,1.0],[0.9,1.0],[1,0.98]]},
+  ornate:{name:'Ornate Gourd', kf:[[0,0.3],[0.12,0.55],[0.25,0.8],[0.35,0.6],[0.45,0.35],[0.55,0.6],[0.68,0.85],[0.8,0.55],[0.9,0.3],[1,0.42]]}
+};
+const POT_ORDER=['vase','tazza','ornate'];
+function potFrac(shape,t){ const kf=POT_SHAPES[shape].kf;
+  for(let i=0;i<kf.length-1;i++){ if(t<=kf[i+1][0]){ const a=kf[i],b=kf[i+1]; const u=(t-a[0])/((b[0]-a[0])||1); return a[1]+(b[1]-a[1])*u; } }
+  return kf[kf.length-1][1]; }
+function lathePot(shape,h,maxR,mat){
+  const pts=[]; const N=18;
+  for(let i=0;i<=N;i++){ const t=i/N; pts.push(new THREE.Vector2(Math.max(0.02,potFrac(shape,t)*maxR),t*h)); }
+  const m=new THREE.Mesh(new THREE.LatheGeometry(pts,18),mat); m.castShadow=true; return m;
+}
+function buildPotteryRoom(cx,cz,abs){
+  const p=new THREE.PointLight(0xffe0b0,0.6,20); p.position.set(cx,4,cz); scene.add(p);
+  { const et=makeTag('POTTERY STUDIO',false); et.position.set(cx,3.4,cz); scene.add(et); }
+  // potter's wheel
+  const wx=cx, wz=cz+1.4;
+  cyl(0.45,0.6,1.0,12,M.darkWood,wx,0.5,wz);
+  cyl(0.85,0.85,0.1,20,lam(0x6a5040),wx,1.05,wz);
+  const clay=lathePot('vase',0.55,0.4,lam(0xa9754e)); clay.position.set(wx,1.1,wz); scene.add(clay);
+  clay.userData.spin=true; potterySpin.push(clay);
+  addColliderBox(wx,wz,1.2,1.2,0.1);
+  // shelf with the three example pots to replicate
+  const sx=cx-4.4, sz=cz-3.2;
+  box(2.6,0.14,1.0,M.darkWood,sx,1.2,sz); box(2.6,0.14,1.0,M.darkWood,sx,2.2,sz);
+  cyl(0.1,0.1,2.2,6,M.darkWood,sx-1.2,1.1,sz); cyl(0.1,0.1,2.2,6,M.darkWood,sx+1.2,1.1,sz);
+  POT_ORDER.forEach((sh,i)=>{ const pot=lathePot(sh,0.9,0.32,lam([0xc08a5a,0x8aa0b0,0x9a6a8a][i]));
+    pot.position.set(sx-0.85+i*0.85,1.27,sz); scene.add(pot); });
+  { const st=makeTag('EXEMPLARS \u2014 replicate these',true); st.scale.set(6,1,1); st.position.set(sx,2.7,sz); scene.add(st); }
+  // kiln
+  const kx=cx+4.2, kz=cz-3.2;
+  box(2.0,2.6,2.0,lam(0x6a4030),kx,1.3,kz);
+  box(2.15,0.3,2.15,lam(0x4a2c1c),kx,2.7,kz);
+  box(1.2,1.5,0.2,new THREE.MeshBasicMaterial({color:0xff6020}),kx,1.05,kz+1.0);
+  const kl=new THREE.PointLight(0xff6010,0.7,9); kl.position.set(kx,1.1,kz+1.6); scene.add(kl);
+  { const kt=makeTag('KILN',true); kt.position.set(kx,3.0,kz); scene.add(kt); }
+  pottery.shelfPos={x:cx-1.4,z:cz+1.4};
+  interactables.push({x:wx,z:wz+1.5,r:1.9,dead:false,label:'sit at the potter\u2019s wheel',fn:openPottery});
+}
+const potterySpin=[];
+
+// ---- the wheel mini-game (2D canvas overlay) ----
+const pottery={open:false,idx:0,stage:'shape',N:28,prof:[],target:[],paint:[],colour:'#b0472a',painted:false,fireP:0,shelfPos:null,firedCol:[]};
+let potCanvas=null,potCtx=null,potDragging=false,potLast=0;
+const POT_PALETTE=['#b0472a','#2a5a8a','#3a8a4a','#e0b040','#f0eee8','#7a3a8a','#1a1a1a'];
+function openPottery(){
+  pottery.idx=0; pottery.firedCol=[]; startPot();
+  potCanvas=byId('potteryCanvas'); potCtx=potCanvas.getContext('2d');
+  pottery.open=true; openOverlay(byId('potteryOverlay'));
+  potLast=0; requestAnimationFrame(potLoop);
+}
+function startPot(){
+  const shape=POT_ORDER[pottery.idx];
+  pottery.stage='shape'; pottery.painted=false; pottery.fireP=0;
+  pottery.target=[]; pottery.prof=[]; pottery.paint=[];
+  for(let i=0;i<pottery.N;i++){ const t=i/(pottery.N-1);
+    pottery.target.push(potFrac(shape,t)); pottery.prof.push(1.0); pottery.paint.push(null); }
+  byId('potteryTitle').textContent='Throw a '+POT_SHAPES[shape].name+'  ('+(pottery.idx+1)+' of 3)';
+  byId('potteryMsg').textContent='';
+  potUpdateControls();
+}
+function potMatch(){ let d=0; for(let i=0;i<pottery.N;i++) d+=Math.abs(pottery.prof[i]-pottery.target[i]);
+  d/=pottery.N; return Math.max(0,Math.min(100,Math.round(100-d*260))); }
+function potLoop(ts){
+  if(!pottery.open || byId('potteryOverlay').style.display==='none'){ pottery.open=false; return; }
+  if(!potLast) potLast=ts; const dt=Math.min(0.05,(ts-potLast)/1000); potLast=ts;
+  if(pottery.stage==='fire'){ pottery.fireP=Math.min(1,pottery.fireP+dt/3.2);
+    if(pottery.fireP>=1){ pottery.stage='fired'; potUpdateControls(); } }
+  potRender(ts);
+  requestAnimationFrame(potLoop);
+}
+function potRender(ts){
+  const c=potCtx, W=300,H=360, cx=150, topY=44, botY=326, maxR=92, N=pottery.N;
+  c.clearRect(0,0,W,H);
+  c.fillStyle='#241812'; c.fillRect(0,botY+8,W,H-botY-8);
+  c.fillStyle='#4a3628'; c.beginPath(); c.ellipse(cx,botY+12,124,15,0,0,7); c.fill();
+  const spin=ts*0.004;
+  function path(prof){ c.beginPath();
+    for(let i=0;i<N;i++){ const t=i/(N-1),y=botY-(botY-topY)*t,r=prof[i]*maxR; if(i===0)c.moveTo(cx-r,y); else c.lineTo(cx-r,y); }
+    for(let i=N-1;i>=0;i--){ const t=i/(N-1),y=botY-(botY-topY)*t,r=prof[i]*maxR; c.lineTo(cx+r,y); } c.closePath(); }
+  if(pottery.stage==='shape'){ c.save(); c.setLineDash([5,4]); c.strokeStyle='rgba(255,238,205,0.55)'; c.lineWidth=2; path(pottery.target); c.stroke(); c.restore(); }
+  path(pottery.prof); c.fillStyle='#a9754e'; c.fill();
+  c.save(); path(pottery.prof); c.clip();
+  const hx=cx+Math.sin(spin)*44;
+  const grd=c.createLinearGradient(hx-46,0,hx+46,0);
+  grd.addColorStop(0,'rgba(0,0,0,0.28)'); grd.addColorStop(0.5,'rgba(255,232,200,0.4)'); grd.addColorStop(1,'rgba(0,0,0,0.28)');
+  c.fillStyle=grd; c.fillRect(0,0,W,H);
+  if(pottery.stage!=='shape'){ for(let i=0;i<N;i++){ if(pottery.paint[i]){ const t=i/(N-1),y=botY-(botY-topY)*t,h=(botY-topY)/(N-1)+1.5;
+    c.fillStyle=pottery.paint[i]; c.globalAlpha=0.9; c.fillRect(0,y-h/2,W,h); } } c.globalAlpha=1; }
+  c.strokeStyle='rgba(70,44,26,0.28)'; c.lineWidth=1;
+  for(let i=2;i<N;i+=3){ const t=i/(N-1),y=botY-(botY-topY)*t,r=pottery.prof[i]*maxR; c.beginPath(); c.moveTo(cx-r,y); c.lineTo(cx+r,y); c.stroke(); }
+  if(pottery.stage==='fire'){ const pr=pottery.fireP; c.fillStyle='rgba(255,'+Math.round(150-110*pr)+',40,'+(0.25+0.45*pr)+')'; c.fillRect(0,0,W,H); }
+  c.restore();
+  if(pottery.stage==='fire'){ c.strokeStyle='#8a3410'; c.lineWidth=12; c.strokeRect(24,26,W-48,H-56);
+    c.fillStyle='#ffcf80'; c.font='13px Georgia'; c.textAlign='center'; c.fillText('firing \u2026 '+Math.round(pottery.fireP*100)+'%',cx,20); }
+}
+function potXY(e){ const r=potCanvas.getBoundingClientRect(); return {x:(e.clientX-r.left)*(300/r.width), y:(e.clientY-r.top)*(360/r.height)}; }
+function potSculpt(e){
+  const {x,y}=potXY(e); const topY=44,botY=326,maxR=92,cx=150,N=pottery.N;
+  if(pottery.stage==='shape'){
+    const fi=((botY-y)/(botY-topY))*(N-1); const tool=Math.max(0.06,Math.min(1,Math.abs(x-cx)/maxR));
+    for(let i=0;i<N;i++){ const w=Math.exp(-Math.pow((i-fi)/2.2,2)); if(w>0.02){ pottery.prof[i]+=(tool-pottery.prof[i])*w*0.5; pottery.prof[i]=Math.max(0.05,Math.min(1,pottery.prof[i])); } }
+    const m=potMatch(); const mel=byId('potMatch'); if(mel) mel.textContent=m+'% match';
+    const b=byId('potPaintBtn'); if(b) b.disabled=m<84;
+  } else if(pottery.stage==='paint'){
+    const i=Math.round(((botY-y)/(botY-topY))*(N-1)); if(i>=0&&i<N){ pottery.paint[i]=pottery.colour; pottery.painted=true;
+      const b=byId('potFireBtn'); if(b) b.disabled=false; }
+  }
+}
+function potUpdateControls(){
+  const el=byId('potteryControls'); let h='';
+  if(pottery.stage==='shape'){
+    h='<div id="potMatch" class="potmeter">0% match</div>'+
+      '<button class="btn" id="potRewetBtn">Re-wet</button>'+
+      '<button class="btn" id="potPaintBtn" disabled>Paint It \u2192</button>';
+  } else if(pottery.stage==='paint'){
+    h='<div class="potpal">'+POT_PALETTE.map(cl=>'<span class="pcol" data-c="'+cl+'" style="background:'+cl+'"></span>').join('')+'</div>'+
+      '<button class="btn" id="potFireBtn" disabled>Fire It \u2192</button>';
+  } else if(pottery.stage==='fire'){
+    h='<div class="potmeter">the kiln roars\u2026</div>';
+  } else if(pottery.stage==='fired'){
+    h='<button class="btn" id="potNextBtn">'+(pottery.idx<2?'Next Pot \u2192':'Finish the Set')+'</button>';
+  } else if(pottery.stage==='complete'){
+    h='<button class="btn" id="potDoneBtn">Leave the Wheel</button>';
+  }
+  el.innerHTML=h;
+  const rw=byId('potRewetBtn'); if(rw) rw.onclick=()=>{ for(let i=0;i<pottery.N;i++)pottery.prof[i]=1.0; potUpdateControls(); };
+  const pb=byId('potPaintBtn'); if(pb) pb.onclick=()=>{ pottery.stage='paint'; byId('potteryMsg').textContent='Drag to lay bands of colour as it spins.'; potUpdateControls(); };
+  const fb=byId('potFireBtn'); if(fb) fb.onclick=()=>{ // record dominant paint colour
+      const tally={}; pottery.paint.forEach(pc=>{ if(pc) tally[pc]=(tally[pc]||0)+1; });
+      let best='#b0472a',bc=0; for(const k in tally){ if(tally[k]>bc){bc=tally[k];best=k;} }
+      pottery.firedCol[pottery.idx]=best; pottery.stage='fire'; pottery.fireP=0; byId('potteryMsg').textContent=''; potUpdateControls(); };
+  const nb=byId('potNextBtn'); if(nb) nb.onclick=()=>{ if(pottery.idx<2){ pottery.idx++; startPot(); } else { potteryComplete(); } };
+  const db=byId('potDoneBtn'); if(db) db.onclick=closeOverlay;
+  el.querySelectorAll('.pcol').forEach(s=>s.onclick=()=>{ pottery.colour=s.dataset.c;
+    el.querySelectorAll('.pcol').forEach(z=>z.classList.remove('sel')); s.classList.add('sel'); });
+}
+function potteryComplete(){
+  store.set('fenn_pottery_done',1);
+  if(typeof giveManuscript==='function') giveManuscript('pottery');
+  pottery.stage='complete'; byId('potteryTitle').textContent='A Fine Set';
+  byId('potteryMsg').textContent='All three pots fired and glazed \u2014 set out on the shelf.';
+  potUpdateControls();
+  try{ if(pottery.shelfPos) POT_ORDER.forEach((sh,i)=>{
+    const col=parseInt((pottery.firedCol[i]||'#b0472a').slice(1),16);
+    const pot=lathePot(sh,0.85,0.3,lam(col)); pot.position.set(pottery.shelfPos.x+i*1.0,1.1,pottery.shelfPos.z); scene.add(pot); }); }catch(e){}
+}
+
+// =====================================================================
 // UI — overlays, prompt, toast, blueprint, directory
 // =====================================================================
 const byId=id=>document.getElementById(id);
@@ -2481,6 +2968,17 @@ function closeOverlay(){
 byId('dirClose').onclick=closeOverlay;
 byId('draftClose').onclick=closeOverlay;
 byId('bpClose').onclick=closeOverlay;
+byId('moraClose').onclick=closeOverlay;
+byId('moraResetBtn').onclick=moraReset;
+byId('moraHintBtn').onclick=moraHint;
+byId('potteryClose').onclick=closeOverlay;
+(function(){ const cvp=byId('potteryCanvas');
+  const down=e=>{ potDragging=true; potSculpt(e); e.preventDefault(); };
+  const move=e=>{ if(potDragging) potSculpt(e); };
+  const up=()=>{ potDragging=false; };
+  cvp.addEventListener('pointerdown',down); cvp.addEventListener('pointermove',move);
+  addEventListener('pointerup',up); cvp.addEventListener('pointerleave',up);
+})();
 
 // ---- room directory (title screen curation) ----
 function renderDir(){
@@ -2999,6 +3497,7 @@ function tick(){
     lampGlows[i].material.opacity=0.5+Math.sin(t*3+i*1.7)*0.06+Math.random()*0.02;
   }
   for(let i=0;i<celestial.length;i++){ celestial[i].mesh.rotation.y+=celestial[i].speed*dt; }
+  for(let i=0;i<potterySpin.length;i++){ potterySpin[i].rotation.y+=dt*3.0; }
   if(intel.visible){
     for(const p of intelPins){ p.rotation.y=t*1.6; }
   }
