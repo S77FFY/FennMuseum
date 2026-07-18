@@ -284,7 +284,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.2.1</div>
+    <div id="verTag">v3.2.3</div>
   </div>
 </div>
 
@@ -400,7 +400,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.2.1';
+const VERSION='v3.2.3';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -3456,10 +3456,12 @@ function buildAlzaraRoom(cx,cz,abs){
   arch.position.set(mx,HEAD_Y+0.22,mz-0.16); scene.add(arch);
   // ---- Alzara himself ----
   const A=new THREE.Group(); A.position.set(mx,CAB_H+0.10,mz-0.04); scene.add(A);
-  const robe=lam(0x6a6a86,{emissive:0x1a1a26}), skin=lam(0xb9a48c,{emissive:0x2a2420});
-  const dark=lam(0x22202a,{emissive:0x08080c});
-  cyl(0.30,0.23,0.74,10,robe,0,0.37,0,A);                        // robed body, slimmer
-  box(0.62,0.11,0.24,robe,0,0.70,0,A);                           // shoulders
+  // warm brown skin, rich purple robe — per the reference machine
+  const robe=lam(0x7c3f88,{emissive:0x241028}), skin=lam(0x8a5a38,{emissive:0x241408});
+  const dark=lam(0x1c1a22,{emissive:0x08080c});
+  cyl(0.24,0.30,0.74,10,robe,0,0.37,0,A);                        // robed body: slim at chest, wide at base
+  box(0.58,0.11,0.22,robe,0,0.70,0,A);                           // shoulders
+  sph(0.028,M.gold,0,0.575,0.26,A,8,6);                          // pendant on the chest
   // arms bend at the elbow (mid-arm), hands cupping the crystal ball
   function limbSeg(a,b,r0,r1,mat){
     const av=new THREE.Vector3(...a), bv=new THREE.Vector3(...b);
@@ -3470,7 +3472,7 @@ function buildAlzaraRoom(cx,cz,abs){
     m.castShadow=true; m.receiveShadow=true; A.add(m); return m;
   }
   [-1,1].forEach(sx=>{
-    const S=[sx*0.25,0.66,0.05], E=[sx*0.36,0.46,0.13], H=[sx*0.155,0.415,0.235]; // shoulder / elbow / hand on ball
+    const S=[sx*0.25,0.66,0.05], E=[sx*0.34,0.46,0.24], H=[sx*0.16,0.45,0.44]; // shoulder / elbow / hand on ball
     limbSeg(S,E,0.066,0.058,robe);                 // upper arm
     limbSeg(E,H,0.056,0.045,robe);                 // forearm
     sph(0.055,skin,E[0],E[1],E[2],A,8,6);          // elbow joint
@@ -3478,10 +3480,13 @@ function buildAlzaraRoom(cx,cz,abs){
     hand.scale.set(1.0,0.8,1.15);
   });
   sph(0.135,skin,0,0.86,0,A,12,10);                              // head
-  // long pointed beard
-  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.105,0.40,8),dark);
-  beard.position.set(0,0.61,0.045); beard.rotation.x=Math.PI; A.add(beard);
-  box(0.15,0.03,0.04,dark,0,0.845,0.125,A);                      // moustache
+  // sharp pointed goatee, angled forward so the point stands clear of the chest
+  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.075,0.28,8),dark);
+  beard.position.set(0,0.70,0.10); beard.rotation.x=Math.PI-0.38; A.add(beard);
+  box(0.15,0.026,0.04,dark,0,0.845,0.125,A);                     // moustache
+  // dark eyebrows above the eyes
+  [-1,1].forEach(sx=>{ const b=box(0.055,0.014,0.02,dark,sx*0.05,0.915,0.126,A);
+    b.rotation.z=sx*0.18; b.castShadow=false; });
   alzara.eyes=[];
   [-1,1].forEach(sx=>{
     // oval white of the eye
@@ -3491,22 +3496,25 @@ function buildAlzaraRoom(cx,cz,abs){
     const p=sph(0.010,new THREE.MeshBasicMaterial({color:0x14141c}),sx*0.05,0.885,0.134,A,6,6);
     p.scale.set(1.1,1.3,0.5); p.castShadow=false;
   });
-  // hair wrapping around the back and sides of the head, under the turban
-  const hairMat=lam(0x2a2430,{emissive:0x0a080e});
-  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.142,12,10,Math.PI*0.62,Math.PI*1.76,0.35,Math.PI*0.62),hairMat);
-  hair.position.set(0,0.86,0); hair.rotation.y=Math.PI; A.add(hair);
+  // hair: a slightly larger sphere set back, so it shows at the back and sides only
+  const hairMat=lam(0x201a26,{emissive:0x0a080e});
+  const hair=sph(0.138,hairMat,0,0.855,-0.035,A,12,10);
+  hair.scale.set(1.04,1.0,0.85); hair.castShadow=false;
   [-1,1].forEach(sx=>{ const tuft=sph(0.045,hairMat,sx*0.125,0.83,-0.02,A,8,6); tuft.scale.set(0.7,1.5,0.9); tuft.castShadow=false; });
-  cyl(0.17,0.18,0.15,12,lam(0xe4ded0,{emissive:0x2a2822}),0,1.00,0,A);   // turban
-  cyl(0.145,0.155,0.10,12,lam(0xd6cfc0,{emissive:0x262420}),0,1.10,0,A);
-  sph(0.035,M.gold,0,1.17,0,A,8,6);
-  box(0.04,0.05,0.02,lam(0x7a2018),0,1.00,0.175,A);              // turban jewel
-  // table, cloth and the blue crystal ball — set forward so it is clearly in view
-  box(0.74,0.05,0.34,lam(0xcfc6b4,{emissive:0x2a2620}),0,0.20,0.20,A);
-  cyl(0.12,0.135,0.05,10,M.gold,0,0.25,0.24,A);                  // brass stand
+  // cream turban: full dome with a wrapped band and a red centre jewel
+  const turb=lam(0xe9e2d2,{emissive:0x2c2a24}), turbDk=lam(0xd2c9b6,{emissive:0x242018});
+  const dome=sph(0.150,turb,0,1.015,0,A,12,10); dome.scale.set(1.0,0.82,1.0);
+  cyl(0.158,0.168,0.10,12,turbDk,0,0.955,0,A);                   // wrap band around the brow
+  const knot=sph(0.055,turb,0,1.135,0,A,8,6); knot.scale.set(1.2,0.8,1.2);
+  box(0.045,0.06,0.02,lam(0x8a1c14,{emissive:0x2a0806}),0,0.965,0.168,A); // red jewel on the band
+  sph(0.016,M.gold,0,1.005,0.168,A,6,6);                         // gold pin above the jewel
+  // table, cloth and the blue crystal ball — well forward of the body so nothing intersects
+  box(0.78,0.05,0.46,lam(0xcfc6b4,{emissive:0x2a2620}),0,0.20,0.38,A);
+  cyl(0.12,0.135,0.05,10,M.gold,0,0.25,0.44,A);                  // brass stand on the table
   const ballMat=new THREE.MeshPhongMaterial({color:0x4f8ae8,emissive:0x1e50c0,
     emissiveIntensity:0.9,transparent:true,opacity:0.88,shininess:110});
-  alzara.ball=sph(0.155,ballMat,0,0.40,0.24,A,16,14); alzara.ball.castShadow=false;
-  const bl=new THREE.PointLight(0x5aa0ff,0.75,4.5); bl.position.set(mx,CAB_H+0.50,mz+0.20); scene.add(bl);
+  alzara.ball=sph(0.155,ballMat,0,0.43,0.44,A,16,14); alzara.ball.castShadow=false;
+  const bl=new THREE.PointLight(0x5aa0ff,0.75,4.5); bl.position.set(mx,CAB_H+0.55,mz+0.40); scene.add(bl);
   alzara.ballLight=bl;
   // ---- wall socket + cable ----
   const wallZ=cz-5.72;
