@@ -110,6 +110,13 @@
   .roomCard .rn{font-size:13px;font-variant:small-caps;letter-spacing:.04em;}
   .roomCard .rd{margin:4px 0 2px;}
   .roomCard .rnote{font-size:10px;color:#7a715d;line-height:1.4;}
+  .roomCard .rmeta{display:flex;justify-content:space-between;align-items:center;margin:3px 0 4px;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;}
+  .roomCard .rar.rare{color:#8a2320;} .roomCard .rar.unusual{color:#9a6a1a;}
+  .roomCard .rar.standard{color:#5a7a4a;} .roomCard .rar.commonplace{color:#8a8171;}
+  .roomCard .cost{color:#2a6a6a;font-weight:bold;} .roomCard .cost.no{color:#b03a2a;}
+  .roomCard.broke{opacity:.55;}
+  .dirMeta{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8a8171;margin-left:8px;}
+  .dirMeta .c{color:#2a6a6a;}
   .pip{display:inline-block;width:9px;height:9px;border:1px solid #6b6250;margin-right:3px;background:#c2a35a;}
   .pip.off{background:transparent;}
   .dirRow{display:flex;align-items:center;gap:10px;border-bottom:1px solid #d8cfb8;padding:5px 2px;}
@@ -131,17 +138,44 @@
   #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;}
   @media (pointer:coarse){ .desktop{display:none} }
   @media (pointer:fine){ .touch{display:none} }
-  #moraGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:260px;margin:14px auto 0;}
-  .mtile{aspect-ratio:1;border-radius:6px;cursor:pointer;position:relative;border:2px solid rgba(0,0,0,.35);
-    box-shadow:inset 0 2px 6px rgba(255,255,255,.15),inset 0 -3px 6px rgba(0,0,0,.3);transition:transform .08s;}
-  .mtile:hover{transform:scale(1.05);}
-  .mtile.corner{border-width:3px;}
-  .mtile .tgt{position:absolute;inset:14%;opacity:.85;pointer-events:none;display:block;}
-  .mtile.lit{box-shadow:0 0 14px 3px rgba(255,235,150,.8),inset 0 0 8px rgba(255,255,255,.5);}
-  #moraLocks{display:flex;justify-content:center;gap:26px;margin:12px auto 0;width:260px;}
-  .mlock{width:44px;height:30px;border:2px solid #c2a35a;border-radius:4px;background:rgba(20,22,26,.6);
-    color:#e8dfc9;font-family:Georgia,serif;font-size:11px;cursor:pointer;letter-spacing:.05em;}
-  .mlock.lit{background:rgba(200,170,80,.35);color:#fff;}
+  #moraStage{display:flex;justify-content:center;margin-top:14px;}
+  #resBar{position:fixed;z-index:12;top:16px;right:62px;display:none;gap:9px;align-items:center;
+    background:rgba(21,24,28,.66);border:1px solid rgba(194,163,90,.55);border-radius:3px;
+    padding:5px 10px;font-family:Georgia,serif;backdrop-filter:blur(3px);}
+  #resBar .r{display:flex;align-items:center;gap:4px;font-size:13px;color:#efe9dc;letter-spacing:.03em;}
+  #resBar .r .ri{font-size:14px;line-height:1;}
+  #resBar .r.coin .ri{color:#e8c24a;} #resBar .r.dice .ri{color:#f2ece0;}
+  #resBar .r.key .ri{color:#d8b25a;}  #resBar .r.gem .ri{color:#7fe0d0;}
+  #stepsBox{position:fixed;z-index:12;top:64px;left:14px;display:none;align-items:baseline;gap:6px;
+    background:rgba(21,24,28,.66);border:1px solid rgba(194,163,90,.55);border-radius:3px;
+    padding:5px 12px;font-family:Georgia,serif;color:#efe9dc;backdrop-filter:blur(3px);}
+  #stepsNum{font-size:19px;letter-spacing:.04em;}
+  #stepsBox .lbl{font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#c2a35a;}
+  #stepsBox.low #stepsNum{color:#e8776a;}
+  #dirBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 6px;}
+  #dirBar .btn{padding:5px 11px;font-size:10px;}
+  #dirCount{margin-left:auto;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a8171;}
+  .dirBadge{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:2px;font-size:8.5px;
+    letter-spacing:.16em;background:#8a2320;color:#f6e6df;vertical-align:middle;}
+  .dirRow.fresh{background:rgba(138,35,32,.07);}
+  #moraBoxFace{position:relative;width:290px;height:290px;border-radius:14px;
+    background:linear-gradient(150deg,#464b53 0%,#33373d 45%,#272a30 100%);
+    border:7px solid #b8933f;box-shadow:0 8px 22px rgba(0,0,0,.55),inset 0 0 34px rgba(0,0,0,.55);}
+  #moraBoxFace::after{content:'';position:absolute;inset:8px;border:2px solid rgba(184,147,63,.55);border-radius:8px;pointer-events:none;}
+  #moraGrid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);gap:7px;
+    padding:8px;background:rgba(12,13,16,.5);border-radius:6px;}
+  .mtile{border-radius:3px;cursor:pointer;border:3px solid #5a3a1e;
+    box-shadow:inset 0 3px 7px rgba(255,255,255,.28),inset 0 -4px 8px rgba(0,0,0,.45);transition:transform .08s;}
+  .mtile:hover{transform:scale(1.06);}
+  .mtile.lit{box-shadow:0 0 16px 4px rgba(255,228,150,.85),inset 0 0 10px rgba(255,255,255,.5);}
+  .mmed{position:absolute;width:62px;height:62px;border-radius:50%;cursor:pointer;
+    background:radial-gradient(circle at 40% 35%,#3d424a,#22252a);border:5px solid #a9862f;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.5);}
+  .mmed .mshape{width:34px;height:34px;display:block;}
+  .mmed.lit{border-color:#ffdf8a;box-shadow:0 0 18px 5px rgba(255,220,130,.8);}
+  .mmed.tl{left:-16px;top:-16px;} .mmed.tr{right:-16px;top:-16px;}
+  .mmed.bl{left:-16px;bottom:-16px;} .mmed.br{right:-16px;bottom:-16px;}
   #moraMsg{text-align:center;font-size:12.5px;margin-top:10px;color:#c2a35a;min-height:16px;font-family:Georgia,serif;}
   #potteryCanvas{display:block;margin:12px auto 0;width:260px;height:312px;border-radius:6px;
     background:#1a120c;border:1px solid rgba(200,160,90,.4);touch-action:none;cursor:crosshair;}
@@ -233,7 +267,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v2.4.0</div>
+    <div id="verTag">v2.8.0</div>
   </div>
 </div>
 
@@ -241,6 +275,12 @@
   <span class="close" id="dirClose">Close</span>
   <h2>Room Directory</h2>
   <div class="sub">curate which rooms can appear in the draft pool</div>
+  <div id="dirBar">
+    <button class="btn" id="dirAllIn">Add All In</button>
+    <button class="btn" id="dirAllOut">Remove All</button>
+    <button class="btn" id="dirOnlyNew">Only New</button>
+    <span id="dirCount"></span>
+  </div>
   <div id="dirList"></div>
 </div></div>
 
@@ -249,14 +289,16 @@
   <h2>Draft a Room</h2>
   <div class="sub" id="draftSub">choose what lies beyond this door</div>
   <div class="cards" id="draftCards"></div>
+  <div style="margin-top:12px;text-align:right;">
+    <button class="btn" id="draftReroll" style="display:none;">Reroll ⚅</button>
+  </div>
 </div></div>
 
-<div class="modal" id="moraOverlay"><div class="sheet" style="max-width:360px;text-align:center;">
+<div class="modal" id="moraOverlay"><div class="sheet" style="max-width:380px;text-align:center;">
   <span class="close" id="moraClose">Close</span>
   <h2 id="moraTitle">Mora Jai Box</h2>
-  <div class="sub">press tiles to work the box \u00b7 make the corners match, then lock them</div>
-  <div id="moraGrid"></div>
-  <div id="moraLocks"></div>
+  <div class="sub">press tiles to work the box \u00b7 tap a corner medallion to lock it</div>
+  <div id="moraStage"></div>
   <div id="moraMsg"></div>
   <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
     <button class="btn" id="moraHintBtn">Hint</button>
@@ -308,6 +350,8 @@
 <div id="interactBtn">◈</div>
 <div id="goggleBtn" class="toolBtn">☾</div>
 <div id="cogBtn">⚙</div>
+<div id="resBar"></div>
+<div id="stepsBox"><span id="stepsNum">40</span><span class="lbl">steps</span></div>
 <div id="invHud"></div>
 <div id="geiger">
   <div id="geigerLabel">GEIGER</div>
@@ -329,7 +373,7 @@
 (function(){
 'use strict';
 
-const VERSION='v2.4.0';
+const VERSION='v2.8.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -363,6 +407,59 @@ const UNLOCK_SLOTS=[
   {id:'staff', ic:'\u26BF', name:'Staff Access'}
 ];
 unlocks.add('floor0'); // ground floor is always available
+
+// ---------- resources (coins / ivory dice / keys / gems) ----------
+const res={
+  coins: store.get('fenn_coins',0),
+  dice:  store.get('fenn_dice',0),
+  keys:  store.get('fenn_keys',0),
+  gems:  store.get('fenn_gems',null)===null?100:store.get('fenn_gems',100)   // 100 to start while building
+};
+function saveRes(){ store.set('fenn_coins',res.coins); store.set('fenn_dice',res.dice);
+  store.set('fenn_keys',res.keys); store.set('fenn_gems',res.gems); }
+saveRes();
+const RES_ICON={coins:'\u25C9',dice:'\u2685',keys:'\u26B7',gems:'\u25C7'};
+function renderRes(){
+  const bar=document.getElementById('resBar'); if(!bar) return;
+  let h='',any=false;
+  [['coins','coin'],['dice','dice'],['keys','key'],['gems','gem']].forEach(([k,cls])=>{
+    if(res[k]>0){ any=true; h+='<span class="r '+cls+'"><span class="ri">'+RES_ICON[k]+'</span>'+res[k]+'</span>'; }
+  });
+  bar.innerHTML=h; bar.style.display=(any&&started)?'flex':'none';
+}
+function addRes(kind,n,quiet){
+  res[kind]=Math.max(0,res[kind]+n); saveRes(); renderRes();
+  if(!quiet&&n>0){ const nm={coins:'coin',dice:'ivory die',keys:'key',gems:'gem'}[kind];
+    msg('Found '+(n>1?n+' '+nm+'s':'a '+nm)+'.'); }
+}
+
+// ---------- steps ----------
+let steps=40, outDist=0;
+function renderSteps(){
+  const el=document.getElementById('stepsNum'); if(!el) return;
+  el.textContent=steps;
+  const bx=document.getElementById('stepsBox'); if(!bx) return;
+  if(bx.classList&&bx.classList.toggle) bx.classList.toggle('low',steps<=8);
+  bx.style.display=started?'flex':'none';
+}
+function spendStep(n){
+  if(steps<=0) return;
+  steps=Math.max(0,steps-(n||1)); renderSteps();
+  if(steps===0) msg('You are out of steps \u2014 the night is nearly spent. End it from the \u2699 menu.');
+  else if(steps===8) msg('Only 8 steps remain.');
+}
+
+// ---------- room rarity & gem cost ----------
+const RARE_SP={morajai:1,blackbridge:1,pottery:1,planetarium:1,egypt:1,jurassic:1};
+function roomRarity(r){
+  if(r.sp&&RARE_SP[r.sp]) return 'Rare';
+  if(r.sp) return 'Unusual';
+  if(r.d>=3) return 'Standard';
+  return 'Commonplace';
+}
+const RARITY_BASE={Rare:6,Unusual:4,Standard:2,Commonplace:0};
+function roomCost(r){ return RARITY_BASE[roomRarity(r)]+r.d; }
+// the allowance itself is collected from the brown envelope on the entrance table
 
 document.getElementById('verTag').textContent=VERSION+' \u00b7 S77FFY';
 document.getElementById('plateNight').textContent='Night '+night;
@@ -739,66 +836,136 @@ function tileMat(){ if(!_tileMat) _tileMat=new THREE.MeshLambertMaterial({map:ma
 function makeWallpaperTexture(bgHex,motifHex){
   const S=512, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
   const c=cv.getContext('2d');
-  const bg='#'+('000000'+bgHex.toString(16)).slice(-6);
-  const mo='#'+('000000'+motifHex.toString(16)).slice(-6);
-  c.fillStyle=bg; c.fillRect(0,0,S,S);
-  // faint tonal ground variation
-  const gg=c.createLinearGradient(0,0,0,S); gg.addColorStop(0,'rgba(255,255,255,0.05)'); gg.addColorStop(1,'rgba(0,0,0,0.10)');
-  c.fillStyle=gg; c.fillRect(0,0,S,S);
-  c.fillStyle=mo; c.strokeStyle=mo;
-  // one damask motif, mirror-symmetric about its vertical axis, centred at (cx,cy)
-  function leaf(cx,cy,dir,len,wid,curl){
-    c.beginPath();
-    c.moveTo(cx,cy);
-    c.bezierCurveTo(cx+dir*wid, cy-len*0.35, cx+dir*wid*1.1, cy-len*0.75, cx+dir*curl, cy-len);
-    c.bezierCurveTo(cx+dir*wid*0.2, cy-len*0.7, cx+dir*wid*0.2, cy-len*0.3, cx, cy);
-    c.fill();
+  const hex=v=>'#'+('000000'+v.toString(16)).slice(-6);
+  // ---- ground: deep, slightly shaded, with a fine woven tooth ----
+  const g=c.createLinearGradient(0,0,0,S);
+  g.addColorStop(0,hex(bgHex)); g.addColorStop(0.5,hex(mix(bgHex,0xffffff,0.06))); g.addColorStop(1,hex(bgHex));
+  c.fillStyle=g; c.fillRect(0,0,S,S);
+  c.globalAlpha=0.05; c.strokeStyle='#000'; c.lineWidth=1;
+  for(let y=0;y<S;y+=3){ c.beginPath(); c.moveTo(0,y); c.lineTo(S,y); c.stroke(); }
+  for(let x=0;x<S;x+=3){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,S); c.stroke(); }
+  c.globalAlpha=1;
+  function mix2(a,b,t){ return mix(a,b,t); }
+  // ---- a tapered acanthus frond: sampled bezier spine, offset to a filled leaf ----
+  function bez(a,b,cc,d,t){ const u=1-t; return u*u*u*a+3*u*u*t*b+3*u*t*t*cc+t*t*t*d; }
+  function dbez(a,b,cc,d,t){ const u=1-t; return 3*u*u*(b-a)+6*u*t*(cc-b)+3*t*t*(d-cc); }
+  function frond(ctx,p0,p1,p2,p3,w,bulge){
+    const N=18,L=[],R=[];
+    for(let i=0;i<=N;i++){ const t=i/N;
+      const x=bez(p0[0],p1[0],p2[0],p3[0],t), y=bez(p0[1],p1[1],p2[1],p3[1],t);
+      const dx=dbez(p0[0],p1[0],p2[0],p3[0],t), dy=dbez(p0[1],p1[1],p2[1],p3[1],t);
+      const len=Math.hypot(dx,dy)||1, nx=-dy/len, ny=dx/len;
+      const ww=w*Math.pow(1-t,0.55)*(1+(bulge||0.7)*Math.sin(Math.PI*Math.min(1,t*1.05)));
+      L.push([x+nx*ww,y+ny*ww]); R.push([x-nx*ww,y-ny*ww]);
+    }
+    ctx.beginPath(); ctx.moveTo(L[0][0],L[0][1]);
+    for(let i=1;i<=N;i++) ctx.lineTo(L[i][0],L[i][1]);
+    for(let i=N;i>=0;i--) ctx.lineTo(R[i][0],R[i][1]);
+    ctx.closePath(); ctx.fill();
   }
-  function motif(cx,cy,sc){
-    c.save(); c.translate(cx,cy); c.scale(sc,sc);
-    // central palmette core
-    c.beginPath(); c.moveTo(0,-52);
-    c.bezierCurveTo(26,-40,26,-6,0,26); c.bezierCurveTo(-26,-6,-26,-40,0,-52); c.fill();
-    // crown tuft
-    for(let i=-2;i<=2;i++){ leaf(0,-46,1,26+Math.abs(i)*4,8, i*10); }
-    // big side fronds (mirror)
-    [1,-1].forEach(d=>{
-      leaf(0,-6,d,54,30,d*30);
-      leaf(0,2,d,40,20,d*36);
-      leaf(0,16,d,30,14,d*30);
-      // scrolling tail
-      c.beginPath(); c.moveTo(0,20);
-      c.bezierCurveTo(d*24,30,d*44,26,d*46,6);
-      c.bezierCurveTo(d*40,20,d*26,20,0,26); c.fill();
-      // small dot accents
-      c.beginPath(); c.arc(d*40,10,3.2,0,Math.PI*2); c.fill();
-      c.beginPath(); c.arc(d*30,-30,2.6,0,Math.PI*2); c.fill();
-    });
-    // lower pendant
-    c.beginPath(); c.moveTo(0,24);
-    c.bezierCurveTo(12,40,12,64,0,80); c.bezierCurveTo(-12,64,-12,40,0,24); c.fill();
-    c.beginPath(); c.arc(0,86,4,0,Math.PI*2); c.fill();
+  // ---- one half of the motif (mirrored for guaranteed symmetry) ----
+  function halfMotif(ctx){
+    // great outer acanthus sweeping up and out
+    frond(ctx,[6,-18],[70,-56],[104,-108],[70,-150],20,0.9);
+    frond(ctx,[4,-6],[78,-30],[120,-74],[116,-120],17,0.85);
+    // broad mid leaves
+    frond(ctx,[4,10],[74,6],[116,26],[124,72],18,0.9);
+    frond(ctx,[4,26],[62,34],[92,66],[86,108],14,0.8);
+    // lower scrolling tail
+    frond(ctx,[4,44],[48,66],[70,104],[40,132],12,0.7);
+    // small inner blades hugging the spine
+    frond(ctx,[3,-40],[34,-58],[52,-88],[38,-116],9,0.8);
+    frond(ctx,[3,-2],[30,-6],[46,16],[34,44],8,0.8);
+    // curled scroll heads
+    frond(ctx,[100,-118],[128,-128],[136,-100],[110,-96],7,0.6);
+    frond(ctx,[122,60],[146,52],[150,84],[124,88],6,0.6);
+    // berries / buds
+    [[86,-142,7],[120,-128,5],[128,44,6],[96,110,5],[52,132,4],[40,-104,4]].forEach(([x,y,r])=>{
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); });
+    // flower cluster at the crown
+    [[26,-168,11],[52,-176,8],[16,-186,7]].forEach(([x,y,r])=>{
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); });
+  }
+  function centreSpine(ctx){
+    // symmetric central palmette body
+    ctx.beginPath();
+    ctx.moveTo(0,-150);
+    ctx.bezierCurveTo(34,-104,40,-40,0,26);
+    ctx.bezierCurveTo(-40,-40,-34,-104,0,-150);
+    ctx.closePath(); ctx.fill();
+    // crown spike
+    ctx.beginPath();
+    ctx.moveTo(0,-196); ctx.bezierCurveTo(16,-176,16,-160,0,-146);
+    ctx.bezierCurveTo(-16,-160,-16,-176,0,-196); ctx.closePath(); ctx.fill();
+    // pendant drop
+    ctx.beginPath();
+    ctx.moveTo(0,20); ctx.bezierCurveTo(22,58,22,104,0,140);
+    ctx.bezierCurveTo(-22,104,-22,58,0,20); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,152,8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,-206,7,0,Math.PI*2); ctx.fill();
+  }
+  function motif(x,y,sc,fill){
+    c.save(); c.translate(x,y); c.scale(sc,sc); c.fillStyle=fill;
+    centreSpine(c);
+    c.save(); halfMotif(c); c.restore();
+    c.save(); c.scale(-1,1); halfMotif(c); c.restore();   // exact mirror
     c.restore();
   }
-  // half-drop tiling: full motifs on a grid, offset rows drop by half
-  const stepX=S/2, stepY=S/2, sc=1.7;
-  for(let ry=-1;ry<=2;ry++) for(let rx=-1;rx<=2;rx++){
-    const off=(ry%2!==0)?stepX/2:0;
-    motif(rx*stepX+off, ry*stepY, sc);
+  // a smaller connecting sprig that fills the gaps between the big motifs
+  function sprig(x,y,sc,fill){
+    c.save(); c.translate(x,y); c.scale(sc,sc); c.fillStyle=fill;
+    c.beginPath(); c.moveTo(0,-46); c.bezierCurveTo(20,-20,20,18,0,44);
+    c.bezierCurveTo(-20,18,-20,-20,0,-46); c.closePath(); c.fill();
+    [1,-1].forEach(sx=>{ c.save(); c.scale(sx,1);
+      frond(c,[4,-10],[40,-20],[62,-48],[46,-76],9,0.8);
+      frond(c,[4,12],[38,22],[56,52],[36,74],8,0.8);
+      c.restore(); });
+    c.beginPath(); c.arc(0,-84,6,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(0,82,6,0,Math.PI*2); c.fill();
+    c.restore();
   }
-  // subtle weave
-  c.globalAlpha=0.06; c.strokeStyle='#000';
-  for(let y=0;y<S;y+=4){ c.beginPath(); c.moveTo(0,y); c.lineTo(S,y); c.stroke(); }
-  c.globalAlpha=1;
+  // ---- lay the pattern: half-drop repeat, drawn wrapped so it tiles ----
+  const STEP=256, SC=0.78, HI=hex(mix(motifHex,0xffffff,0.22)), MO=hex(motifHex);
+  for(let j=-1;j<=2;j++) for(let i=-1;i<=2;i++){
+    const x=i*STEP+(j&1?STEP/2:0), y=j*STEP;
+    motif(x+2.5,y+2.5,SC,HI);              // soft raised highlight beneath
+    motif(x,y,SC,MO);                      // the damask itself
+    sprig(x+STEP/2+2.5,y+STEP/2+2.5,SC,HI);
+    sprig(x+STEP/2,y+STEP/2,SC,MO);
+  }
   const tex=new THREE.CanvasTexture(cv);
-  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(2,2);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(1.6,1.6);
   return tex;
 }
-let _wallpaperMat=null,_wallpaperGold=null;
-// deep red ground, black damask (reference #1)
-function wallpaperMat(){ if(!_wallpaperMat) _wallpaperMat=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(0x6e1113,0x140a0b),emissive:0x2a0d0e,emissiveIntensity:0.4}); return _wallpaperMat; }
-// black ground, gold damask (reference #2)
-function wallpaperGold(){ if(!_wallpaperGold) _wallpaperGold=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(0x14110c,0xb8963f),emissive:0x1a160b,emissiveIntensity:0.35}); return _wallpaperGold; }
+function mix(a,b,t){
+  const ar=(a>>16)&255, ag=(a>>8)&255, ab=a&255;
+  const br=(b>>16)&255, bg=(b>>8)&255, bb=b&255;
+  return (Math.round(ar+(br-ar)*t)<<16)|(Math.round(ag+(bg-ag)*t)<<8)|Math.round(ab+(bb-ab)*t);
+}
+// four colourways — deep grounds, near-black (or metallic) damask
+const WALLPAPERS=[
+  {id:'crimson', bg:0x4a0c11, mo:0x08060a, em:0x1c0709},
+  {id:'gold',    bg:0x0a0908, mo:0xa8842f, em:0x141008},
+  {id:'navy',    bg:0x102540, mo:0x050a14, em:0x081020},
+  {id:'plum',    bg:0x2b1038, mo:0x0a0412, em:0x140820}
+];
+const _wpCache={};
+function wallpaperById(id){
+  if(!_wpCache[id]){
+    const w=WALLPAPERS.find(p=>p.id===id)||WALLPAPERS[0];
+    _wpCache[id]=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(w.bg,w.mo),
+      emissive:w.em,emissiveIntensity:0.42});
+  }
+  return _wpCache[id];
+}
+function wallpaperMat(){ return wallpaperById('crimson'); }
+function wallpaperGold(){ return wallpaperById('gold'); }
+// pick a paper per room so each room is internally consistent but varied
+function paperForRoom(roomId,floorIdx){
+  let h=floorIdx*7;
+  for(let i=0;i<(roomId||'').length;i++) h=(h*31+roomId.charCodeAt(i))>>>0;
+  return WALLPAPERS[h%WALLPAPERS.length].id;
+}
 
 function makeBlueprintMaterial(){
   const cv=document.createElement('canvas'); cv.width=768; cv.height=512;
@@ -1481,6 +1648,35 @@ MORA_REGIONS.forEach(rg=>{
 });
 ROOMS.push(R('blackbridge','The Black Bridge',2,P2I,'#141414','The cursed effigy, sealed under glass.','blackbridge'));
 ROOMS.push(R('pottery','Pottery Studio',2,P2L,'#b07a4a','A wheel, a kiln, and clay to throw.','pottery'));
+
+// ---- room revisions: bump a room's rev whenever it is added or changed ----
+const ROOM_REV={
+  grandstair:2,                                   // lift -> spiral staircase
+  egyptology:2, jurassic:2,                       // added with the exhibits
+  planetarium:3,
+  mora_orinda:4, mora_fennaries:4, mora_archaries:4, mora_eraja:4,
+  mora_corarica:4, mora_morajai:4, mora_verra:4, mora_nuance:4, blackbridge:4,
+  pottery:5
+};
+function revOf(id){ return ROOM_REV[id]||1; }
+// rooms new or updated since the player last curated the directory
+const dirNew=new Set();
+(function reconcileDirectory(){
+  const seen=store.get('fenn_dir_seen',null);
+  if(seen===null){ markDirSeen(); return; }        // first run: set the baseline, flag nothing
+  let changed=false;
+  ROOMS.forEach(r=>{
+    if((seen[r.id]||0) < revOf(r.id)){
+      dirNew.add(r.id);
+      if(dirOff.has(r.id)){ dirOff.delete(r.id); changed=true; }   // new/updated rooms come in enabled
+    }
+  });
+  if(changed) store.set('fenn_dir_off',[...dirOff]);
+})();
+function markDirSeen(){
+  const m={}; ROOMS.forEach(r=>m[r.id]=revOf(r.id));
+  store.set('fenn_dir_seen',m);
+}
 // floor tags: 0=ground, 1=upper, 2=cupola. default ground.
 ROOMS.forEach(r=>{ r.fl=[0]; });
 const UPPER=new Set(['whisperinghall','scholarsstair','fiftherawing','archive','conservationlab',
@@ -1529,9 +1725,9 @@ function edgeInfo(f,c,r,side){
   if(side==='W') return {key:'v'+c+'_'+r,     x:cellX(f,c)-6,z:cellZ(f,r),   horiz:false};
   return             {key:'v'+(c+1)+'_'+r,    x:cellX(f,c)+6,z:cellZ(f,r),   horiz:false};
 }
-function buildEdgeWall(f,info,gap){
+function buildEdgeWall(f,info,gap,paperId){
   const rec={gap:gap,cols:[],panelMesh:null,panelCol:null,inter:null,sealed:false};
-  const H=4.6, WM=(f.idx%2)?wallpaperGold():wallpaperMat();
+  const H=4.6, WM=paperId?wallpaperById(paperId):((f.idx%2)?wallpaperGold():wallpaperMat());
   if(!gap){
     if(info.horiz){ box(12,H,0.5,WM,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,12,0.5,0.25)); }
     else{ box(0.5,H,12,WM,info.x,H/2,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.5,12,0.25)); }
@@ -1553,19 +1749,43 @@ function buildEdgeWall(f,info,gap){
   }
   f.edges.set(info.key,rec); return rec;
 }
+const swingDoors=[];   // hinged panels animating open
 function addDoorPanel(f,rec,info,target){
-  const p=info.horiz? box(2.85,3.75,0.2,M.darkWood,info.x,1.85,info.z)
-                    : box(0.2,3.75,2.85,M.darkWood,info.x,1.85,info.z);
-  rec.knob=sph(0.09,M.gold,info.horiz?info.x+0.8:info.x+0.12,1.7,info.horiz?info.z+0.12:info.z+0.8,scene,8,8);
-  rec.panelMesh=p;
+  const HW=1.425;                                  // half-width of the leaf
+  const hinge=new THREE.Group();
+  if(info.horiz) hinge.position.set(info.x-HW,0,info.z);
+  else           hinge.position.set(info.x,0,info.z-HW);
+  scene.add(hinge);
+  const p=info.horiz? box(2.85,3.75,0.2,M.darkWood,HW,1.85,0,hinge)
+                    : box(0.2,3.75,2.85,M.darkWood,0,1.85,HW,hinge);
+  // gold knobs on BOTH faces, near the free edge, riding with the leaf
+  rec.knobs=[];
+  [0.14,-0.14].forEach(off=>{
+    const k=info.horiz? sph(0.09,M.gold,HW*1.72,1.7,off,hinge,8,8)
+                      : sph(0.09,M.gold,off,1.7,HW*1.72,hinge,8,8);
+    k.castShadow=false; rec.knobs.push(k);
+  });
+  rec.hinge=hinge; rec.panelMesh=p; rec.horiz=info.horiz;
   rec.panelCol=info.horiz? addColliderBox(info.x,info.z,2.6,0.5,0.15)
                          : addColliderBox(info.x,info.z,0.5,2.6,0.15);
   rec.inter={x:info.x,z:info.z,r:1.8,label:'open the door \u2014 draft a room',
              fn:()=>openDraft(target),dead:false};
   interactables.push(rec.inter);
 }
+// swing the leaf open (used the moment a room is drafted)
+function openDoorPanel(rec){
+  if(rec.panelCol){ removeCollider(rec.panelCol); rec.panelCol=null; }
+  if(rec.inter){ rec.inter.dead=true; rec.inter=null; }
+  if(rec.hinge && !rec.swinging){
+    rec.swinging=true;
+    rec.hinge.userData.ty=(rec.horiz? -Math.PI/2 : Math.PI/2);
+    swingDoors.push(rec);
+  } else { clearPanel(rec); }
+}
 function clearPanel(rec){
+  if(rec.hinge){ scene.remove(rec.hinge); rec.hinge=null; }
   if(rec.panelMesh){ scene.remove(rec.panelMesh); rec.panelMesh=null; }
+  if(rec.knobs){ rec.knobs.forEach(k=>scene.remove(k)); rec.knobs=null; }
   if(rec.knob){ scene.remove(rec.knob); rec.knob=null; }
   if(rec.panelCol){ removeCollider(rec.panelCol); rec.panelCol=null; }
   if(rec.inter){ rec.inter.dead=true; rec.inter=null; }
@@ -1585,15 +1805,16 @@ function buildRoomGeom(f,c,r,room,abs){
   const fr=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.06,6,16),M.gold);
   fr.rotation.x=Math.PI/2; fr.position.set(cx,4.5,cz); scene.add(fr);
   const tag=makeTag(room.n,false); tag.position.set(cx,3.55,cz); scene.add(tag);
+  const paper=paperForRoom(room.id,f.idx);
   ORD.forEach(side=>{
     const info=edgeInfo(f,c,r,side);
     const meDoor=abs.has(side);
     if(f.edges.has(info.key)){
       const rec=f.edges.get(info.key);
-      if(rec.gap && meDoor){ clearPanel(rec); }
+      if(rec.gap && meDoor){ openDoorPanel(rec); }
       else if(rec.gap && !meDoor){ clearPanel(rec); sealEdgeGap(rec,info); }
     }else{
-      const rec=buildEdgeWall(f,info,meDoor);
+      const rec=buildEdgeWall(f,info,meDoor,paper);
       if(meDoor){
         const [dc,dr]=SIDE_D[side];
         const nc=c+dc,nr=r+dr;
@@ -1621,6 +1842,7 @@ function buildRoomGeom(f,c,r,room,abs){
   if(room.sp==='morajai'){ buildMoraRoom(cx,cz,abs,MORA_REGIONS.find(r=>'mora_'+r.id===room.id)); }
   if(room.sp==='blackbridge'){ buildBlackBridgeRoom(cx,cz,abs); }
   if(room.sp==='pottery'){ buildPotteryRoom(cx,cz,abs); }
+  spawnRoomLoot(f,cx,cz,room);
 }
 function buildLift(f,cx,cz){
   const up=FLOORS[f.idx+1];
@@ -2632,23 +2854,35 @@ function makeMoraPlacard(rg){
 }
 
 // a physical Mora Jai box on a pedestal; examining it opens the puzzle
+const moraLids=[];
 function buildMoraBox(cx,cz,rg){
-  // tall slim plinth (like the tool pedestals) with a SMALL box on top
+  // tall slim plinth with a SMALL box on top
   cyl(0.5,0.62,1.1,10,M.marbleSh,cx,0.55,cz); cyl(0.58,0.58,0.12,10,M.marble,cx,1.16,cz);
   addColliderBox(cx,cz,1.2,1.2,0.1);
-  const BY=1.30;                       // box sits on the plinth top
-  const BS=0.42;                       // ~ the footprint of the geiger counter base
-  box(BS,0.20,BS,M.darkWood,cx,BY,cz);
-  box(BS+0.04,0.03,BS+0.04,M.gold,cx,BY+0.115,cz);
-  const bs={rg:rg, grid:moraInitial(rg), initial:moraInitial(rg), cornersLit:[false,false,false,false], tiles:[]};
-  const step=BS/3;                     // 3x3 tiles across the tiny lid
+  const BY=1.30, BS=0.42, H=BS/2;
+  box(BS,0.20,BS,M.darkWood,cx,BY,cz);                 // casket body
+  // the allowance coin, lying down, stamped with an A
+  const acv=document.createElement('canvas'); acv.width=64; acv.height=64; const ac=acv.getContext('2d');
+  const ag=ac.createRadialGradient(24,20,4,32,32,32); ag.addColorStop(0,'#f8e49a'); ag.addColorStop(1,'#c39a34');
+  ac.fillStyle=ag; ac.beginPath(); ac.arc(32,32,31,0,7); ac.fill();
+  ac.strokeStyle='#8a6a1e'; ac.lineWidth=3; ac.beginPath(); ac.arc(32,32,27,0,7); ac.stroke();
+  ac.fillStyle='#6a4d12'; ac.font='bold 34px Georgia'; ac.textAlign='center'; ac.fillText('A',32,44);
+  const faceMat=new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(acv),emissive:0x2a2008});
+  const coin=cyl(0.085,0.085,0.016,16,[faceMat,faceMat,faceMat],cx,BY+0.072,cz);  // flat on its side
+  coin.visible=false; coin.castShadow=false;
+  // hinged lid (carries the tile grid)
+  const lid=new THREE.Group(); lid.position.set(cx,BY+0.10,cz-H); scene.add(lid);
+  box(BS+0.04,0.03,BS+0.04,M.gold,0,0.015,H,lid);
+  const bs={rg:rg, grid:moraInitial(rg), initial:moraInitial(rg), cornersLit:[false,false,false,false],
+            tiles:[], lid:lid, coin:coin, solved:false};
+  const step=BS/3;
   for(let i=0;i<9;i++){ const r=Math.floor(i/3),c=i%3;
-    const tx=cx+(c-1)*step, tz=cz+(r-1)*step;
-    const t=box(step*0.84,0.03,step*0.84,lam(MORA_HEX[bs.grid[i]]),tx,BY+0.14,tz); t.castShadow=false; bs.tiles.push(t);
+    const t=box(step*0.84,0.03,step*0.84,lam(MORA_HEX[bs.grid[i]]),(c-1)*step,0.045,(r-1)*step+H,lid);
+    t.castShadow=false; bs.tiles.push(t);
   }
-  bs.solved=false;
+  moraLids.push(lid);
   interactables.push({x:cx,z:cz+1.1,r:1.7,dead:false,
-    label:()=>bs.solved?'the '+rg.name+' box lies open':'examine the '+rg.name+' box',
+    label:()=>bs.solved?('the '+rg.name+' box lies open'):('examine the '+rg.name+' box'),
     fn:()=>openMora(bs)});
   return bs;
 }
@@ -2711,8 +2945,13 @@ function buildBlackBridgeRoom(cx,cz,abs){
   const crest=new THREE.Mesh(new THREE.ConeGeometry(0.19,0.26,4),stone);
   crest.rotation.y=Math.PI/4; crest.position.set(0,1.14,0); eff.add(crest);
   box(0.36,0.05,0.32,stoneDk,0,0.995,0,eff);          // helm brow band
-  box(0.06,0.07,0.02,lam(0x111114),0.0,0.92,0.16,eff);// visor slit
-  sph(0.045,new THREE.MeshBasicMaterial({color:0xcc2200}),0.0,0.92,0.155,eff,6,6); // cursed eye glow
+  // two deep black eyes, one to each side of the helm
+  const eyeMat=new THREE.MeshBasicMaterial({color:0x050506});
+  [-1,1].forEach(sx=>{
+    const e=box(0.02,0.075,0.10,eyeMat,sx*0.172,0.915,0.02,eff);  // set into the side faces
+    e.castShadow=false;
+    box(0.015,0.095,0.12,stoneDk,sx*0.163,0.915,0.02,eff);        // carved socket rim
+  });
   box(0.30,0.10,0.06,stoneDk,0,0.76,0.14,eff);        // gorget
   // wing-like fins swept back off the right shoulder
   [[0.30,0.72,-0.06,0.5],[0.34,0.60,-0.10,0.9]].forEach(([wx,wy,wz,rot])=>{
@@ -2750,20 +2989,24 @@ function openMora(bs){ mora.box=bs; byId('moraTitle').textContent=bs.rg.name+' \
   byId('moraMsg').textContent=''; renderMora(); openOverlay(byId('moraOverlay')); }
 function renderMora(){
   const bs=mora.box; const corners=[0,2,6,8];
-  let h='';
+  // the emblems are drawn point-down; rotate so each corner's point aims inwards
+  const ROT={0:-45,2:45,6:-135,8:135};
+  let h='<div id="moraBoxFace"><div id="moraGrid"></div>';
+  corners.forEach((gi,ci)=>{
+    const pos=['tl','tr','bl','br'][ci];
+    h+='<div class="mmed '+pos+(bs.cornersLit[ci]?' lit':'')+'" data-c="'+ci+'">'+
+       '<div class="mshape" style="transform:rotate('+ROT[gi]+'deg)">'+
+       moraShapeSVG(bs.rg.id,'#e8dfc9','#7a5a20')+'</div></div>';
+  });
+  h+='</div>';
+  byId('moraStage').innerHTML=h;
+  let g='';
   for(let i=0;i<9;i++){ const ci=corners.indexOf(i);
-    const lit = ci>=0 && bs.cornersLit[ci];
-    h+='<div class="mtile'+(ci>=0?' corner':'')+(lit?' lit':'')+'" data-i="'+i+'" style="background:'+MORA_COL[bs.grid[i]]+'">'+
-       (ci>=0?'<span class="tgt">'+moraShapeSVG(bs.rg.id,'none',MORA_COL[bs.rg.col])+'</span>':'')+'</div>';
+    g+='<div class="mtile'+(ci>=0&&bs.cornersLit[ci]?' lit':'')+'" data-i="'+i+'" style="background:'+MORA_COL[bs.grid[i]]+'"></div>';
   }
-  byId('moraGrid').innerHTML=h;
+  byId('moraGrid').innerHTML=g;
   byId('moraGrid').querySelectorAll('.mtile').forEach(t=>t.onclick=()=>moraTap(parseInt(t.dataset.i)));
-  // corner-lock row
-  let lh='';
-  corners.forEach((gi,ci)=>{ const ok=bs.grid[gi]===bs.rg.col;
-    lh+='<button class="mlock'+(bs.cornersLit[ci]?' lit':'')+'" data-c="'+ci+'" style="border-color:'+MORA_COL[bs.rg.col]+'">'+(bs.cornersLit[ci]?'\u2713':(ok?'lock':'\u00b7'))+'</button>'; });
-  byId('moraLocks').innerHTML=lh;
-  byId('moraLocks').querySelectorAll('.mlock').forEach(b=>b.onclick=()=>moraLock(parseInt(b.dataset.c)));
+  byId('moraStage').querySelectorAll('.mmed').forEach(b=>b.onclick=()=>moraLock(parseInt(b.dataset.c)));
 }
 function moraTap(i){ const bs=mora.box; moraApply(bs.grid,i); updateBox3D(bs); byId('moraMsg').textContent=''; renderMora(); }
 function moraLock(ci){
@@ -2771,9 +3014,12 @@ function moraLock(ci){
   if(bs.grid[gi]===bs.rg.col){ bs.cornersLit[ci]=true; renderMora();
     if(bs.cornersLit.every(Boolean)){ byId('moraMsg').textContent='\u2713 The '+bs.rg.name+' box opens \u2014 a coin lies inside.';
       if(!bs.solved){ bs.solved=true;
-        allowance+=1; store.set('fenn_allowance',allowance);
+        if(bs.lid) bs.lid.userData.ty=-2.1;      // the lid swings open
+        if(bs.coin) bs.coin.visible=true;
         const done=new Set(store.get('fenn_mora_solved',[])); done.add(bs.rg.id); store.set('fenn_mora_solved',[...done]);
-        renderInv(); msg('The '+bs.rg.name+' box yields a coin. (Allowance '+allowance+')');
+        allowance+=1; store.set('fenn_allowance',allowance);
+        addRes('gems',3,true);                    // puzzles pay out gems
+        renderInv(); msg('Your allowance has been increased.');
       }
     }
   } else { bs.grid=bs.initial.slice(); bs.cornersLit=[false,false,false,false]; updateBox3D(bs); renderMora();
@@ -2785,7 +3031,7 @@ function moraHint(){
   if(sol===null){ byId('moraMsg').textContent='No quick path found \u2014 try Reset.'; return; }
   if(!sol.length){ byId('moraMsg').textContent='The corners already match \u2014 lock them.'; return; }
   const i=sol[0]; byId('moraMsg').textContent='Hint: press tile '+(i+1)+' ('+bs.grid[i]+').';
-  const t=byId('moraGrid').querySelector('.mtile[data-i="'+i+'"]');
+  const t=byId('moraStage').querySelector('.mtile[data-i="'+i+'"]');
   if(t){ t.style.outline='3px solid #ffe08a'; setTimeout(()=>{ if(t) t.style.outline=''; },900); }
 }
 
@@ -2943,6 +3189,106 @@ function potteryComplete(){
 }
 
 // =====================================================================
+// PICKUPS — coins, ivory dice, keys, gems
+// =====================================================================
+const pickupSpin=[];
+function makeCoinMesh(letter){
+  const c=cyl(0.16,0.16,0.03,16,M.gold,0,0,0,null); return c;
+}
+function addPickup(kind,x,y,z,label){
+  const g=new THREE.Group(); g.position.set(x,y,z); scene.add(g);
+  if(kind==='coins'){
+    const c=cyl(0.15,0.15,0.03,16,M.gold,0,0,0,g); c.rotation.x=Math.PI/2;   // lying flat
+  } else if(kind==='dice'){
+    const ivory=lam(0xf1ece0,{emissive:0x2a2822});
+    box(0.2,0.2,0.2,ivory,0,0,0,g);
+    const pip=new THREE.MeshBasicMaterial({color:0x2a2622});
+    [[0,0,0.105],[0.06,0.06,-0.105],[-0.06,-0.06,-0.105],[0.105,0.05,0.05],[0.105,-0.05,-0.05]]
+      .forEach(([px,py,pz])=>{ const d=sph(0.018,pip,px,py,pz,g,5,4); d.castShadow=false; });
+  } else if(kind==='keys'){
+    cyl(0.025,0.025,0.34,6,M.gold,0,0,0,g).rotation.z=Math.PI/2;
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(0.07,0.022,6,14),M.gold);
+    ring.position.set(-0.2,0,0); ring.rotation.y=Math.PI/2; g.add(ring);
+    box(0.03,0.09,0.02,M.gold,0.12,-0.05,0,g); box(0.03,0.06,0.02,M.gold,0.17,-0.035,0,g);
+  } else {
+    const gemMat=new THREE.MeshPhongMaterial({color:0x49e0c4,emissive:0x115a4c,shininess:90,
+      transparent:true,opacity:0.9});
+    const gm=new THREE.Mesh(new THREE.OctahedronGeometry(0.15),gemMat); g.add(gm);
+  }
+  g.rotation.y=Math.random()*Math.PI;
+  pickupSpin.push(g);
+  const rec={dead:false};
+  interactables.push({x:x,z:z,r:1.6,dead:false,
+    label:label||('take the '+{coins:'coin',dice:'ivory die',keys:'key',gems:'gem'}[kind]),
+    cond:()=>!rec.dead,
+    fn:()=>{ rec.dead=true; scene.remove(g);
+             const i=pickupSpin.indexOf(g); if(i>=0) pickupSpin.splice(i,1);
+             addRes(kind,1); }});
+  return g;
+}
+// scatter loot for a freshly drafted room
+function spawnRoomLoot(f,cx,cz,room){
+  if(room.d===0) return;
+  const rar=roomRarity(room);
+  const rnd=()=>(Math.random()-0.5)*7.4;
+  // a piece of furniture in roughly half of the plain rooms (dice & keys need somewhere to sit)
+  let furn=null;
+  if(!room.sp && Math.random()<0.55){
+    const fx=cx+(Math.random()<0.5?-3.6:3.6), fz=cz+(Math.random()<0.5?-3.4:3.4);
+    box(2.0,0.16,1.1,M.darkWood,fx,0.92,fz);                       // table top
+    [[-0.85,-0.45],[0.85,-0.45],[-0.85,0.45],[0.85,0.45]].forEach(([ox,oz])=>
+      cyl(0.07,0.07,0.9,6,M.darkWood,fx+ox,0.45,fz+oz));
+    addColliderBox(fx,fz,2.1,1.2,0.05);
+    furn={x:fx,z:fz,y:1.06};
+  }
+  // COINS — anywhere
+  if(Math.random()<0.42) addPickup('coins',cx+rnd(),0.12,cz+rnd());
+  if(Math.random()<0.14) addPickup('coins',cx+rnd(),0.12,cz+rnd());
+  // IVORY DICE — rare, and only ever on furniture
+  if(furn && Math.random()<0.10) addPickup('dice',furn.x+(Math.random()-0.5)*1.1,furn.y+0.11,furn.z);
+  // KEYS — rarely on the floor, more often on a table
+  if(furn && Math.random()<0.20) addPickup('keys',furn.x+(Math.random()-0.5)*1.1,furn.y+0.06,furn.z);
+  else if(Math.random()<0.07) addPickup('keys',cx+rnd(),0.1,cz+rnd());
+  // GEMS — in the richer rooms
+  const gemChance=rar==='Rare'?0.55:(rar==='Unusual'?0.3:0.12);
+  if(Math.random()<gemChance) addPickup('gems',cx+rnd(),0.18,cz+rnd());
+}
+
+// ---------- outdoor loot: coins anywhere, the odd key on a bench ----------
+[[30,44],[-22,-14],[74,52],[-52,22],[12,-60],[88,-6],[-34,-64],[58,-44]].forEach(([x,z])=>{
+  if(Math.random()<0.7) addPickup('coins',x+(Math.random()-0.5)*6,0.12,z+(Math.random()-0.5)*6);
+});
+// benches out on the paths sometimes hold a key
+[[24,52],[-18,6],[70,58],[96,10]].forEach(([x,z])=>{
+  if(Math.random()<0.25) addPickup('keys',x,0.86,z);
+});
+
+// ---------- the allowance envelope on the entrance table ----------
+(function allowanceEnvelope(){
+  const ex=57.4, ey=1.02, ez=14.6;
+  const env=new THREE.Group(); env.position.set(ex,ey,ez); env.rotation.y=-0.25; scene.add(env);
+  const paper=lam(0x9a7248,{emissive:0x2a1f12});
+  box(0.62,0.03,0.42,paper,0,0,0,env);
+  const flap=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.2,3),paper);
+  flap.rotation.x=-Math.PI/2; flap.rotation.z=Math.PI; flap.position.set(0,0.02,0.02); env.add(flap);
+  box(0.16,0.032,0.16,lam(0x7a2018),0.0,0.005,0,env);     // wax seal
+  const tag=makeTag('ALLOWANCE',true); tag.scale.set(3.2,0.8,1); tag.position.set(ex,1.5,ez); scene.add(tag);
+  let taken=(store.get('fenn_allowNight',-1)===night);
+  if(taken) env.visible=false;
+  interactables.push({x:ex,z:ez,r:1.9,dead:false,
+    cond:()=>!taken,
+    label:()=>'open the brown envelope',
+    fn:()=>{
+      taken=true; env.visible=false; tag.visible=false;
+      store.set('fenn_allowNight',night);
+      if(allowance>0){ addRes('coins',allowance,true);
+        msg('Your allowance: '+allowance+' coin'+(allowance>1?'s':'')+' from the Mora Jai boxes.'); }
+      else msg('The envelope is empty \u2014 solve a Mora Jai box to earn an allowance.');
+    }});
+})();
+
+
+// =====================================================================
 // UI — overlays, prompt, toast, blueprint, directory
 // =====================================================================
 const byId=id=>document.getElementById(id);
@@ -2965,7 +3311,14 @@ function closeOverlay(){
   currentOverlay.style.display='none'; currentOverlay=null; uiOpen=false;
   if(started && !isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
-byId('dirClose').onclick=closeOverlay;
+byId('dirClose').onclick=function(){ markDirSeen(); closeOverlay(); };
+byId('dirAllIn').onclick=function(){ dirOff.clear(); store.set('fenn_dir_off',[]); renderDir(); };
+byId('dirAllOut').onclick=function(){ ROOMS.forEach(r=>dirOff.add(r.id)); store.set('fenn_dir_off',[...dirOff]); renderDir(); };
+byId('dirOnlyNew').onclick=function(){
+  if(!dirNew.size){ msg('No rooms have changed since you last curated the pool.'); return; }
+  ROOMS.forEach(r=>{ if(dirNew.has(r.id)) dirOff.delete(r.id); else dirOff.add(r.id); });
+  store.set('fenn_dir_off',[...dirOff]); renderDir();
+};
 byId('draftClose').onclick=closeOverlay;
 byId('bpClose').onclick=closeOverlay;
 byId('moraClose').onclick=closeOverlay;
@@ -2988,11 +3341,17 @@ function renderDir(){
     let pips='';
     for(let i=0;i<4;i++) pips+='<span class="pip'+(i<r.d?'':' off')+'"></span>';
     const on=!dirOff.has(r.id);
-    html+='<div class="dirRow'+(r.sp?' special':'')+'"><span class="rn">'+r.n+'</span>'+
+    const badge=dirNew.has(r.id)
+      ? '<span class="dirBadge">'+(revOf(r.id)>1&&r.sp?'NEW':'NEW')+'</span>' : '';
+    html+='<div class="dirRow'+(r.sp?' special':'')+(dirNew.has(r.id)?' fresh':'')+'">'+
+          '<span class="rn">'+r.n+badge+
+          '<span class="dirMeta">'+roomRarity(r)+' \u00b7 <span class="c">\u25C7'+roomCost(r)+'</span></span></span>'+
           '<span>'+pips+'</span>'+
           '<span class="tog '+(on?'on':'off')+'" data-id="'+r.id+'">'+(on?'In pool':'Out')+'</span></div>';
   });
   list.innerHTML=html;
+  const inCount=ROOMS.length-dirOff.size;
+  byId('dirCount').textContent=inCount+' of '+ROOMS.length+' in pool';
 }
 byId('dirList').onclick=function(e){
   let el=e.target;
@@ -3032,28 +3391,56 @@ function openDraft(target){
   pool=pool.slice();
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
   const choices=pool.slice(0,Math.min(3,pool.length));
-  draftCtx=target;
+  draftCtx=target; draftChoices=choices;
+  renderDraftCards();
+  byId('draftSub').textContent=f.name+' \u00b7 draw a room \u00b7 you hold '+res.gems+' gems';
+  openOverlay(byId('draftOverlay'));
+}
+let draftChoices=[];
+function renderDraftCards(){
   let html='';
-  choices.forEach(r=>{
+  draftChoices.forEach(r=>{
     let pips='';
     for(let i=0;i<4;i++) pips+='<span class="pip'+(i<r.d?'':' off')+'"></span>';
-    html+='<div class="roomCard" data-id="'+r.id+'"><div class="rn">'+r.n+'</div>'+
+    const cost=roomCost(r), rar=roomRarity(r), afford=res.gems>=cost;
+    html+='<div class="roomCard'+(afford?'':' broke')+'" data-id="'+r.id+'"><div class="rn">'+r.n+'</div>'+
           '<div class="rd">'+pips+'</div>'+
+          '<div class="rmeta"><span class="rar '+rar.toLowerCase()+'">'+rar+'</span>'+
+          '<span class="cost'+(afford?'':' no')+'">\u25C7 '+cost+'</span></div>'+
           '<div class="rnote">'+(r.note||(r.d?'Empty \u2014 awaiting curation.':''))+'</div></div>';
   });
   byId('draftCards').innerHTML=html;
-  byId('draftSub').textContent=f.name+' \u00b7 draw a room';
-  openOverlay(byId('draftOverlay'));
+  const rb=byId('draftReroll');
+  rb.style.display=res.dice>0?'inline-block':'none';
+  rb.textContent='Reroll \u2685 ('+res.dice+')';
+}
+function draftReroll(){
+  if(res.dice<=0) return;
+  if(!draftCtx) return;
+  addRes('dice',-1,true);
+  const f=draftCtx.f;
+  let pool=poolFor(f);
+  const fits=pool.filter(r=>!touchesPerimeter(r,f,draftCtx.tc,draftCtx.tr,draftCtx.entry));
+  if(fits.length) pool=fits;
+  pool=pool.slice();
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+  draftChoices=pool.slice(0,Math.min(3,pool.length));
+  renderDraftCards();
+  byId('draftSub').textContent=f.name+' \u00b7 rerolled \u00b7 you hold '+res.gems+' gems';
 }
 byId('draftCards').onclick=function(e){
   let el=e.target;
   while(el && el!==this){ if(el.dataset && el.dataset.id) break; el=el.parentNode; }
   if(!el || el===this || !el.dataset || !el.dataset.id) return;
   const id=el.dataset.id, ctx=draftCtx;
+  const rm=roomById(id), cost=rm?roomCost(rm):0;
+  if(res.gems<cost){ msg('Not enough gems \u2014 '+rm.n+' costs '+cost+'.'); return; }
+  addRes('gems',-cost,true);
   closeOverlay();
   if(ctx) placeRoom(id,ctx);
   draftCtx=null;
 };
+byId('draftReroll').onclick=draftReroll;
 
 // ---- blueprint ----
 function drawBP(){
@@ -3224,8 +3611,18 @@ function zoneFor(px,pz){
 }
 const zoneName=byId('zoneName'), zoneSub=byId('zoneSub'), zonePlateEl=byId('zonePlate');
 let curZone='', zoneDimTimer=null;
+function isRoomZone(px,pz){
+  const f=activeFloor(px); if(!f) return false;
+  if(pz>f.oz+6&&pz<f.oz+12.6) return false;
+  const c=Math.round((px-f.ox)/CS_+(f.gw-1)/2), r=Math.round(-(pz-f.oz)/CS_);
+  return !!(c>=0&&c<f.gw&&r>=0&&r<f.gh&&f.grid[r][c]&&!f.grid[r][c].entrance);
+}
+let wasInRoom=false;
 function updateZone(px,pz){
   const [n,s]=zoneFor(px,pz);
+  const inRoom=isRoomZone(px,pz);
+  if(wasInRoom && !inRoom) spendStep(1);      // one step spent leaving a room
+  wasInRoom=inRoom;
   if(n!==curZone){
     curZone=n; zoneName.textContent=n; zoneSub.textContent=s;
     if(n==='Closed Exhibit') grantUnlock('crownroom','Crown Chamber');
@@ -3283,6 +3680,8 @@ overlay.addEventListener('click',()=>{
   // restore any permanently-owned tools into the HUD
   renderInv();
   byId('cogBtn').style.display='flex';
+  lastPX=player.x; lastPZ=player.z;
+  renderRes(); renderSteps();
   if(hasItem('geiger')) byId('geiger').style.display='block';
   if(hasItem('goggles')&&isTouch) byId('goggleBtn').style.display='flex';
   // let the onboarding chrome fade so the view stays clear
@@ -3397,7 +3796,7 @@ function resolveCollisions(){
 }
 function lerpTo(cur,target,dt,rate){ return cur+(target-cur)*Math.min(1,dt*rate); }
 
-let playSaveAcc=0;
+let playSaveAcc=0, lastPX=0, lastPZ=0;
 addEventListener('beforeunload',()=>{ try{ store.set('fenn_playms',Math.round(playMs)); }catch(e){} });
 const clock=new THREE.Clock();
 function tick(){
@@ -3498,11 +3897,25 @@ function tick(){
   }
   for(let i=0;i<celestial.length;i++){ celestial[i].mesh.rotation.y+=celestial[i].speed*dt; }
   for(let i=0;i<potterySpin.length;i++){ potterySpin[i].rotation.y+=dt*3.0; }
+  for(let i=swingDoors.length-1;i>=0;i--){ const rc=swingDoors[i]; if(!rc.hinge){ swingDoors.splice(i,1); continue; }
+    rc.hinge.rotation.y=lerpTo(rc.hinge.rotation.y,rc.hinge.userData.ty,dt,4);
+    if(Math.abs(rc.hinge.rotation.y-rc.hinge.userData.ty)<0.02) swingDoors.splice(i,1); }
+  for(let i=0;i<moraLids.length;i++){ const L=moraLids[i];
+    L.rotation.x=lerpTo(L.rotation.x,L.userData.ty||0,dt,3); }
   if(intel.visible){
     for(const p of intelPins){ p.rotation.y=t*1.6; }
   }
   updateZone(player.x,player.z);
   updateTools(dt,t);
+  for(let i=0;i<pickupSpin.length;i++){ const g=pickupSpin[i];
+    g.rotation.y+=dt*1.1; g.position.y+=Math.sin(t*2+i)*0.0012; }
+  // outdoors, every 20 paces costs a step
+  if(started){
+    const outdoors=Math.abs(player.x)<200 && Math.abs(player.z)<200;
+    if(outdoors){ outDist+=Math.hypot(player.x-lastPX,player.z-lastPZ);
+      while(outDist>=20){ outDist-=20; spendStep(1); } }
+    lastPX=player.x; lastPZ=player.z;
+  }
   if(started){ playMs+=dt*1000; playSaveAcc+=dt;
     if(playSaveAcc>10){ playSaveAcc=0; store.set('fenn_playms',Math.round(playMs)); } }
   renderer.render(scene,camera);
