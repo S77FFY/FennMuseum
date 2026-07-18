@@ -284,7 +284,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.1.0</div>
+    <div id="verTag">v3.1.1</div>
   </div>
 </div>
 
@@ -400,7 +400,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.1.0';
+const VERSION='v3.1.1';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -1949,7 +1949,7 @@ function buildStair(f,cx,cz){
   }
   f.liftUpPos={x:cx,z:cz};
   up.unlocked=true;
-  const tg=makeTag('SPIRAL STAIR \u2014 STEP ON TO RISE',true); tg.scale.set(7,1.2,1); tg.position.set(cx,3.7,cz); scene.add(tg);
+  const tg=makeTag('SPIRAL STAIR',true); tg.scale.set(3.4,0.9,1); tg.position.set(cx,3.7,cz); scene.add(tg);
   // step-on ascent: proximity trigger on the stair, arriving beside the hole above
   const upX=up.ox, upHoleZ=up.oz+6.5;
   teleports.push({x:cx,z:cz,r:1.7, tx:upX, tz:upHoleZ+2.4, yaw:0,
@@ -1962,7 +1962,7 @@ function buildStair(f,cx,cz){
   hr.rotation.x=-Math.PI/2; hr.position.set(holeX,0.5,holeZ); scene.add(hr);
   [[-1.5,-1.5],[1.5,-1.5],[-1.5,1.5],[1.5,1.5]].forEach(([ox,oz])=>{
     cyl(0.06,0.06,1.0,6,M.gold,holeX+ox,0.5,holeZ+oz); });
-  const htg=makeTag('DOWN \u2014 the stair below',true); htg.position.set(holeX,2.2,holeZ); scene.add(htg);
+  const htg=makeTag('DOWN',true); htg.position.set(holeX,2.2,holeZ); scene.add(htg);
   teleports.push({x:holeX,z:holeZ,r:1.3, tx:cx+3.0, tz:cz, yaw:-Math.PI/2,
     onArrive:()=>setTimeout(()=>msg('Down to '+f.name+'.'),650)});
 }
@@ -2263,7 +2263,7 @@ function wallRun(x1,z1,x2,z2,gaps){
     box(5.2,0.14,0.16,M.gold,PANX,PANY-1.2,zCover-0.02,cover);
     const knobG=box(1.0,0.34,0.22,M.gold,PANX,PANY-1.0,zCover-0.14,cover);
     box(1.0,0.12,0.28,lam(0x2a2e34),PANX,PANY-1.0,zCover-0.26,cover);
-    const ctag=makeTag('SECURITY \u2014 SLIDE OPEN',true); ctag.scale.set(4.4,1.1,1);
+    const ctag=makeTag('SECURITY',true); ctag.scale.set(2.6,0.9,1);
     ctag.position.set(PANX,PANY+1.7,zCover); scene.add(ctag);
     panelState.cover=cover; panelState.ctag=ctag;
     cover.userData.ty=0;                    // 0 closed, +2.9 open (slides up)
@@ -3136,7 +3136,6 @@ function buildPotteryRoom(cx,cz,abs){
   cyl(0.1,0.1,2.2,6,M.darkWood,sx-1.2,1.1,sz); cyl(0.1,0.1,2.2,6,M.darkWood,sx+1.2,1.1,sz);
   POT_ORDER.forEach((sh,i)=>{ const pot=lathePot(sh,0.9,0.32,lam([0xc08a5a,0x8aa0b0,0x9a6a8a][i]));
     pot.position.set(sx-0.85+i*0.85,1.27,sz); scene.add(pot); });
-  { const st=makeTag('EXEMPLARS \u2014 replicate these',true); st.scale.set(6,1,1); st.position.set(sx,2.7,sz); scene.add(st); }
   // kiln
   const kx=cx+4.2, kz=cz-3.2;
   box(2.0,2.6,2.0,lam(0x6a4030),kx,1.3,kz);
@@ -3334,21 +3333,20 @@ function spawnRoomLoot(f,cx,cz,room){
 
 // ---------- the allowance envelope on the entrance table ----------
 (function allowanceEnvelope(){
-  const ex=54.05, ey=1.16, ez=14.55;
+  const ex=54.10, ey=1.17, ez=13.30;
   const env=new THREE.Group(); env.position.set(ex,ey,ez); env.rotation.y=-0.25; scene.add(env);
   const paper=lam(0x9a7248,{emissive:0x2a1f12});
   box(0.62,0.03,0.42,paper,0,0,0,env);
   const flap=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.2,3),paper);
   flap.rotation.x=-Math.PI/2; flap.rotation.z=Math.PI; flap.position.set(0,0.02,0.02); env.add(flap);
   box(0.16,0.032,0.16,lam(0x7a2018),0.0,0.005,0,env);     // wax seal
-  const tag=makeTag('ALLOWANCE',true); tag.scale.set(3.2,0.8,1); tag.position.set(ex,1.5,ez); scene.add(tag);
   let taken=(store.get('fenn_allowNight',-1)===night);
   if(taken) env.visible=false;
   interactables.push({x:ex,z:ez,r:1.9,dead:false,
     cond:()=>!taken,
     label:()=>'open the brown envelope',
     fn:()=>{
-      taken=true; env.visible=false; tag.visible=false;
+      taken=true; env.visible=false;
       store.set('fenn_allowNight',night);
       if(allowance>0){ addRes('coins',allowance,true);
         msg('Your allowance: '+allowance+' coin'+(allowance>1?'s':'')+' from the Mora Jai boxes.'); }
@@ -3399,7 +3397,7 @@ function makeAlzaraSign(){
 function rebuildCable(){
   if(alzara.cable){ scene.remove(alzara.cable); alzara.cable=null; }
   const cx=alzara.cx, cz=alzara.cz, sk=alzara.socket;
-  const start=new THREE.Vector3(cx-0.95,1.05,cz-0.42);
+  const start=new THREE.Vector3(cx-0.78,0.72,cz-0.34);
   const pts=alzara.plugged
     ? [start,new THREE.Vector3(cx-1.5,0.55,cz-1.4),new THREE.Vector3(sk.x+0.25,0.42,sk.z+0.55),new THREE.Vector3(sk.x,sk.y,sk.z+0.1)]
     : [start,new THREE.Vector3(cx-1.6,0.5,cz-1.2),new THREE.Vector3(cx-2.1,0.1,cz-1.9),new THREE.Vector3(cx-2.5,0.07,cz-2.4)];
@@ -3417,58 +3415,63 @@ function buildAlzaraRoom(cx,cz,abs){
   const p=new THREE.PointLight(0xbfa8ff,0.5,18); p.position.set(cx,3.8,cz); scene.add(p);
   { const t=makeTag('ALZARA',false); t.position.set(cx,3.4,cz); scene.add(t); }
   const wood=lam(0x4a3524,{emissive:0x140e08}), woodDk=lam(0x33241a,{emissive:0x0c0805});
+  // 20% smaller overall, with a much shorter base so the top clears the ceiling
+  const CAB_H=1.28, CAB_Y=CAB_H/2;                 // squat lower cabinet
+  const CASE_H=1.72, CASE_Y=CAB_H+CASE_H/2;        // glass case above it
+  const CASE_TOP=CAB_H+CASE_H;                     // = 3.00, well under the 4.75 ceiling
   // ---- lower cabinet ----
-  box(1.9,2.1,1.1,wood,mx,1.05,mz);
-  box(2.05,0.12,1.2,woodDk,mx,2.16,mz);
-  box(2.05,0.12,1.2,woodDk,mx,0.06,mz);
-  addColliderBox(mx,mz,2.1,1.25,0.1);
-  // coin slot + card tray on the front panel
-  box(1.3,0.9,0.06,lam(0x6a5236,{emissive:0x1a1208}),mx,1.45,mz+0.57);
-  box(0.09,0.22,0.05,lam(0x14141a),mx+0.45,1.72,mz+0.61);         // coin slot
-  box(0.55,0.07,0.05,lam(0x14141a),mx,1.16,mz+0.61);              // card mouth
-  { const t=makeTag('INSERT A COIN',true); t.scale.set(3.4,0.8,1); t.position.set(mx,1.98,mz+0.62); scene.add(t); }
+  box(1.52,CAB_H,0.88,wood,mx,CAB_Y,mz);
+  box(1.64,0.10,0.96,woodDk,mx,CAB_H-0.05,mz);
+  box(1.64,0.10,0.96,woodDk,mx,0.05,mz);
+  addColliderBox(mx,mz,1.7,1.0,0.1);
+  // coin slot + card mouth on the front panel
+  box(1.02,0.62,0.05,lam(0x6a5236,{emissive:0x1a1208}),mx,0.80,mz+0.45);
+  box(0.07,0.17,0.04,lam(0x14141a),mx+0.34,0.98,mz+0.48);        // coin slot
+  box(0.44,0.06,0.04,lam(0x14141a),mx,0.60,mz+0.48);             // card mouth
   // ---- glass case ----
-  const caseY=3.35;
-  [-1,1].forEach(sx=>cyl(0.075,0.075,2.2,8,lam(0xd8d2c4,{emissive:0x2a2820}),mx+sx*0.82,caseY,mz-0.42));
-  [-1,1].forEach(sx=>cyl(0.075,0.075,2.2,8,lam(0xd8d2c4,{emissive:0x2a2820}),mx+sx*0.82,caseY,mz+0.42));
-  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.68,2.2,0.92),
-    new THREE.MeshPhongMaterial({color:0xaecbe6,transparent:true,opacity:0.15,shininess:100,side:THREE.DoubleSide}));
-  glass.position.set(mx,caseY,mz); scene.add(glass);
-  box(1.86,0.1,1.06,woodDk,mx,caseY+1.12,mz);
-  // ---- header board with the ALZARA sign, arched ----
-  box(1.9,0.62,0.16,woodDk,mx,caseY+1.5,mz-0.2);
-  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.7,0.52),makeAlzaraSign());
-  sign.position.set(mx,caseY+1.5,mz+0.42); scene.add(sign);
-  const arch=new THREE.Mesh(new THREE.TorusGeometry(0.85,0.07,6,16,Math.PI),woodDk);
-  arch.position.set(mx,caseY+1.76,mz-0.1); scene.add(arch);
-  // the two dark diamonds flanking the header
-  [-1,1].forEach(sx=>{ const d=new THREE.Mesh(new THREE.OctahedronGeometry(0.34),lam(0x3a1c1a,{emissive:0x120606}));
-    d.scale.set(1,1,0.25); d.position.set(mx+sx*1.5,caseY+1.5,mz-0.1); scene.add(d); });
+  [-1,1].forEach(sx=>[-1,1].forEach(sz=>
+    cyl(0.06,0.06,CASE_H,8,lam(0xd8d2c4,{emissive:0x2a2820}),mx+sx*0.65,CASE_Y,mz+sz*0.34)));
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.34,CASE_H,0.74),
+    new THREE.MeshPhongMaterial({color:0xaecbe6,transparent:true,opacity:0.14,shininess:100,side:THREE.DoubleSide}));
+  glass.position.set(mx,CASE_Y,mz); scene.add(glass);
+  box(1.50,0.09,0.86,woodDk,mx,CASE_TOP+0.04,mz);
+  // ---- header board with the ALZARA sign ----
+  const HEAD_Y=CASE_TOP+0.34;
+  box(1.52,0.50,0.14,woodDk,mx,HEAD_Y,mz-0.16);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.36,0.42),makeAlzaraSign());
+  sign.position.set(mx,HEAD_Y,mz-0.08); scene.add(sign);
+  const arch=new THREE.Mesh(new THREE.TorusGeometry(0.68,0.06,6,16,Math.PI),woodDk);
+  arch.position.set(mx,HEAD_Y+0.22,mz-0.16); scene.add(arch);
   // ---- Alzara himself ----
-  const A=new THREE.Group(); A.position.set(mx,caseY-0.95,mz-0.05); scene.add(A);
+  const A=new THREE.Group(); A.position.set(mx,CAB_H+0.10,mz-0.04); scene.add(A);
   const robe=lam(0x6a6a86,{emissive:0x1a1a26}), skin=lam(0xb9a48c,{emissive:0x2a2420});
-  const dark=lam(0x2a2630,{emissive:0x0a0a10});
-  cyl(0.46,0.34,1.0,10,robe,0,0.5,0,A);                          // robed body
-  box(0.9,0.16,0.34,robe,0,0.94,0,A);                            // shoulders
-  [-1,1].forEach(sx=>{ const arm=new THREE.Group(); arm.position.set(sx*0.36,0.92,0.05); arm.rotation.z=sx*0.85; A.add(arm);
-    cyl(0.09,0.08,0.66,8,robe,0,-0.33,0,arm);
-    sph(0.085,skin,0,-0.68,0.12,arm,8,6); });                    // hands to the ball
-  sph(0.19,skin,0,1.16,0,A,12,10);                               // head
-  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.34,8),dark);
-  beard.rotation.x=Math.PI; beard.position.set(0,0.98,0.06); A.add(beard);
-  box(0.19,0.045,0.05,dark,0,1.14,0.17,A);                       // moustache
+  const dark=lam(0x22202a,{emissive:0x08080c});
+  cyl(0.30,0.23,0.74,10,robe,0,0.37,0,A);                        // robed body, slimmer
+  box(0.62,0.11,0.24,robe,0,0.70,0,A);                           // shoulders
+  // arms reaching forward onto the ball
+  [-1,1].forEach(sx=>{ const arm=new THREE.Group(); arm.position.set(sx*0.26,0.68,0.04); arm.rotation.set(-0.55,0,sx*0.75); A.add(arm);
+    cyl(0.065,0.058,0.48,8,robe,0,-0.24,0,arm);
+    sph(0.062,skin,0,-0.50,0,arm,8,6); });
+  sph(0.135,skin,0,0.86,0,A,12,10);                              // head
+  // long pointed beard
+  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.105,0.40,8),dark);
+  beard.position.set(0,0.61,0.045); beard.rotation.x=Math.PI; A.add(beard);
+  box(0.15,0.03,0.04,dark,0,0.845,0.125,A);                      // moustache
   alzara.eyes=[];
-  [-1,1].forEach(sx=>{ const e=sph(0.028,new THREE.MeshBasicMaterial({color:0xdfe6ff}),sx*0.068,1.19,0.165,A,6,6);
+  [-1,1].forEach(sx=>{ const e=sph(0.021,new THREE.MeshBasicMaterial({color:0xdfe6ff}),sx*0.05,0.885,0.122,A,6,6);
     e.castShadow=false; alzara.eyes.push(e); });
-  cyl(0.235,0.25,0.20,12,lam(0xe4ded0,{emissive:0x2a2822}),0,1.36,0,A);   // turban
-  cyl(0.20,0.22,0.14,12,lam(0xd6cfc0,{emissive:0x262420}),0,1.50,0,A);
-  sph(0.05,M.gold,0,1.60,0,A,8,6);
-  box(0.05,0.07,0.03,lam(0x7a2018),0,1.36,0.24,A);               // turban jewel
-  // table + cloth + crystal ball
-  box(0.95,0.06,0.45,lam(0xcfc6b4,{emissive:0x2a2620}),0,0.30,0.20,A);
-  const ballMat=new THREE.MeshPhongMaterial({color:0x5f8fe0,emissive:0x21407e,transparent:true,opacity:0.85,shininess:100});
-  alzara.ball=sph(0.19,ballMat,0,0.46,0.22,A,14,12); alzara.ball.castShadow=false;
-  cyl(0.15,0.17,0.06,10,M.gold,0,0.34,0.22,A);
+  cyl(0.17,0.18,0.15,12,lam(0xe4ded0,{emissive:0x2a2822}),0,1.00,0,A);   // turban
+  cyl(0.145,0.155,0.10,12,lam(0xd6cfc0,{emissive:0x262420}),0,1.10,0,A);
+  sph(0.035,M.gold,0,1.17,0,A,8,6);
+  box(0.04,0.05,0.02,lam(0x7a2018),0,1.00,0.175,A);              // turban jewel
+  // table, cloth and the blue crystal ball — set forward so it is clearly in view
+  box(0.74,0.05,0.34,lam(0xcfc6b4,{emissive:0x2a2620}),0,0.20,0.20,A);
+  cyl(0.12,0.135,0.05,10,M.gold,0,0.25,0.24,A);                  // brass stand
+  const ballMat=new THREE.MeshPhongMaterial({color:0x4f8ae8,emissive:0x1e50c0,
+    emissiveIntensity:0.9,transparent:true,opacity:0.88,shininess:110});
+  alzara.ball=sph(0.155,ballMat,0,0.40,0.24,A,16,14); alzara.ball.castShadow=false;
+  const bl=new THREE.PointLight(0x5aa0ff,0.75,4.5); bl.position.set(mx,CAB_H+0.50,mz+0.20); scene.add(bl);
+  alzara.ballLight=bl;
   // ---- wall socket + cable ----
   const wallZ=cz-5.72;
   alzara.socket={x:cx-2.9,y:0.55,z:wallZ+0.14};
@@ -4096,7 +4099,7 @@ function updateZone(px,pz){
 // PLAYER, CONTROLS, TELEPORTS, MAIN LOOP
 // =====================================================================
 const player={x:55,z:96,yaw:0,pitch:-0.04,vx:0,vz:0};
-const EYE=1.75, SPEED=11, RUNMULT=1.8;
+const EYE=2.45, SPEED=11, RUNMULT=1.8;
 const keys={};
 let fading=false, tpCool=0;
 function fadeTeleport(tx,tz,yaw){
