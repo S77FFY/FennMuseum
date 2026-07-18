@@ -139,6 +139,17 @@
   @media (pointer:coarse){ .desktop{display:none} }
   @media (pointer:fine){ .touch{display:none} }
   #moraStage{display:flex;justify-content:center;margin-top:14px;}
+  #cine{position:fixed;inset:0;z-index:14;display:none;align-items:center;justify-content:center;
+    flex-direction:column;pointer-events:auto;cursor:pointer;background:transparent;}
+  #cine::before{content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 42%, rgba(0,0,0,.62) 100%);}
+  #cineNight{font-family:'Snell Roundhand','Apple Chancery','Segoe Script','Brush Script MT',cursive;
+    font-size:clamp(46px,11vw,104px);color:#f4ece0;letter-spacing:.02em;
+    text-shadow:0 3px 18px rgba(0,0,0,.85),0 0 42px rgba(220,190,140,.35);
+    opacity:0;transform:translateY(14px);transition:opacity 1.6s ease,transform 1.6s ease;}
+  #cineNight.show{opacity:1;transform:translateY(0);}
+  #cineSkip{position:absolute;bottom:34px;font-family:Georgia,serif;font-size:10px;
+    letter-spacing:.32em;text-transform:uppercase;color:rgba(240,232,216,.5);}
   #resBar{position:fixed;z-index:12;top:16px;right:62px;display:none;gap:9px;align-items:center;
     background:rgba(21,24,28,.66);border:1px solid rgba(194,163,90,.55);border-radius:3px;
     padding:5px 10px;font-family:Georgia,serif;backdrop-filter:blur(3px);}
@@ -189,8 +200,6 @@
   .toolBtn{position:fixed;z-index:12;width:54px;height:54px;border-radius:50%;display:none;
     align-items:center;justify-content:center;font-size:26px;color:#cfe6cf;
     background:rgba(30,50,34,.5);border:1px solid rgba(120,200,140,.7);font-family:Georgia,serif;}
-  #goggleBtn{right:26px;bottom:180px;}
-  #goggleBtn.on{background:rgba(60,150,80,.6);color:#eaffe9;box-shadow:0 0 16px rgba(90,220,120,.6);}
   #invHud{position:fixed;z-index:11;left:14px;bottom:70px;display:flex;gap:6px;pointer-events:none;}
   #invHud .item{background:rgba(21,24,28,.72);border:1px solid rgba(194,163,90,.6);border-radius:4px;
     padding:5px 9px;color:#efe9dc;font-family:Georgia,serif;font-size:12px;letter-spacing:.04em;
@@ -267,7 +276,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v2.8.0</div>
+    <div id="verTag">v3.0.0</div>
   </div>
 </div>
 
@@ -348,10 +357,9 @@
 <div class="stick" id="stickBase"></div>
 <div class="stick" id="stickKnob"></div>
 <div id="interactBtn">◈</div>
-<div id="goggleBtn" class="toolBtn">☾</div>
 <div id="cogBtn">⚙</div>
 <div id="resBar"></div>
-<div id="stepsBox"><span id="stepsNum">40</span><span class="lbl">steps</span></div>
+<div id="stepsBox"><span id="stepsNum">40</span><span class="lbl">🐾</span></div>
 <div id="invHud"></div>
 <div id="geiger">
   <div id="geigerLabel">GEIGER</div>
@@ -360,6 +368,10 @@
   <div id="geigerDot"></div>
 </div>
 <div id="goggleFx"></div>
+<div id="cine">
+  <div id="cineNight">Night One</div>
+  <div id="cineSkip">tap to skip</div>
+</div>
 <div id="fade"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -373,7 +385,7 @@
 (function(){
 'use strict';
 
-const VERSION='v2.8.0';
+const VERSION='v3.0.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -418,7 +430,7 @@ const res={
 function saveRes(){ store.set('fenn_coins',res.coins); store.set('fenn_dice',res.dice);
   store.set('fenn_keys',res.keys); store.set('fenn_gems',res.gems); }
 saveRes();
-const RES_ICON={coins:'\u25C9',dice:'\u2685',keys:'\u26B7',gems:'\u25C7'};
+const RES_ICON={coins:'\uD83E\uDE99',dice:'\uD83C\uDFB2',keys:'\uD83D\uDD11',gems:'\uD83D\uDC8E'};
 function renderRes(){
   const bar=document.getElementById('resBar'); if(!bar) return;
   let h='',any=false;
@@ -429,8 +441,34 @@ function renderRes(){
 }
 function addRes(kind,n,quiet){
   res[kind]=Math.max(0,res[kind]+n); saveRes(); renderRes();
+  if(kind==='coins'&&n>0) kerching();
   if(!quiet&&n>0){ const nm={coins:'coin',dice:'ivory die',keys:'key',gems:'gem'}[kind];
     msg('Found '+(n>1?n+' '+nm+'s':'a '+nm)+'.'); }
+}
+// a bright two-note cash-register chime
+function kerching(){
+  try{
+    if(!window.__fennActx) window.__fennActx=new (window.AudioContext||window.webkitAudioContext)();
+    const ac=window.__fennActx; if(ac.state==='suspended') ac.resume();
+    const t0=ac.currentTime;
+    [[1318.5,0,0.10],[1975.5,0.075,0.26]].forEach(([f,off,dur])=>{
+      const o=ac.createOscillator(), g=ac.createGain(), o2=ac.createOscillator();
+      o.type='triangle'; o.frequency.value=f;
+      o2.type='sine'; o2.frequency.value=f*2.01;              // shimmer
+      g.gain.setValueAtTime(0.0001,t0+off);
+      g.gain.exponentialRampToValueAtTime(0.16,t0+off+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+off+dur);
+      o.connect(g); o2.connect(g); g.connect(ac.destination);
+      o.start(t0+off); o2.start(t0+off); o.stop(t0+off+dur+0.02); o2.stop(t0+off+dur+0.02);
+    });
+    // the little bell ting on top
+    const n=ac.createOscillator(), ng=ac.createGain();
+    n.type='square'; n.frequency.value=2637;
+    ng.gain.setValueAtTime(0.0001,t0); ng.gain.exponentialRampToValueAtTime(0.05,t0+0.008);
+    ng.gain.exponentialRampToValueAtTime(0.0001,t0+0.13);
+    n.connect(ng); ng.connect(ac.destination); n.start(t0); n.stop(t0+0.15);
+    if(navigator.vibrate) navigator.vibrate(12);
+  }catch(e){}
 }
 
 // ---------- steps ----------
@@ -2345,28 +2383,23 @@ function giveItem(id){
   inventory.add(id);
   store.set('fenn_items',[...inventory]);
   renderInv();
-  if(id==='geiger') byId('geiger').style.display='block';
-  if(id==='goggles') byId('goggleBtn').style.display=isTouch?'flex':'none';
 }
 function renderInv(){
   const el=byId('invHud'); let h='';
-  if(hasItem('goggles')) h+='<div class="item'+(gogglesOn?' active':'')+'"><span class="ic">\u25C9</span>Goggles</div>';
-  if(hasItem('geiger'))  h+='<div class="item"><span class="ic">\u2301</span>Geiger</div>';
+  if(hasItem('goggles')) h+='<div class="item"><span class="ic">\u25C9</span>Goggles</div>';
   if(hasItem('geiger')||bonesFound>0) h+='<div class="item"><span class="ic">\u269D</span>Bones '+bonesFound+'/3</div>';
   if(manuscripts>0) h+='<div class="item"><span class="ic">\u2637</span>Manuscripts '+manuscripts+'</div>';
   if(allowance>0) h+='<div class="item"><span class="ic">\u25C9</span>Coins '+allowance+'</div>';
   el.innerHTML=h;
 }
-function toggleGoggles(){
-  if(!hasItem('goggles')){ msg('You need the survey goggles.'); return; }
-  gogglesOn=!gogglesOn;
-  byId('goggleFx').style.display=gogglesOn?'block':'none';
-  byId('goggleBtn').classList.toggle('on',gogglesOn);
+function applyGoggles(){
+  gogglesOn=hasItem('goggles');            // worn permanently once found
+  const fx=byId('goggleFx'); if(fx) fx.style.display=gogglesOn?'block':'none';
   xrayGroup.visible=gogglesOn;
-  fillNextBone();   // ghost bones follow the goggles
+  fillNextBone();
   renderInv();
-  msg(gogglesOn?'Goggles on \u2014 night-vision engaged. Radioactive traces glow.':'Goggles off.');
 }
+function toggleGoggles(){ applyGoggles(); }   // kept as a no-op hook
 // pulsing highlight ring shown through the goggles
 function xrayMark(x,z){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(1.1,0.08,6,20),
@@ -2512,8 +2545,8 @@ function buildEgyptRoom(cx,cz){
   interactables.push({x:gx,z:gz,r:1.8,dead:false,
     label:()=>hasItem('goggles')?'':'take the survey goggles',
     cond:()=>!hasItem('goggles'),
-    fn:()=>{ giveItem('goggles'); scene.remove(gg);
-      msg('Survey goggles acquired. Toggle with '+(isTouch?'the \u263E button':'G')+' \u2014 night-vision & radioactive traces.'); }});
+    fn:()=>{ giveItem('goggles'); scene.remove(gg); applyGoggles();
+      msg('Survey goggles acquired \u2014 worn from here on. Radioactive traces now glow.'); }});
 }
 
 // ---------- JURASSIC HALL ----------
@@ -2618,6 +2651,7 @@ function updateTools(dt,t){
   byId('geigerFill').style.width=Math.round(inten*100)+'%';
   const cps=Math.round(inten*inten*40);
   byId('geigerCps').textContent=cps+' cps';
+  byId('geiger').style.display=cps>0?'block':'none';
   clickAcc+=dt*cps;
   const dot=byId('geigerDot');
   if(clickAcc>=1){ clickAcc-=Math.floor(clickAcc);
@@ -2694,8 +2728,6 @@ function makePlanetSignMat(p){
   c.fillStyle=p.tc; c.font='bold 40px Georgia';
   c.fillText(p.n.split('').join('\u2009'),240,124);
   c.fillStyle=p.sc; c.font='italic 22px Georgia'; c.fillText(p.t,244,158);
-  c.fillStyle='#d7d2c6'; c.font='italic 18px Georgia';
-  c.fillText('Starting tomorrow\u2026',244,206);
   c.strokeStyle='#3a4658'; c.lineWidth=4; c.strokeRect(6,6,500,292);
   const tex=new THREE.CanvasTexture(cv); return new THREE.MeshLambertMaterial({map:tex,emissive:0x202832,emissiveIntensity:0.7});
 }
@@ -2860,28 +2892,44 @@ function buildMoraBox(cx,cz,rg){
   cyl(0.5,0.62,1.1,10,M.marbleSh,cx,0.55,cz); cyl(0.58,0.58,0.12,10,M.marble,cx,1.16,cz);
   addColliderBox(cx,cz,1.2,1.2,0.1);
   const BY=1.30, BS=0.42, H=BS/2;
-  box(BS,0.20,BS,M.darkWood,cx,BY,cz);                 // casket body
-  // the allowance coin, lying down, stamped with an A
+  // hollow casket: floor + four walls, so it reads as a box once the lid lifts
+  const WT=0.035, WH=0.20;
+  box(BS,WT,BS,M.darkWood,cx,BY-WH/2+WT/2,cz);                       // inner floor
+  box(BS,WH,WT,M.darkWood,cx,BY,cz-H+WT/2);                          // back wall
+  box(BS,WH,WT,M.darkWood,cx,BY,cz+H-WT/2);                          // front wall
+  box(WT,WH,BS-WT*2,M.darkWood,cx-H+WT/2,BY,cz);                     // left wall
+  box(WT,WH,BS-WT*2,M.darkWood,cx+H-WT/2,BY,cz);                     // right wall
+  // the allowance coin, lying flat inside, stamped with an A
   const acv=document.createElement('canvas'); acv.width=64; acv.height=64; const ac=acv.getContext('2d');
   const ag=ac.createRadialGradient(24,20,4,32,32,32); ag.addColorStop(0,'#f8e49a'); ag.addColorStop(1,'#c39a34');
   ac.fillStyle=ag; ac.beginPath(); ac.arc(32,32,31,0,7); ac.fill();
   ac.strokeStyle='#8a6a1e'; ac.lineWidth=3; ac.beginPath(); ac.arc(32,32,27,0,7); ac.stroke();
   ac.fillStyle='#6a4d12'; ac.font='bold 34px Georgia'; ac.textAlign='center'; ac.fillText('A',32,44);
   const faceMat=new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(acv),emissive:0x2a2008});
-  const coin=cyl(0.085,0.085,0.016,16,[faceMat,faceMat,faceMat],cx,BY+0.072,cz);  // flat on its side
-  coin.visible=false; coin.castShadow=false;
+  const coinG=new THREE.Group(); coinG.position.set(cx,BY-WH/2+WT+0.012,cz); scene.add(coinG);
+  cyl(0.088,0.088,0.02,18,M.gold,0,0,0,coinG);                       // rim
+  const face=new THREE.Mesh(new THREE.CircleGeometry(0.082,18),faceMat);
+  face.rotation.x=-Math.PI/2; face.position.y=0.011; coinG.add(face); // the A, facing up
+  coinG.visible=false;
   // hinged lid (carries the tile grid)
   const lid=new THREE.Group(); lid.position.set(cx,BY+0.10,cz-H); scene.add(lid);
   box(BS+0.04,0.03,BS+0.04,M.gold,0,0.015,H,lid);
   const bs={rg:rg, grid:moraInitial(rg), initial:moraInitial(rg), cornersLit:[false,false,false,false],
-            tiles:[], lid:lid, coin:coin, solved:false};
+            tiles:[], lid:lid, coin:coinG, coinTaken:false, solved:false};
   const step=BS/3;
   for(let i=0;i<9;i++){ const r=Math.floor(i/3),c=i%3;
     const t=box(step*0.84,0.03,step*0.84,lam(MORA_HEX[bs.grid[i]]),(c-1)*step,0.045,(r-1)*step+H,lid);
     t.castShadow=false; bs.tiles.push(t);
   }
   moraLids.push(lid);
+  // the coin can be lifted out once the box is open
+  interactables.push({x:cx,z:cz+0.9,r:1.5,dead:false,
+    cond:()=>bs.solved&&!bs.coinTaken,
+    label:'take the allowance coin',
+    fn:()=>{ bs.coinTaken=true; coinG.visible=false; addRes('coins',1,true);
+             msg('Allowance coin collected.'); }});
   interactables.push({x:cx,z:cz+1.1,r:1.7,dead:false,
+    cond:()=>!(bs.solved&&!bs.coinTaken),
     label:()=>bs.solved?('the '+rg.name+' box lies open'):('examine the '+rg.name+' box'),
     fn:()=>openMora(bs)});
   return bs;
@@ -3019,7 +3067,10 @@ function moraLock(ci){
         const done=new Set(store.get('fenn_mora_solved',[])); done.add(bs.rg.id); store.set('fenn_mora_solved',[...done]);
         allowance+=1; store.set('fenn_allowance',allowance);
         addRes('gems',3,true);                    // puzzles pay out gems
-        renderInv(); msg('Your allowance has been increased.');
+        renderInv();
+        // step back and watch the casket open
+        setTimeout(()=>{ if(currentOverlay===byId('moraOverlay')) closeOverlay();
+                         msg('Your allowance has been increased.'); },900);
       }
     }
   } else { bs.grid=bs.initial.slice(); bs.cornersLit=[false,false,false,false]; updateBox3D(bs); renderMora();
@@ -3198,7 +3249,8 @@ function makeCoinMesh(letter){
 function addPickup(kind,x,y,z,label){
   const g=new THREE.Group(); g.position.set(x,y,z); scene.add(g);
   if(kind==='coins'){
-    const c=cyl(0.15,0.15,0.03,16,M.gold,0,0,0,g); c.rotation.x=Math.PI/2;   // lying flat
+    cyl(0.15,0.15,0.03,16,M.gold,0,0,0,g);                     // a disc already lies flat
+    cyl(0.115,0.115,0.034,16,lam(0xe8c24a,{emissive:0x4a3a10}),0,0,0,g);
   } else if(kind==='dice'){
     const ivory=lam(0xf1ece0,{emissive:0x2a2822});
     box(0.2,0.2,0.2,ivory,0,0,0,g);
@@ -3242,8 +3294,8 @@ function spawnRoomLoot(f,cx,cz,room){
     furn={x:fx,z:fz,y:1.06};
   }
   // COINS — anywhere
-  if(Math.random()<0.42) addPickup('coins',cx+rnd(),0.12,cz+rnd());
-  if(Math.random()<0.14) addPickup('coins',cx+rnd(),0.12,cz+rnd());
+  if(Math.random()<0.42) addPickup('coins',cx+rnd(),0.117,cz+rnd());
+  if(Math.random()<0.14) addPickup('coins',cx+rnd(),0.117,cz+rnd());
   // IVORY DICE — rare, and only ever on furniture
   if(furn && Math.random()<0.10) addPickup('dice',furn.x+(Math.random()-0.5)*1.1,furn.y+0.11,furn.z);
   // KEYS — rarely on the floor, more often on a table
@@ -3256,7 +3308,7 @@ function spawnRoomLoot(f,cx,cz,room){
 
 // ---------- outdoor loot: coins anywhere, the odd key on a bench ----------
 [[30,44],[-22,-14],[74,52],[-52,22],[12,-60],[88,-6],[-34,-64],[58,-44]].forEach(([x,z])=>{
-  if(Math.random()<0.7) addPickup('coins',x+(Math.random()-0.5)*6,0.12,z+(Math.random()-0.5)*6);
+  if(Math.random()<0.7) addPickup('coins',x+(Math.random()-0.5)*6,0.035,z+(Math.random()-0.5)*6);
 });
 // benches out on the paths sometimes hold a key
 [[24,52],[-18,6],[70,58],[96,10]].forEach(([x,z])=>{
@@ -3265,7 +3317,7 @@ function spawnRoomLoot(f,cx,cz,room){
 
 // ---------- the allowance envelope on the entrance table ----------
 (function allowanceEnvelope(){
-  const ex=57.4, ey=1.02, ez=14.6;
+  const ex=54.05, ey=1.16, ez=14.55;
   const env=new THREE.Group(); env.position.set(ex,ey,ez); env.rotation.y=-0.25; scene.add(env);
   const paper=lam(0x9a7248,{emissive:0x2a1f12});
   box(0.62,0.03,0.42,paper,0,0,0,env);
@@ -3287,6 +3339,145 @@ function spawnRoomLoot(f,cx,cz,room){
     }});
 })();
 
+
+// =====================================================================
+// OPENING CINEMATIC — Mary Jones, outside the museum
+// =====================================================================
+const NIGHT_WORDS=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+  'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen','Twenty'];
+function nightWord(n){ return NIGHT_WORDS[n]!==undefined?NIGHT_WORDS[n]:String(n); }
+
+// her face, painted: pale skin, the dark mask band, wide eyes, dark lips
+function makeMaryFace(){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const c=cv.getContext('2d');
+  c.clearRect(0,0,256,256);
+  // face shape
+  c.fillStyle='#c9ccd6';
+  c.beginPath(); c.ellipse(128,132,74,92,0,0,Math.PI*2); c.fill();
+  // cool shadow down the left cheek
+  c.fillStyle='#a7adbb';
+  c.beginPath(); c.ellipse(92,140,34,74,0.06,0,Math.PI*2); c.fill();
+  // the dark mask across the eyes
+  c.fillStyle='#20222c';
+  c.beginPath(); c.ellipse(128,112,72,30,0,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(128,96,66,22,0,0,Math.PI*2); c.fill();
+  // eyes
+  [[100,112],[156,112]].forEach(([ex,ey])=>{
+    c.fillStyle='#f2f1ee'; c.beginPath(); c.ellipse(ex,ey,20,15,0,0,Math.PI*2); c.fill();
+    c.fillStyle='#2b2b33'; c.beginPath(); c.arc(ex+2,ey+1,8.5,0,Math.PI*2); c.fill();
+    c.fillStyle='#0b0b10'; c.beginPath(); c.arc(ex+2,ey+1,4,0,Math.PI*2); c.fill();
+    c.fillStyle='#ffffff'; c.beginPath(); c.arc(ex-3,ey-4,2.6,0,Math.PI*2); c.fill();
+  });
+  // nose + lips
+  c.strokeStyle='#9aa0ad'; c.lineWidth=3; c.beginPath();
+  c.moveTo(130,140); c.quadraticCurveTo(136,160,126,166); c.stroke();
+  c.fillStyle='#8d5f63'; c.beginPath(); c.ellipse(128,192,20,11,0,0,Math.PI*2); c.fill();
+  c.fillStyle='#6f4a4f'; c.beginPath(); c.ellipse(128,197,17,5,0,0,Math.PI*2); c.fill();
+  const tex=new THREE.CanvasTexture(cv);
+  return new THREE.MeshLambertMaterial({map:tex,transparent:true,emissive:0x2a2e38,emissiveIntensity:0.5});
+}
+function buildMary(x,z,yaw){
+  const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=yaw; scene.add(g);
+  const coat=lam(0x1b1f2b,{emissive:0x080a10}), coatDk=lam(0x11141d,{emissive:0x05070c});
+  const red=lam(0xb0362c,{emissive:0x3a100c}), skin=lam(0xc9ccd6,{emissive:0x2a2e38});
+  const hair=lam(0x4a2620,{emissive:0x140a08}), blk=lam(0x0d0d12,{emissive:0x050508});
+  // legs
+  [-0.16,0.16].forEach(sx=>cyl(0.11,0.09,0.86,8,blk,sx,0.43,0,g));
+  // long coat, flared
+  cyl(0.40,0.30,0.92,10,coat,0,1.24,0,g);
+  cyl(0.30,0.34,0.62,10,coat,0,1.98,0,g);
+  // red piping down the front + sash
+  box(0.05,0.86,0.03,red,0.10,1.28,0.29,g);
+  const sash=box(0.5,0.06,0.04,red,0,1.62,0.30,g); sash.rotation.z=-0.5;
+  // shoulders with red flashes
+  box(0.62,0.14,0.34,coatDk,0,2.28,0,g);
+  [-1,1].forEach(sx=>box(0.20,0.07,0.30,red,sx*0.22,2.34,0,g));
+  // arms — the right one raised, as in the photograph
+  const armL=new THREE.Group(); armL.position.set(-0.34,2.2,0); armL.rotation.z=0.18; g.add(armL);
+  cyl(0.10,0.09,0.86,8,coat,0,-0.43,0,armL); sph(0.09,blk,0,-0.9,0,armL,8,6);
+  const armR=new THREE.Group(); armR.position.set(0.34,2.2,0); armR.rotation.z=-1.15; g.add(armR);
+  cyl(0.10,0.09,0.82,8,coat,0,-0.41,0,armR);
+  const fore=new THREE.Group(); fore.position.set(0,-0.82,0); fore.rotation.z=-0.65; armR.add(fore);
+  cyl(0.085,0.08,0.62,8,coat,0,-0.31,0,fore); sph(0.095,blk,0,-0.66,0,fore,8,6);  // gloved hand
+  // black turtleneck
+  cyl(0.17,0.17,0.28,10,blk,0,2.48,0,g);
+  // head
+  const head=sph(0.235,skin,0,2.78,0,g,14,12); head.scale.set(1,1.12,0.94);
+  // painted face on the front of the head
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.5),makeMaryFace());
+  face.position.set(0,2.79,-0.215); face.rotation.y=Math.PI; g.add(face);
+  // auburn bob — a shell around the back and sides
+  const bob=sph(0.265,hair,0,2.80,0.02,g,14,12); bob.scale.set(1.06,1.06,1.0);
+  box(0.52,0.30,0.30,hair,0,2.60,0.06,g);                       // the blunt cut at the jaw
+  [-1,1].forEach(sx=>box(0.10,0.42,0.22,hair,sx*0.24,2.66,-0.06,g));  // side lengths framing the face
+  // beret, tilted
+  const ber=new THREE.Group(); ber.position.set(0,3.02,0.03); ber.rotation.set(0.18,0,0.22); g.add(ber);
+  cyl(0.30,0.28,0.13,14,lam(0x3a2b3c,{emissive:0x140e16}),0,0,0,ber);
+  cyl(0.31,0.31,0.05,14,red,0,-0.07,0,ber);                     // red band beneath
+  sph(0.045,lam(0x3a2b3c),0,0.09,0,ber,8,6);
+  g.visible=false;
+  return g;
+}
+
+const cine={active:false,t:0,mary:null,dur:9.6};
+// keyframes: [time, x,y,z, yaw, pitch]
+let CINE_KEYS=[];
+function startCinematic(){
+  const sx=player.x, sz=player.z;
+  if(!cine.mary) cine.mary=buildMary(sx,sz,0);      // she stands exactly where you spawn
+  cine.mary.visible=true;
+  CINE_KEYS=[
+    [0.00, sx, 1.72, sz-13.0, Math.PI,       0.04],   // ahead of her, looking back at her face
+    [0.34, sx, 1.86, sz-9.2,  Math.PI,      -0.02],   // drifting slowly forward
+    [0.62, sx, 4.60, sz-4.0,  Math.PI*0.72, -0.50],   // rising, arcing over
+    [0.84, sx, 5.20, sz+0.6,  Math.PI*0.20, -0.86],   // directly above her, looking down
+    [1.00, sx, EYE,  sz,      0,            -0.04]    // settled behind her eyes
+  ];
+  cine.active=true; cine.t=0;
+  const el=byId('cine'); el.style.display='flex';
+  byId('cineNight').textContent='Night '+nightWord(night+1);   // first night reads "Night One"
+  byId('cineNight').classList.remove('show');
+  requestAnimationFrame(()=>byId('cineNight').classList.add('show'));
+}
+function sstep(u){ return u*u*(3-2*u); }
+function updateCinematic(dt){
+  cine.t=Math.min(cine.dur,cine.t+dt);
+  const u=cine.t/cine.dur;
+  let a=CINE_KEYS[0],b=CINE_KEYS[CINE_KEYS.length-1];
+  for(let i=0;i<CINE_KEYS.length-1;i++){
+    if(u>=CINE_KEYS[i][0]&&u<=CINE_KEYS[i+1][0]){ a=CINE_KEYS[i]; b=CINE_KEYS[i+1]; break; }
+  }
+  const span=(b[0]-a[0])||1, k=sstep(Math.max(0,Math.min(1,(u-a[0])/span)));
+  const lp=(i)=>a[i]+(b[i]-a[i])*k;
+  camera.position.set(lp(1),lp(2),lp(3));
+  camera.rotation.order='YXZ';
+  camera.rotation.y=lp(4);
+  camera.rotation.x=lp(5);
+  if(skyMesh) skyMesh.position.copy(camera.position);
+  // she fades from view as we arrive behind her eyes
+  if(u>0.88 && cine.mary){
+    const f=Math.max(0,Math.min(1,(u-0.88)/0.10));
+    cine.mary.traverse(o=>{ if(o.material&&o.material.opacity!==undefined){
+      o.material.transparent=true; o.material.opacity=1-f; } });
+    if(f>=1) cine.mary.visible=false;
+  }
+  if(u>0.72) byId('cineNight').classList.remove('show');
+  if(cine.t>=cine.dur) endCinematic();
+}
+function endCinematic(){
+  if(!cine.active) return;
+  cine.active=false;
+  if(cine.mary){ cine.mary.visible=false; }
+  byId('cine').style.display='none';
+  player.yaw=0; player.pitch=-0.04;
+  lastPX=player.x; lastPZ=player.z;
+  if(!isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
+  else initTouch();
+  byId('cogBtn').style.display='flex';
+  renderInv(); renderRes(); renderSteps(); applyGoggles();
+  setTimeout(()=>{ const h=byId('hint'); if(h && !intel.visible) h.style.opacity='0'; },9000);
+  setTimeout(()=>{ const tp=byId('titlePlate'); if(tp) tp.style.opacity='0'; },7000);
+}
 
 // =====================================================================
 // UI — overlays, prompt, toast, blueprint, directory
@@ -3653,7 +3844,6 @@ addEventListener('keydown',e=>{
   if(e.code==='Escape' && !currentOverlay && started){ openSettings(); return; }
   if(uiOpen) return;
   if(e.code==='KeyH') toggleIntel();
-  if(e.code==='KeyG') toggleGoggles();
   if(e.code==='KeyR') openPoolReorder();
   if(e.code==='KeyB') openBP();
   if(e.code==='KeyE' && currentInter) currentInter.fn();
@@ -3664,10 +3854,6 @@ interactBtn.addEventListener('click',fireInteract);
 interactBtn.addEventListener('touchstart',function(e){
   e.preventDefault(); e.stopPropagation(); fireInteract();
 },{passive:false});
-(function(){ const gb=byId('goggleBtn');
-  gb.addEventListener('click',()=>{ if(!uiOpen) toggleGoggles(); });
-  gb.addEventListener('touchstart',function(e){ e.preventDefault(); e.stopPropagation(); if(!uiOpen) toggleGoggles(); },{passive:false});
-})();
 
 const overlay=byId('startOverlay');
 const isTouch=matchMedia('(pointer:coarse)').matches;
@@ -3675,19 +3861,15 @@ let started=false;
 overlay.addEventListener('click',()=>{
   if(uiOpen) return;
   overlay.style.display='none'; started=true;
-  if(!isTouch) canvas.requestPointerLock && canvas.requestPointerLock();
-  else initTouch();
-  // restore any permanently-owned tools into the HUD
-  renderInv();
-  byId('cogBtn').style.display='flex';
-  lastPX=player.x; lastPZ=player.z;
-  renderRes(); renderSteps();
-  if(hasItem('geiger')) byId('geiger').style.display='block';
-  if(hasItem('goggles')&&isTouch) byId('goggleBtn').style.display='flex';
-  // let the onboarding chrome fade so the view stays clear
-  setTimeout(()=>{ const h=byId('hint'); if(!intel.visible) h.style.opacity='0'; },9000);
-  setTimeout(()=>{ byId('titlePlate').style.opacity='0'; },7000);
+  startCinematic();
 });
+// tap or any key skips the opening
+(function(){ const c=byId('cine');
+  const skip=e=>{ if(cine.active){ e.preventDefault(); e.stopPropagation(); cine.t=cine.dur; endCinematic(); } };
+  c.addEventListener('click',skip);
+  c.addEventListener('touchstart',skip,{passive:false});
+  addEventListener('keydown',e=>{ if(cine.active){ cine.t=cine.dur; endCinematic(); } });
+})();
 canvas.addEventListener('click',()=>{
   if(started && !isTouch && !uiOpen && document.pointerLockElement!==canvas)
     canvas.requestPointerLock && canvas.requestPointerLock();
@@ -3805,7 +3987,7 @@ function tick(){
   const t=clock.elapsedTime;
   const now=performance.now();
 
-  if(!uiOpen && !fading){
+  if(!uiOpen && !fading && !cine.active){
     let ix=0,iz=0;
     if(keys.KeyW||keys.ArrowUp) iz-=1;
     if(keys.KeyS||keys.ArrowDown) iz+=1;
@@ -3882,11 +4064,14 @@ function tick(){
 
   const speedNow=Math.hypot(player.vx,player.vz);
   const bob=Math.sin(t*9)*Math.min(0.06,speedNow*0.006);
-  camera.position.set(player.x,EYE+bob,player.z);
-  if(skyMesh) skyMesh.position.copy(camera.position);
-  camera.rotation.order='YXZ';
-  camera.rotation.y=player.yaw;
-  camera.rotation.x=player.pitch;
+  if(cine.active){ updateCinematic(dt); }
+  else{
+    camera.position.set(player.x,EYE+bob,player.z);
+    if(skyMesh) skyMesh.position.copy(camera.position);
+    camera.rotation.order='YXZ';
+    camera.rotation.y=player.yaw;
+    camera.rotation.x=player.pitch;
+  }
 
   for(const f of flags){
     f.rotation.y=Math.sin(t*2.2+f.position.x)*0.28;
