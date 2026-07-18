@@ -284,7 +284,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.1.1</div>
+    <div id="verTag">v3.2.1</div>
   </div>
 </div>
 
@@ -400,7 +400,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.1.1';
+const VERSION='v3.2.1';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -890,14 +890,8 @@ function makeWallpaperTexture(bgHex,motifHex){
   const S=512, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
   const c=cv.getContext('2d');
   const hex=v=>'#'+('000000'+v.toString(16)).slice(-6);
-  // ---- ground: deep, slightly shaded, with a fine woven tooth ----
-  const g=c.createLinearGradient(0,0,0,S);
-  g.addColorStop(0,hex(bgHex)); g.addColorStop(0.5,hex(mix(bgHex,0xffffff,0.06))); g.addColorStop(1,hex(bgHex));
-  c.fillStyle=g; c.fillRect(0,0,S,S);
-  c.globalAlpha=0.05; c.strokeStyle='#000'; c.lineWidth=1;
-  for(let y=0;y<S;y+=3){ c.beginPath(); c.moveTo(0,y); c.lineTo(S,y); c.stroke(); }
-  for(let x=0;x<S;x+=3){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,S); c.stroke(); }
-  c.globalAlpha=1;
+  // ---- ground: one flat, vibrant colour — no gradient, no weave, no shading ----
+  c.fillStyle=hex(bgHex); c.fillRect(0,0,S,S);
   function mix2(a,b,t){ return mix(a,b,t); }
   // ---- a tapered acanthus frond: sampled bezier spine, offset to a filled leaf ----
   function bez(a,b,cc,d,t){ const u=1-t; return u*u*u*a+3*u*u*t*b+3*u*t*t*cc+t*t*t*d; }
@@ -978,12 +972,10 @@ function makeWallpaperTexture(bgHex,motifHex){
     c.restore();
   }
   // ---- lay the pattern: half-drop repeat, drawn wrapped so it tiles ----
-  const STEP=256, SC=0.78, HI=hex(mix(motifHex,0xffffff,0.22)), MO=hex(motifHex);
+  const STEP=256, SC=0.78, MO=hex(motifHex);   // exactly two colours: ground + motif
   for(let j=-1;j<=2;j++) for(let i=-1;i<=2;i++){
     const x=i*STEP+(j&1?STEP/2:0), y=j*STEP;
-    motif(x+2.5,y+2.5,SC,HI);              // soft raised highlight beneath
-    motif(x,y,SC,MO);                      // the damask itself
-    sprig(x+STEP/2+2.5,y+STEP/2+2.5,SC,HI);
+    motif(x,y,SC,MO);                      // the damask itself, flat
     sprig(x+STEP/2,y+STEP/2,SC,MO);
   }
   const tex=new THREE.CanvasTexture(cv);
@@ -995,12 +987,12 @@ function mix(a,b,t){
   const br=(b>>16)&255, bg=(b>>8)&255, bb=b&255;
   return (Math.round(ar+(br-ar)*t)<<16)|(Math.round(ag+(bg-ag)*t)<<8)|Math.round(ab+(bb-ab)*t);
 }
-// four colourways — deep grounds, near-black (or metallic) damask
+// four colourways — exactly two flat, vibrant colours each
 const WALLPAPERS=[
-  {id:'crimson', bg:0x4a0c11, mo:0x08060a, em:0x1c0709},
-  {id:'gold',    bg:0x0a0908, mo:0xa8842f, em:0x141008},
-  {id:'navy',    bg:0x102540, mo:0x050a14, em:0x081020},
-  {id:'plum',    bg:0x2b1038, mo:0x0a0412, em:0x140820}
+  {id:'crimson', bg:0xb5091a, mo:0x000000, em:0x400309},   // deep vibrant red + black
+  {id:'gold',    bg:0x000000, mo:0xe8b422, em:0x171204},   // black + vivid gold
+  {id:'navy',    bg:0x0e3fa8, mo:0x000000, em:0x04143a},   // vivid royal blue + black
+  {id:'plum',    bg:0x8a1cb8, mo:0x000000, em:0x2c0940}    // vivid purple + black
 ];
 const _wpCache={};
 function wallpaperById(id){
@@ -3337,12 +3329,16 @@ function spawnRoomLoot(f,cx,cz,room){
   const env=new THREE.Group(); env.position.set(ex,ey,ez); env.rotation.y=-0.25; scene.add(env);
   const paper=lam(0x9a7248,{emissive:0x2a1f12});
   box(0.62,0.03,0.42,paper,0,0,0,env);
-  const flap=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.2,3),paper);
-  flap.rotation.x=-Math.PI/2; flap.rotation.z=Math.PI; flap.position.set(0,0.02,0.02); env.add(flap);
-  box(0.16,0.032,0.16,lam(0x7a2018),0.0,0.005,0,env);     // wax seal
+  // flat triangular flap, folded down onto the envelope face
+  const flapShape=new THREE.Shape();
+  flapShape.moveTo(-0.29,0); flapShape.lineTo(0.29,0); flapShape.lineTo(0,0.20); flapShape.closePath();
+  const flap=new THREE.Mesh(new THREE.ShapeGeometry(flapShape),
+    new THREE.MeshLambertMaterial({color:0x8a6540,emissive:0x241a0e,side:THREE.DoubleSide}));
+  flap.rotation.x=-Math.PI/2; flap.position.set(0,0.018,0.21); env.add(flap);
+  box(0.16,0.032,0.16,lam(0x7a2018),0.0,0.02,0.02,env);   // wax seal over the flap tip
   let taken=(store.get('fenn_allowNight',-1)===night);
   if(taken) env.visible=false;
-  interactables.push({x:ex,z:ez,r:1.9,dead:false,
+  interactables.push({x:ex,z:14.55,r:2.1,dead:false,prio:1,
     cond:()=>!taken,
     label:()=>'open the brown envelope',
     fn:()=>{
@@ -3390,8 +3386,14 @@ function makeAlzaraSign(){
   const g=c.createLinearGradient(0,0,0,160); g.addColorStop(0,'#5e2320'); g.addColorStop(1,'#3d1614');
   c.fillStyle=g; c.fillRect(0,0,512,160);
   c.strokeStyle='#8a6a3a'; c.lineWidth=8; c.strokeRect(8,8,496,144);
-  c.fillStyle='#efe6d6'; c.font='bold 92px Georgia'; c.textAlign='center';
-  c.fillText('A L Z A R A',256,112);
+  // BIG capital A, then smaller capitals LZARA, centred as one word
+  c.fillStyle='#efe6d6'; c.textAlign='left'; c.textBaseline='alphabetic';
+  const fBig='bold 118px Georgia', fSm='bold 74px Georgia';
+  c.font=fBig; const wA=c.measureText('A').width;
+  c.font=fSm;  const wRest=c.measureText('LZARA').width;
+  let x=(512-(wA+wRest))/2; const base=118;
+  c.font=fBig; c.fillText('A',x,base); x+=wA;
+  c.font=fSm;  c.fillText('LZARA',x,base);
   return new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv),emissive:0x2a1210});
 }
 function rebuildCable(){
@@ -3408,6 +3410,16 @@ function rebuildCable(){
   const end=pts[pts.length-1]; plug.position.copy(end);
   const grp=new THREE.Group(); grp.add(tube); grp.add(plug); scene.add(grp);
   alzara.cable=grp;
+  if(!alzara.plugged){
+    // the loose plug falls through the floor and vanishes
+    const g=grp; let vy=0.006;
+    (function fall(){
+      if(alzara.cable!==g) return;                 // superseded (re-plugged / room rebuilt)
+      vy+=0.0035; g.position.y-=vy;                // accelerating drop
+      if(g.position.y<=-1.6){ g.visible=false; return; }
+      requestAnimationFrame(fall);
+    })();
+  }
 }
 function buildAlzaraRoom(cx,cz,abs){
   alzara.cx=cx; alzara.cz=cz-3.6; alzara.plugged=true; alzara.busy=false;
@@ -3448,18 +3460,42 @@ function buildAlzaraRoom(cx,cz,abs){
   const dark=lam(0x22202a,{emissive:0x08080c});
   cyl(0.30,0.23,0.74,10,robe,0,0.37,0,A);                        // robed body, slimmer
   box(0.62,0.11,0.24,robe,0,0.70,0,A);                           // shoulders
-  // arms reaching forward onto the ball
-  [-1,1].forEach(sx=>{ const arm=new THREE.Group(); arm.position.set(sx*0.26,0.68,0.04); arm.rotation.set(-0.55,0,sx*0.75); A.add(arm);
-    cyl(0.065,0.058,0.48,8,robe,0,-0.24,0,arm);
-    sph(0.062,skin,0,-0.50,0,arm,8,6); });
+  // arms bend at the elbow (mid-arm), hands cupping the crystal ball
+  function limbSeg(a,b,r0,r1,mat){
+    const av=new THREE.Vector3(...a), bv=new THREE.Vector3(...b);
+    const dir=bv.clone().sub(av), len=dir.length();
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,8),mat);
+    m.position.copy(av.clone().add(bv).multiplyScalar(0.5));
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+    m.castShadow=true; m.receiveShadow=true; A.add(m); return m;
+  }
+  [-1,1].forEach(sx=>{
+    const S=[sx*0.25,0.66,0.05], E=[sx*0.36,0.46,0.13], H=[sx*0.155,0.415,0.235]; // shoulder / elbow / hand on ball
+    limbSeg(S,E,0.066,0.058,robe);                 // upper arm
+    limbSeg(E,H,0.056,0.045,robe);                 // forearm
+    sph(0.055,skin,E[0],E[1],E[2],A,8,6);          // elbow joint
+    const hand=sph(0.062,skin,H[0],H[1],H[2],A,8,6); // hand resting on the ball
+    hand.scale.set(1.0,0.8,1.15);
+  });
   sph(0.135,skin,0,0.86,0,A,12,10);                              // head
   // long pointed beard
   const beard=new THREE.Mesh(new THREE.ConeGeometry(0.105,0.40,8),dark);
   beard.position.set(0,0.61,0.045); beard.rotation.x=Math.PI; A.add(beard);
   box(0.15,0.03,0.04,dark,0,0.845,0.125,A);                      // moustache
   alzara.eyes=[];
-  [-1,1].forEach(sx=>{ const e=sph(0.021,new THREE.MeshBasicMaterial({color:0xdfe6ff}),sx*0.05,0.885,0.122,A,6,6);
-    e.castShadow=false; alzara.eyes.push(e); });
+  [-1,1].forEach(sx=>{
+    // oval white of the eye
+    const e=sph(0.022,new THREE.MeshBasicMaterial({color:0xf2f4ff}),sx*0.05,0.885,0.120,A,8,8);
+    e.scale.set(1.55,1.0,0.55); e.castShadow=false; alzara.eyes.push(e);
+    // dark pupil, sitting just proud of the white
+    const p=sph(0.010,new THREE.MeshBasicMaterial({color:0x14141c}),sx*0.05,0.885,0.134,A,6,6);
+    p.scale.set(1.1,1.3,0.5); p.castShadow=false;
+  });
+  // hair wrapping around the back and sides of the head, under the turban
+  const hairMat=lam(0x2a2430,{emissive:0x0a080e});
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.142,12,10,Math.PI*0.62,Math.PI*1.76,0.35,Math.PI*0.62),hairMat);
+  hair.position.set(0,0.86,0); hair.rotation.y=Math.PI; A.add(hair);
+  [-1,1].forEach(sx=>{ const tuft=sph(0.045,hairMat,sx*0.125,0.83,-0.02,A,8,6); tuft.scale.set(0.7,1.5,0.9); tuft.castShadow=false; });
   cyl(0.17,0.18,0.15,12,lam(0xe4ded0,{emissive:0x2a2822}),0,1.00,0,A);   // turban
   cyl(0.145,0.155,0.10,12,lam(0xd6cfc0,{emissive:0x262420}),0,1.10,0,A);
   sph(0.035,M.gold,0,1.17,0,A,8,6);
@@ -4283,16 +4319,17 @@ function tick(){
         if(Math.hypot(player.x-tp.x,player.z-tp.z)<tp.r){ fadeTeleport(tp.tx,tp.tz,tp.yaw); if(tp.onArrive) tp.onArrive(); break; }
       }
     }
-    // interact prompt
-    let best=null,bestD=1e9;
+    // interact prompt — higher prio wins; distance breaks ties
+    let best=null,bestD=1e9,bestP=-1e9;
     for(const it of interactables){
       if(it.dead) continue;
       if(it.cond && !it.cond()) continue;
       const d=Math.hypot(player.x-it.x,player.z-it.z);
-      if(d<it.r && d<bestD){
+      const p=it.prio||0;
+      if(d<it.r && (p>bestP || (p===bestP && d<bestD))){
         const lb=(typeof it.label==='function')?it.label():it.label;
         if(!lb) continue;
-        best=it; bestD=d; best._lb=lb;
+        best=it; bestD=d; bestP=p; best._lb=lb;
       }
     }
     currentInter=best;
