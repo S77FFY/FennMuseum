@@ -276,7 +276,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.0.0</div>
+    <div id="verTag">v3.0.1</div>
   </div>
 </div>
 
@@ -385,7 +385,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.0.0';
+const VERSION='v3.0.1';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -3347,34 +3347,117 @@ const NIGHT_WORDS=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight
   'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen','Twenty'];
 function nightWord(n){ return NIGHT_WORDS[n]!==undefined?NIGHT_WORDS[n]:String(n); }
 
-// her face, painted: pale skin, the dark mask band, wide eyes, dark lips
+// her face, painted: pale skin, auburn bob and fringe, the dark domino mask
 function makeMaryFace(){
-  const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const c=cv.getContext('2d');
-  c.clearRect(0,0,256,256);
-  // face shape
-  c.fillStyle='#c9ccd6';
-  c.beginPath(); c.ellipse(128,132,74,92,0,0,Math.PI*2); c.fill();
-  // cool shadow down the left cheek
-  c.fillStyle='#a7adbb';
-  c.beginPath(); c.ellipse(92,140,34,74,0.06,0,Math.PI*2); c.fill();
-  // the dark mask across the eyes
-  c.fillStyle='#20222c';
-  c.beginPath(); c.ellipse(128,112,72,30,0,0,Math.PI*2); c.fill();
-  c.beginPath(); c.ellipse(128,96,66,22,0,0,Math.PI*2); c.fill();
-  // eyes
-  [[100,112],[156,112]].forEach(([ex,ey])=>{
-    c.fillStyle='#f2f1ee'; c.beginPath(); c.ellipse(ex,ey,20,15,0,0,Math.PI*2); c.fill();
-    c.fillStyle='#2b2b33'; c.beginPath(); c.arc(ex+2,ey+1,8.5,0,Math.PI*2); c.fill();
-    c.fillStyle='#0b0b10'; c.beginPath(); c.arc(ex+2,ey+1,4,0,Math.PI*2); c.fill();
-    c.fillStyle='#ffffff'; c.beginPath(); c.arc(ex-3,ey-4,2.6,0,Math.PI*2); c.fill();
-  });
-  // nose + lips
-  c.strokeStyle='#9aa0ad'; c.lineWidth=3; c.beginPath();
-  c.moveTo(130,140); c.quadraticCurveTo(136,160,126,166); c.stroke();
-  c.fillStyle='#8d5f63'; c.beginPath(); c.ellipse(128,192,20,11,0,0,Math.PI*2); c.fill();
-  c.fillStyle='#6f4a4f'; c.beginPath(); c.ellipse(128,197,17,5,0,0,Math.PI*2); c.fill();
+  const W=256,H=320, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const c=cv.getContext('2d');
+  const SKIN='#d4d1da', SKIN_HI='#e9e6ee', SKIN_SH='#b3b1c0', SKIN_SH2='#9b99ab';
+  const HAIR='#5c2f24', HAIR_DK='#3f1f18', HAIR_HI='#8d4030';
+  const MASK='#3b3e49', MASK_DK='#2a2c36';
+  c.clearRect(0,0,W,H);
+  // ---- hair mass behind the head ----
+  c.fillStyle=HAIR;
+  c.beginPath(); c.ellipse(128,150,101,124,0,0,Math.PI*2); c.fill();
+  c.beginPath(); c.moveTo(27,150); c.lineTo(35,262); c.lineTo(78,258); c.lineTo(72,150); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(229,150); c.lineTo(224,268); c.lineTo(180,262); c.lineTo(184,150); c.closePath(); c.fill();
+  c.fillStyle=HAIR_HI;    // warm rim on her right
+  c.beginPath(); c.ellipse(196,146,30,110,0.06,0,Math.PI*2); c.fill();
+  // ---- face ----
+  c.fillStyle=SKIN;
+  c.beginPath();
+  c.moveTo(58,132);
+  c.bezierCurveTo(58,72,198,72,198,132);      // brow line
+  c.bezierCurveTo(200,196,178,246,128,266);   // right jaw to chin
+  c.bezierCurveTo(78,246,56,196,58,132);      // left jaw
+  c.closePath(); c.fill();
+  // cel shadow down her left cheek and under the jaw
+  c.fillStyle=SKIN_SH;
+  c.beginPath(); c.moveTo(58,132); c.bezierCurveTo(60,200,84,244,124,264);
+  c.lineTo(104,266); c.bezierCurveTo(66,242,50,196,50,134); c.closePath(); c.fill();
+  c.beginPath(); c.ellipse(90,206,26,44,0.15,0,Math.PI*2); c.fill();
+  c.fillStyle=SKIN_HI;    // light catching the forehead and right cheek
+  c.beginPath(); c.ellipse(158,150,34,52,0.1,0,Math.PI*2); c.fill();
+  // ---- the domino mask ----
+  c.fillStyle=MASK;
+  c.beginPath();
+  c.moveTo(48,128);
+  c.bezierCurveTo(52,92,104,84,128,100);
+  c.bezierCurveTo(152,84,204,92,208,128);
+  c.bezierCurveTo(210,166,182,182,150,176);
+  c.bezierCurveTo(136,174,120,174,106,176);
+  c.bezierCurveTo(74,182,46,166,48,128);
+  c.closePath(); c.fill();
+  c.fillStyle=MASK_DK;    // shaded left half of the mask
+  c.beginPath(); c.moveTo(48,128); c.bezierCurveTo(52,92,104,84,128,100);
+  c.lineTo(128,176); c.bezierCurveTo(112,174,74,182,48,166); c.closePath(); c.fill();
+  // eye openings cut through the mask, showing skin
+  function socket(ex,ey,rx,ry){
+    c.fillStyle=SKIN; c.beginPath(); c.ellipse(ex,ey,rx,ry,0,0,Math.PI*2); c.fill();
+  }
+  socket(94,135,31,25); socket(166,135,31,25);
+  // ---- eyes ----
+  function eye(ex,ey,flip){
+    c.save(); c.translate(ex,ey); if(flip) c.scale(-1,1);
+    c.fillStyle='#f4f3f6';                                  // sclera
+    c.beginPath(); c.moveTo(-25,2);
+    c.bezierCurveTo(-16,-15,16,-17,25,-1);
+    c.bezierCurveTo(16,15,-14,16,-25,2); c.closePath(); c.fill();
+    c.fillStyle='#7d8496'; c.beginPath(); c.arc(2,0,11.5,0,Math.PI*2); c.fill();   // iris
+    c.fillStyle='#4c5464'; c.beginPath(); c.arc(2,0,8,0,Math.PI*2); c.fill();
+    c.fillStyle='#12141c'; c.beginPath(); c.arc(2,0,4.6,0,Math.PI*2); c.fill();    // pupil
+    c.fillStyle='#ffffff'; c.beginPath(); c.arc(-3,-5,3.1,0,Math.PI*2); c.fill();  // catchlight
+    c.strokeStyle='#23252e'; c.lineWidth=3.4; c.lineCap='round';                   // upper lash line
+    c.beginPath(); c.moveTo(-25,1); c.bezierCurveTo(-16,-16,16,-18,25,-2); c.stroke();
+    c.strokeStyle='#5d5f6b'; c.lineWidth=1.6;
+    c.beginPath(); c.moveTo(-22,5); c.bezierCurveTo(-12,14,12,15,23,3); c.stroke(); // lower lid
+    c.restore();
+  }
+  eye(94,135,false); eye(166,135,true);
+  // ---- nose ----
+  c.strokeStyle=SKIN_SH2; c.lineWidth=3.2; c.lineCap='round';
+  c.beginPath(); c.moveTo(133,168); c.bezierCurveTo(140,192,140,202,129,208); c.stroke();
+  c.fillStyle=SKIN_SH2;
+  c.beginPath(); c.ellipse(118,206,5.2,3.2,0.2,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(140,206,5.2,3.2,-0.2,0,Math.PI*2); c.fill();
+  c.strokeStyle=SKIN_SH; c.lineWidth=2.2;
+  c.beginPath(); c.moveTo(112,202); c.quadraticCurveTo(129,214,146,202); c.stroke();
+  // ---- lips ----
+  c.fillStyle='#8f636b';
+  c.beginPath(); c.moveTo(100,232);
+  c.bezierCurveTo(112,222,120,228,128,228);
+  c.bezierCurveTo(136,228,144,222,156,232);
+  c.bezierCurveTo(144,240,112,240,100,232); c.closePath(); c.fill();
+  c.fillStyle='#a2757c';
+  c.beginPath(); c.moveTo(102,233); c.bezierCurveTo(116,248,140,248,154,233);
+  c.bezierCurveTo(140,240,116,240,102,233); c.closePath(); c.fill();
+  c.strokeStyle='#6d474e'; c.lineWidth=1.8;
+  c.beginPath(); c.moveTo(100,232); c.quadraticCurveTo(128,238,156,232); c.stroke();
+  // chin shadow
+  c.strokeStyle=SKIN_SH; c.lineWidth=2.4;
+  c.beginPath(); c.moveTo(116,252); c.quadraticCurveTo(128,257,140,252); c.stroke();
+  // ---- fringe sweeping across the brow, and side lengths ----
+  c.fillStyle=HAIR;
+  c.beginPath();
+  c.moveTo(44,120); c.bezierCurveTo(48,58,150,42,214,104);
+  c.bezierCurveTo(196,86,150,74,128,96);
+  c.bezierCurveTo(104,72,64,84,44,120); c.closePath(); c.fill();
+  c.beginPath();  // the heavy sweep falling to her left
+  c.moveTo(44,116); c.bezierCurveTo(52,66,120,48,176,66);
+  c.bezierCurveTo(126,70,72,96,60,150); c.closePath(); c.fill();
+  c.fillStyle=HAIR_DK;
+  c.beginPath(); c.moveTo(48,112); c.bezierCurveTo(60,70,116,54,164,68);
+  c.bezierCurveTo(120,76,74,100,58,140); c.closePath(); c.fill();
+  // strands framing the cheeks
+  c.fillStyle=HAIR;
+  c.beginPath(); c.moveTo(56,128); c.bezierCurveTo(44,180,48,224,60,258);
+  c.lineTo(88,254); c.bezierCurveTo(70,214,66,168,72,132); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(200,128); c.bezierCurveTo(214,180,212,228,200,264);
+  c.lineTo(172,256); c.bezierCurveTo(190,216,194,168,188,132); c.closePath(); c.fill();
+  c.fillStyle=HAIR_HI;
+  c.beginPath(); c.moveTo(204,140); c.bezierCurveTo(214,186,212,226,202,258);
+  c.lineTo(192,254); c.bezierCurveTo(202,214,204,180,198,142); c.closePath(); c.fill();
   const tex=new THREE.CanvasTexture(cv);
-  return new THREE.MeshLambertMaterial({map:tex,transparent:true,emissive:0x2a2e38,emissiveIntensity:0.5});
+  return new THREE.MeshLambertMaterial({map:tex,transparent:true,emissive:0x33363f,emissiveIntensity:0.55});
 }
 function buildMary(x,z,yaw){
   const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=yaw; scene.add(g);
@@ -3403,13 +3486,13 @@ function buildMary(x,z,yaw){
   cyl(0.17,0.17,0.28,10,blk,0,2.48,0,g);
   // head
   const head=sph(0.235,skin,0,2.78,0,g,14,12); head.scale.set(1,1.12,0.94);
-  // painted face on the front of the head
-  const face=new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.5),makeMaryFace());
-  face.position.set(0,2.79,-0.215); face.rotation.y=Math.PI; g.add(face);
-  // auburn bob — a shell around the back and sides
-  const bob=sph(0.265,hair,0,2.80,0.02,g,14,12); bob.scale.set(1.06,1.06,1.0);
-  box(0.52,0.30,0.30,hair,0,2.60,0.06,g);                       // the blunt cut at the jaw
-  [-1,1].forEach(sx=>box(0.10,0.42,0.22,hair,sx*0.24,2.66,-0.06,g));  // side lengths framing the face
+  // painted face on the front of the head (portrait aspect, 256x320)
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.575),makeMaryFace());
+  face.position.set(0,2.79,-0.222); face.rotation.y=Math.PI; g.add(face);
+  // auburn bob — volume behind and to the sides, kept clear of the painted face
+  const bob=sph(0.262,hair,0,2.80,0.035,g,14,12); bob.scale.set(1.04,1.06,0.98);
+  box(0.50,0.28,0.26,hair,0,2.60,0.09,g);                       // the blunt cut at the jaw
+  [-1,1].forEach(sx=>box(0.09,0.40,0.20,hair,sx*0.245,2.66,0.02,g));  // side lengths
   // beret, tilted
   const ber=new THREE.Group(); ber.position.set(0,3.02,0.03); ber.rotation.set(0.18,0,0.22); g.add(ber);
   cyl(0.30,0.28,0.13,14,lam(0x3a2b3c,{emissive:0x140e16}),0,0,0,ber);
