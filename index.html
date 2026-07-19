@@ -288,7 +288,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.6.2</div>
+    <div id="verTag">v3.6.3</div>
   </div>
 </div>
 
@@ -425,7 +425,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.6.2';
+const VERSION='v3.6.3';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -2237,6 +2237,7 @@ function buildGroundCipher(f){
     m.castShadow=false; xrayGroup.add(m);
   }
 }
+window.buildGroundCipher=buildGroundCipher;   // reachable from top-level init
   const f=G, Ec=Math.floor(f.gw/2);        // bottom-middle cell = the Entrance Hall
   f.grid[0][Ec]={id:'entrancehall',entrance:true};  // fixed marker (shown on the blueprint)
   const stations=[
@@ -2632,6 +2633,8 @@ function tickGoggles(){
 }
 const radioactives=[];                 // {x,z,mesh,dead}
 const xrayGroup=new THREE.Group(); xrayGroup.visible=false; scene.add(xrayGroup);
+{ const _gf=FLOORS.find(fl=>fl.name==='Ground Floor');
+  if(_gf && window.buildGroundCipher) window.buildGroundCipher(_gf); }  // pigpen glyphs, goggles-gated
 const jurassicSlots=[];                // ghost/solid bone meshes on the mounted skeleton
 const boneMat=lam(0xe9e0c8,{emissive:0x2a2418});
 const goldMat=M.gold, sandMat=lam(0xcdb483), sandDk=lam(0xb59a68);
@@ -4239,8 +4242,7 @@ function endCinematic(){
   byId('cogBtn').style.display='flex';
   renderInv(); renderRes(); renderSteps(); applyGoggles();
   byId('gogBtn').addEventListener('pointerdown',e=>{e.preventDefault();activateGoggles();});
-  const _gf=FLOORS.find(fl=>fl.name==='Ground Floor');
-  if(_gf) buildGroundCipher(_gf);                                  // after xrayGroup exists
+
   setTimeout(()=>{ const h=byId('hint'); if(h && !intel.visible) h.style.opacity='0'; },9000);
   setTimeout(()=>{ const tp=byId('titlePlate'); if(tp) tp.style.opacity='0'; },7000);
 }
