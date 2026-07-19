@@ -288,7 +288,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.6.3</div>
+    <div id="verTag">v3.6.4</div>
   </div>
 </div>
 
@@ -425,7 +425,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.6.3';
+const VERSION='v3.6.4';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -2229,6 +2229,7 @@ function makePigpenTex(letter){
 }
 function buildGroundCipher(f){
   for(let r=0;r<f.gh;r++) for(let c=0;c<f.gw;c++){
+    if(f.grid&&f.grid[r]&&f.grid[r][c]&&f.grid[r][c].entrance) continue;  // hall's letter lives on the blueprint
     const L=cipherLetterFor(f,c,r);
     const m=new THREE.Mesh(new THREE.PlaneGeometry(1.15,1.15),
       new THREE.MeshBasicMaterial({map:makePigpenTex(L),transparent:true,depthWrite:false}));
@@ -2238,6 +2239,7 @@ function buildGroundCipher(f){
   }
 }
 window.buildGroundCipher=buildGroundCipher;   // reachable from top-level init
+window.makePigpenTex=makePigpenTex; window.cipherLetterFor=cipherLetterFor;
   const f=G, Ec=Math.floor(f.gw/2);        // bottom-middle cell = the Entrance Hall
   f.grid[0][Ec]={id:'entrancehall',entrance:true};  // fixed marker (shown on the blueprint)
   const stations=[
@@ -2634,7 +2636,17 @@ function tickGoggles(){
 const radioactives=[];                 // {x,z,mesh,dead}
 const xrayGroup=new THREE.Group(); xrayGroup.visible=false; scene.add(xrayGroup);
 { const _gf=FLOORS.find(fl=>fl.name==='Ground Floor');
-  if(_gf && window.buildGroundCipher) window.buildGroundCipher(_gf); }  // pigpen glyphs, goggles-gated
+  if(_gf && window.buildGroundCipher){
+    window.buildGroundCipher(_gf);
+    // the Grand Entrance occupies a grid space too: its glyph hides on the blueprint
+    const Ec=Math.floor(_gf.gw/2);
+    const bm=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.55),
+      new THREE.MeshBasicMaterial({map:window.makePigpenTex(window.cipherLetterFor(_gf,Ec,0)),
+        transparent:true,depthWrite:false}));
+    bm.rotation.x=-Math.PI/2; bm.rotation.z=0.055;      // lying on the blueprint, same skew
+    bm.position.set(55.05,1.165,13);                    // just above the blueprint sheet
+    bm.castShadow=false; xrayGroup.add(bm);
+  } }  // pigpen glyphs, goggles-gated
 const jurassicSlots=[];                // ghost/solid bone meshes on the mounted skeleton
 const boneMat=lam(0xe9e0c8,{emissive:0x2a2418});
 const goldMat=M.gold, sandMat=lam(0xcdb483), sandDk=lam(0xb59a68);
@@ -2750,7 +2762,7 @@ function makePigpenChartTex(part){
   }
   return new THREE.CanvasTexture(cv);
 }
-function framedPicture(tex,w,h,x,y,z,ry){
+function framedChart(tex,w,h,x,y,z,ry){
   const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=ry; scene.add(g);
   box(w+0.16,h+0.16,0.05,lam(0x4a4038,{emissive:0x120e0a}),0,0,0,g);
   const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshLambertMaterial({map:tex,emissive:0x2a2824}));
@@ -2820,10 +2832,10 @@ function buildCryptoRoom(cx,cz,abs){
   interactables.push({x:cx-3.65,z:cz-4.6,r:1.8,dead:false,label:'inspect the security door',
     fn:()=>msg('A bank-grade vault door, welded shut. Whatever left this room, it did not use the door.')});
   // the four PIGPEN KEY charts, two per side wall
-  framedPicture(makePigpenChartTex(0),1.7,1.7,cx-5.48,2.6,cz-3.65, Math.PI/2);
-  framedPicture(makePigpenChartTex(1),1.7,1.7,cx-5.48,2.6,cz+3.65, Math.PI/2);
-  framedPicture(makePigpenChartTex(2),1.7,1.7,cx+5.48,2.6,cz-3.65,-Math.PI/2);
-  framedPicture(makePigpenChartTex(3),1.7,1.7,cx+5.48,2.6,cz+3.65,-Math.PI/2);
+  framedChart(makePigpenChartTex(0),1.7,1.7,cx-5.48,2.6,cz-3.65, Math.PI/2);
+  framedChart(makePigpenChartTex(1),1.7,1.7,cx-5.48,2.6,cz+3.65, Math.PI/2);
+  framedChart(makePigpenChartTex(2),1.7,1.7,cx+5.48,2.6,cz-3.65,-Math.PI/2);
+  framedChart(makePigpenChartTex(3),1.7,1.7,cx+5.48,2.6,cz+3.65,-Math.PI/2);
   interactables.push({x:cx-5.0,z:cz,r:5.6,dead:false,label:'study the cipher charts',
     fn:()=>msg('The pigpen key: each letter lives in a pen. The pen IS the letter \u2014 a square is E, dotted square is N, a plain vee is S, a dotted vee is W.')});
   // KRYPTOS — medium curved copper scroll on a stone base, OBKR section legible
@@ -2835,9 +2847,11 @@ function buildCryptoRoom(cx,cz,abs){
   addColliderBox(cx+2.7,cz+2.5,2.2,1.6,0.15);
   // BERLINCLOCK — only through the survey goggles
   const bc=new THREE.Mesh(new THREE.PlaneGeometry(1.9,0.36),
-    new THREE.MeshBasicMaterial({map:makeBerlinClockTex(),transparent:true,depthWrite:false}));
-  bc.position.set(cx+2.7-Math.sin(-0.5)*1.2,1.35,cz+2.5-Math.cos(-0.5)*1.2);
-  bc.rotation.y=-0.5+Math.PI; bc.castShadow=false; xrayGroup.add(bc);
+    new THREE.MeshBasicMaterial({map:makeBerlinClockTex(),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+  const bx=cx+2.7-Math.sin(-0.5)*1.35, bz=cz+2.5-Math.cos(-0.5)*1.35;
+  bc.position.set(bx,1.5,bz);
+  bc.rotation.y=Math.atan2(cx-bx,cz-bz);   // face the centre of the room
+  bc.castShadow=false; xrayGroup.add(bc);
   interactables.push({x:cx+2.7,z:cz+1.2,r:2.0,dead:false,label:'read the Kryptos scroll',
     fn:()=>msg('Kryptos, section four \u2014 ninety-seven letters, unsolved for decades. OBKR... The sculptor\\u2019s clue said NORTHEAST, then BERLIN, then... perhaps the goggles see what the eye cannot.')});
   // ENIGMA replica on a steel table
@@ -2863,7 +2877,7 @@ function buildCryptoRoom(cx,cz,abs){
   interactables.push({x:cx,z:cz-2.0,r:1.7,dead:false,label:'try the cryptex',
     fn:()=>msg('A brass cryptex \u2014 five lettered rings guard the scroll inside. The rings spin freely... it wants a five-letter word.')});
   // ZODIAC cipher picture on the north-east panel
-  framedPicture(makeZodiacTex(),1.6,1.6,cx+3.65,2.6,cz-5.48,0);
+  framedChart(makeZodiacTex(),1.6,1.6,cx+3.65,2.6,cz-5.48,0);
   interactables.push({x:cx+3.65,z:cz-4.6,r:1.7,dead:false,label:'study the Zodiac cipher',
     fn:()=>msg('The Zodiac\\u2019s 340-character cipher \u2014 mailed to newspapers, taunting. Cracked at last in 2020 by three amateurs and a lot of patience.')});
   // cold industrial light
