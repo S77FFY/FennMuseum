@@ -222,6 +222,10 @@
   #geigerFill{display:block;height:100%;width:0%;background:linear-gradient(90deg,#3fae52,#e2c04a,#d64a3a);transition:width .1s;}
   #geigerCps{font-size:11px;letter-spacing:.1em;}
   #geigerDot{position:absolute;top:8px;right:10px;width:9px;height:9px;border-radius:50%;background:#7fffa0;opacity:0;}
+  #gogBtn{position:fixed;z-index:12;right:14px;top:130px;display:none;padding:8px 12px;
+    border:1px solid #7fdca0;border-radius:8px;background:rgba(10,26,16,0.78);color:#9df0b8;
+    font-size:13px;letter-spacing:.12em;user-select:none;-webkit-user-select:none;cursor:pointer;}
+  #gogBtn.cd{border-color:#5a5f6a;color:#8a8f99;}
   #goggleFx{position:fixed;inset:0;z-index:9;pointer-events:none;display:none;
     background:radial-gradient(ellipse at 50% 45%, rgba(40,255,120,.10), rgba(0,25,8,.55) 80%);
     mix-blend-mode:screen;}
@@ -284,7 +288,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.3.5</div>
+    <div id="verTag">v3.6.2</div>
   </div>
 </div>
 
@@ -383,14 +387,35 @@
   <div id="geigerDot"></div>
 </div>
 <div id="goggleFx"></div>
+<div id="gogBtn">◉ GOGGLES</div>
 <div id="cine">
   <div id="cineNight">Night One</div>
   <div id="cineSkip">tap to skip</div>
 </div>
 <div id="fade"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
 <script>
+// ---- error trap: surface any uncaught error on-screen with its location ----
+(function(){
+  function show(msg){
+    let d=document.getElementById('errOverlay');
+    if(!d){ d=document.createElement('div'); d.id='errOverlay';
+      d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:rgba(60,10,10,0.94);'+
+        'color:#ffd7d7;font:12px/1.5 monospace;padding:10px 12px;border:1px solid #c06060;border-radius:8px;'+
+        'max-height:38vh;overflow:auto;white-space:pre-wrap;word-break:break-all;';
+      d.addEventListener('pointerdown',()=>d.remove());
+      document.body.appendChild(d); }
+    d.textContent+=msg+'\n'; }
+  window.addEventListener('error',e=>{
+    const src=(e.filename||'').split('/').pop();
+    show('[error] '+(e.message||'Script error.')+' @ '+src+':'+(e.lineno||'?')+':'+(e.colno||'?')
+      +(e.error&&e.error.stack?'\n'+String(e.error.stack).split('\n').slice(0,4).join('\n'):''));
+  });
+  window.addEventListener('unhandledrejection',e=>{
+    show('[promise] '+(e.reason&&e.reason.message?e.reason.message:String(e.reason)));
+  });
+})();
 /* =====================================================================
    THE FENN JOB — The Royal Museum of the (Grand) City of Fenn
    v1.2.0 · Single file · Three.js r128
@@ -400,7 +425,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.3.5';
+const VERSION='v3.6.2';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -883,6 +908,8 @@ function makeTileTexture(light,dark){
 }
 let _tileMat=null;
 function tileMat(){ if(!_tileMat) _tileMat=new THREE.MeshLambertMaterial({map:makeTileTexture(0x9fc2e8,0x35507e),emissive:0x1a2436,emissiveIntensity:0.6}); return _tileMat; }
+let _alzTileMat=null;   // red + ecru checker for Alzara's parlour
+function alzaraTileMat(){ if(!_alzTileMat) _alzTileMat=new THREE.MeshLambertMaterial({map:makeTileTexture(0xe3d6b8,0x9e1f18),emissive:0x2a1a12,emissiveIntensity:0.55}); return _alzTileMat; }
 
 // ornate damask wallpaper — clearly reads as "wall"
 // ornate damask wallpaper, drawn to mimic the reference swatches (half-drop repeat)
@@ -1852,6 +1879,7 @@ MORA_REGIONS.forEach(rg=>{
 ROOMS.push(R('blackbridge','The Black Bridge',2,P2I,'#141414','The cursed effigy, sealed under glass.','blackbridge'));
 ROOMS.push(R('pottery','Pottery Studio',2,P2L,'#b07a4a','A wheel, a kiln, and clay to throw.','pottery'));
 ROOMS.push(R('alzara','Alzara the Soothsayer',2,P2I,'#3b2a4d','A fortune-telling automaton \u2014 cable and all.','alzara'));
+ROOMS.push(R('cryptovault','Cryptography Vault',2,P2I,'#9aa0aa','Steel, rivets and the unsolved ciphers of the age.','crypto'));
 
 // ---- room revisions: bump a room's rev whenever it is added or changed ----
 const ROOM_REV={
@@ -1904,7 +1932,7 @@ const SIDE_D={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0]}; // [dc, dr] (N = deeper row)
 const CS_=12, DZ=0;
 // three stacked floors, each its own grid + landing + room pool
 const FLOORS=[
-  {name:'Ground Floor', ox:600,  oz:0, gw:8, gh:3},
+  {name:'Ground Floor', ox:600,  oz:0, gw:7, gh:5},
   {name:'Upper Gallery',ox:900,  oz:0, gw:5, gh:3},
   {name:'The Cupola',   ox:1180, oz:0, gw:2, gh:2},
 ];
@@ -2001,7 +2029,8 @@ function sealEdgeGap(rec,info){
 }
 function buildRoomGeom(f,c,r,room,abs){
   const cx=cellX(f,c),cz=cellZ(f,r);
-  box(11.9,0.1,11.9,tileMat(),cx,0.05,cz).castShadow=false;   // blue tiled floor
+  const fMat=(room.sp==='alzara')?alzaraTileMat():tileMat();    // Alzara's room: red + ecru
+  box(11.9,0.1,11.9,fMat,cx,0.05,cz).castShadow=false;
   box(12,0.3,12,M.ceilIn,cx,4.75,cz);
   // ceiling light fixture — a warm glowing panel so the room reads as lit
   const fix=box(2.6,0.12,2.6,new THREE.MeshBasicMaterial({color:0xffe9c2,fog:true}),cx,4.55,cz);
@@ -2047,6 +2076,7 @@ function buildRoomGeom(f,c,r,room,abs){
   if(room.sp==='blackbridge'){ buildBlackBridgeRoom(cx,cz,abs); }
   if(room.sp==='pottery'){ buildPotteryRoom(cx,cz,abs); }
   if(room.sp==='alzara'){ buildAlzaraRoom(cx,cz,abs); }
+  if(room.sp==='crypto'){ buildCryptoRoom(cx,cz,abs); }
   spawnRoomLoot(f,cx,cz,room);
 }
 function buildLift(f,cx,cz){
@@ -2165,6 +2195,48 @@ function buildLanding(f){
 FLOORS.forEach(f=>{ if(f.idx>=1) buildLanding(f); });
 const G=FLOORS[0];
 (function buildGroundEntry(){
+
+// ---------- PIGPEN CIPHER — ground floor code, goggles-only ----------
+// Read up column 1 (far LEFT), then up column 2, and so on — turn the map 90° clockwise
+// and the message reads naturally: SOLVE SEVEN HANDS MAKES CLEAR SEVEN EXITS (7 x 5 = 35)
+const CIPHER_MSG='SOLVESEVENHANDSMAKESCLEARSEVENEXITS';
+function cipherLetterFor(f,c,r){ return CIPHER_MSG[c*f.gh + r]; }
+function makePigpenTex(letter){
+  const S=128, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
+  const c=cv.getContext('2d'); c.clearRect(0,0,S,S);
+  c.strokeStyle='#7fffa0'; c.fillStyle='#7fffa0'; c.lineWidth=9; c.lineCap='round';
+  c.shadowColor='#7fffa0'; c.shadowBlur=10;
+  const x0=22,x1=106,y0=22,y1=106,cx=64,cy=64;
+  const code=letter.charCodeAt(0)-65;
+  function line(a,b,d,e){ c.beginPath(); c.moveTo(a,b); c.lineTo(d,e); c.stroke(); }
+  function dot(){ c.beginPath(); c.arc(cx,cy,8,0,Math.PI*2); c.fill(); }
+  if(code<=17){                                  // A..I (grid), J..R (grid + dot)
+    const i=code%9, gr=Math.floor(i/3), gc=i%3;
+    if(gr>0) line(x0,y0,x1,y0);                  // top
+    if(gr<2) line(x0,y1,x1,y1);                  // bottom
+    if(gc>0) line(x0,y0,x0,y1);                  // left
+    if(gc<2) line(x1,y0,x1,y1);                  // right
+    if(code>=9) dot();
+  } else {                                       // S..V (X), W..Z (X + dot)
+    const i=(code-18)%4;
+    if(i===0){ line(x0,y0,cx,y1); line(x1,y0,cx,y1); }        // S/W: v
+    else if(i===1){ line(x0,y0,x1,cy); line(x0,y1,x1,cy); }   // T/X: >
+    else if(i===2){ line(x1,y0,x0,cy); line(x1,y1,x0,cy); }   // U/Y: <
+    else { line(x0,y1,cx,y0); line(x1,y1,cx,y0); }            // V/Z: ^
+    if(code>=22) dot();
+  }
+  return new THREE.CanvasTexture(cv);
+}
+function buildGroundCipher(f){
+  for(let r=0;r<f.gh;r++) for(let c=0;c<f.gw;c++){
+    const L=cipherLetterFor(f,c,r);
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(1.15,1.15),
+      new THREE.MeshBasicMaterial({map:makePigpenTex(L),transparent:true,depthWrite:false}));
+    // top-left of the room's north wall, facing into the room
+    m.position.set(cellX(f,c)-4.55,3.95,cellZ(f,r)-5.55);
+    m.castShadow=false; xrayGroup.add(m);
+  }
+}
   const f=G, Ec=Math.floor(f.gw/2);        // bottom-middle cell = the Entrance Hall
   f.grid[0][Ec]={id:'entrancehall',entrance:true};  // fixed marker (shown on the blueprint)
   const stations=[
@@ -2538,6 +2610,26 @@ function updatePowerUI(){
 const inventory=new Set(store.get('fenn_items',[]));
 let bonesFound=0;            // per-night; the skeleton and scattered bones reset each night
 let gogglesOn=false;
+let gogActiveUntil=0, gogCdUntil=0;      // 10s use, then 20s cooldown
+function activateGoggles(){
+  if(!hasItem('goggles')) return;
+  const now=performance.now();
+  if(now<gogActiveUntil||now<gogCdUntil) return;
+  gogActiveUntil=now+10000; gogCdUntil=gogActiveUntil+20000;
+  applyGoggles();
+}
+function tickGoggles(){
+  try{
+  if(!hasItem('goggles')) return;
+  const now=performance.now(), btn=byId('gogBtn'); if(!btn) return;
+  const wasOn=gogglesOn;
+  gogglesOn=now<gogActiveUntil;
+  if(wasOn!==gogglesOn) applyGoggles();
+  if(gogglesOn){ btn.classList.remove('cd'); btn.textContent='\u25C9 '+Math.ceil((gogActiveUntil-now)/1000)+'s'; }
+  else if(now<gogCdUntil){ btn.classList.add('cd'); btn.textContent='\u25C9 wait '+Math.ceil((gogCdUntil-now)/1000)+'s'; }
+  else { btn.classList.remove('cd'); btn.textContent='\u25C9 GOGGLES'; }
+  }catch(e){}
+}
 const radioactives=[];                 // {x,z,mesh,dead}
 const xrayGroup=new THREE.Group(); xrayGroup.visible=false; scene.add(xrayGroup);
 const jurassicSlots=[];                // ghost/solid bone meshes on the mounted skeleton
@@ -2560,7 +2652,9 @@ function renderInv(){
   el.innerHTML=h;
 }
 function applyGoggles(){
-  gogglesOn=hasItem('goggles');            // worn permanently once found
+  const owned=hasItem('goggles');
+  const btn=byId('gogBtn'); if(btn) btn.style.display=owned?'block':'none';
+  gogglesOn=owned && performance.now()<gogActiveUntil;   // 10s bursts, 20s cooldown
   const fx=byId('goggleFx'); if(fx) fx.style.display=gogglesOn?'block':'none';
   xrayGroup.visible=gogglesOn;
   fillNextBone();
@@ -2606,6 +2700,172 @@ function fillNextBone(){
   }
 }
 
+
+// ---------- CRYPTOGRAPHY VAULT — steel, rivets, and the great unsolved ciphers ----------
+function makeRivetTex(){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+  const c=cv.getContext('2d');
+  c.fillStyle='#6e747e'; c.fillRect(0,0,256,256);
+  const g=c.createLinearGradient(0,0,0,256);
+  g.addColorStop(0,'rgba(255,255,255,0.10)'); g.addColorStop(1,'rgba(0,0,0,0.18)');
+  c.fillStyle=g; c.fillRect(0,0,256,256);
+  c.strokeStyle='rgba(30,34,40,0.8)'; c.lineWidth=4;                 // plate seams
+  c.strokeRect(4,4,120,120); c.strokeRect(132,4,120,120);
+  c.strokeRect(4,132,120,120); c.strokeRect(132,132,120,120);
+  c.fillStyle='#3c414a';
+  for(const [px,py] of [[16,16],[112,16],[16,112],[112,112]])
+    for(const [ox,oy] of [[0,0],[128,0],[0,128],[128,128]]){
+      c.beginPath(); c.arc(px+ox,py+oy,6,0,Math.PI*2); c.fill();
+      c.fillStyle='#8d939d'; c.beginPath(); c.arc(px+ox-1.5,py+oy-1.5,2.4,0,Math.PI*2); c.fill();
+      c.fillStyle='#3c414a';
+    }
+  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+}
+function makePigpenChartTex(part){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+  const c=cv.getContext('2d');
+  c.fillStyle='#e9e4d8'; c.fillRect(0,0,256,256);
+  c.strokeStyle='#1c1e24'; c.fillStyle='#1c1e24'; c.lineWidth=5; c.lineCap='round';
+  c.font='bold 34px Georgia'; c.textAlign='center'; c.textBaseline='middle';
+  function dot(x,y){ c.beginPath(); c.arc(x,y,5,0,Math.PI*2); c.fill(); }
+  if(part<2){                                   // tic-tac-toe grids
+    c.beginPath();
+    c.moveTo(104,32); c.lineTo(104,224); c.moveTo(152,32); c.lineTo(152,224);
+    c.moveTo(32,104); c.lineTo(224,104); c.moveTo(32,152); c.lineTo(224,152); c.stroke();
+    const L=part===0?'ABCDEFGHI':'JKLMNOPQR';
+    for(let i=0;i<9;i++){
+      const gx=[68,128,188][i%3], gy=[68,128,188][Math.floor(i/3)];
+      c.fillText(L[i],gx,gy);
+      if(part===1) dot(gx+22,gy+16);
+    }
+  } else {                                      // X grids
+    c.beginPath(); c.moveTo(36,36); c.lineTo(220,220); c.moveTo(220,36); c.lineTo(36,220); c.stroke();
+    const L=part===2?'STUV':'WXYZ';
+    const pos=[[128,58],[58,128],[198,128],[128,198]];  // top,left,right,bottom
+    for(let i=0;i<4;i++) c.fillText(L[i],pos[i][0],pos[i][1]);
+    if(part===3){ dot(128,100); dot(100,128); dot(156,128); dot(128,156); }
+  }
+  return new THREE.CanvasTexture(cv);
+}
+function framedPicture(tex,w,h,x,y,z,ry){
+  const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=ry; scene.add(g);
+  box(w+0.16,h+0.16,0.05,lam(0x4a4038,{emissive:0x120e0a}),0,0,0,g);
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshLambertMaterial({map:tex,emissive:0x2a2824}));
+  p.position.z=0.032; p.castShadow=false; g.add(p);
+  return g;
+}
+function makeKryptosTex(){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=256;
+  const c=cv.getContext('2d');
+  c.fillStyle='#7a5a34'; c.fillRect(0,0,512,256);                    // weathered copper
+  c.fillStyle='#8d6a3e'; for(let i=0;i<300;i++) c.fillRect(Math.random()*512,Math.random()*256,2,2);
+  c.fillStyle='#241a10'; c.font='bold 17px monospace'; c.textAlign='left';
+  const AL='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let rnd=7; const nx=()=>{ rnd=(rnd*1103515245+12345)&0x7fffffff; return AL[rnd%26]; };
+  for(let row=0;row<9;row++){ let t=''; for(let i=0;i<28;i++) t+=nx(); c.fillText(t,14,26+row*22); }
+  // the famous unsolved final section, clearly legible
+  c.fillStyle='#120c06'; c.font='bold 19px monospace';
+  c.fillText('OBKRUOXOGHULBSOLIFBBWFLRVQQP',14,224);
+  c.fillText('RNGKSSOTWTQSJQSSEKZZWATJKLUDIAWINFBNYP',14,246);
+  return new THREE.CanvasTexture(cv);
+}
+function makeBerlinClockTex(){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=96;
+  const c=cv.getContext('2d'); c.clearRect(0,0,512,96);
+  c.fillStyle='#7fffa0'; c.shadowColor='#7fffa0'; c.shadowBlur=14;
+  c.font='bold 54px monospace'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText('BERLINCLOCK',256,48);
+  return new THREE.CanvasTexture(cv);
+}
+function makeZodiacTex(){
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+  const c=cv.getContext('2d');
+  c.fillStyle='#ece7da'; c.fillRect(0,0,256,256);
+  c.strokeStyle='#20222a'; c.fillStyle='#20222a'; c.lineWidth=3;
+  c.font='bold 22px Georgia'; c.textAlign='center'; c.textBaseline='middle';
+  const syms=['\u25B3','\u25CB','\u2295','\u25A1','\u2020','\u25BD','\u00D8','\u03A9','\u2609',
+              '\u25C7','\u2297','\u005A','\u0394','\u2299','\u25CF','\u002B','\u25E6','\u03A6',
+              '\u2721','\u25AA','\u2226','\u03BB','\u25CC','\u2020','\u0398','\u2295','\u25B3',
+              '\u00D8','\u25A0','\u2299','\u03A9','\u25CB','\u2609','\u25BD','\u2297','\u002B'];
+  for(let i=0;i<36;i++){ const gx=30+(i%6)*40, gy=30+Math.floor(i/6)*40; c.fillText(syms[i%syms.length],gx,gy); }
+  return new THREE.CanvasTexture(cv);
+}
+function buildCryptoRoom(cx,cz,abs){
+  const rivet=makeRivetTex();
+  function steel(rep){ const t=rivet.clone(); t.needsUpdate=true; t.wrapS=t.wrapT=THREE.RepeatWrapping;
+    t.repeat.set(rep,1.6); return new THREE.MeshLambertMaterial({map:t,emissive:0x1e2126}); }
+  // riveted steel liner panels, two per wall, doorway centres left clear
+  [-1,1].forEach(side=>{
+    [-1,1].forEach(half=>{
+      const wN=box(4.1,4.5,0.14,steel(1.6),cx+half*3.65,2.3,cz+side*5.58);
+      wN.castShadow=false;
+      const wE=box(0.14,4.5,4.1,steel(1.6),cx+side*5.58,2.3,cz+half*3.65);
+      wE.castShadow=false;
+    });
+  });
+  // heavy security door: circular vault face on the north-west panel, spoked wheel and bolts
+  const vg=new THREE.Group(); vg.position.set(cx-3.65,2.1,cz-5.42); scene.add(vg);
+  cyl(1.25,1.25,0.16,20,lam(0x596069,{emissive:0x171a1f}),0,0,0,vg).rotation.x=Math.PI/2;
+  cyl(1.32,1.32,0.08,20,lam(0x454b54,{emissive:0x111318}),0,0,-0.06,vg).rotation.x=Math.PI/2;
+  for(let i=0;i<8;i++){ const a=i/8*Math.PI*2;
+    sph(0.07,lam(0x393e46),Math.cos(a)*1.08,Math.sin(a)*1.08,0.09,vg,6,6); }
+  const wheel=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.06,8,18),M.gold);
+  wheel.position.z=0.22; vg.add(wheel);
+  for(let i=0;i<3;i++){ const sp2=cyl(0.045,0.045,0.98,6,M.gold,0,0,0.22,vg);
+    sp2.rotation.z=i*Math.PI/3; }
+  addColliderBox(cx-3.65,cz-5.35,2.7,0.5,0.1);
+  interactables.push({x:cx-3.65,z:cz-4.6,r:1.8,dead:false,label:'inspect the security door',
+    fn:()=>msg('A bank-grade vault door, welded shut. Whatever left this room, it did not use the door.')});
+  // the four PIGPEN KEY charts, two per side wall
+  framedPicture(makePigpenChartTex(0),1.7,1.7,cx-5.48,2.6,cz-3.65, Math.PI/2);
+  framedPicture(makePigpenChartTex(1),1.7,1.7,cx-5.48,2.6,cz+3.65, Math.PI/2);
+  framedPicture(makePigpenChartTex(2),1.7,1.7,cx+5.48,2.6,cz-3.65,-Math.PI/2);
+  framedPicture(makePigpenChartTex(3),1.7,1.7,cx+5.48,2.6,cz+3.65,-Math.PI/2);
+  interactables.push({x:cx-5.0,z:cz,r:5.6,dead:false,label:'study the cipher charts',
+    fn:()=>msg('The pigpen key: each letter lives in a pen. The pen IS the letter \u2014 a square is E, dotted square is N, a plain vee is S, a dotted vee is W.')});
+  // KRYPTOS — medium curved copper scroll on a stone base, OBKR section legible
+  const kg=new THREE.Group(); kg.position.set(cx+2.7,0,cz+2.5); kg.rotation.y=-0.5; scene.add(kg);
+  cyl(0.5,0.6,0.9,10,M.marbleSh,0,0.45,0,kg);
+  const scroll=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.05,2.2,20,1,true,-Math.PI*0.42,Math.PI*0.84),
+    new THREE.MeshLambertMaterial({map:makeKryptosTex(),side:THREE.DoubleSide,emissive:0x241a10}));
+  scroll.position.y=1.85; kg.add(scroll);
+  addColliderBox(cx+2.7,cz+2.5,2.2,1.6,0.15);
+  // BERLINCLOCK — only through the survey goggles
+  const bc=new THREE.Mesh(new THREE.PlaneGeometry(1.9,0.36),
+    new THREE.MeshBasicMaterial({map:makeBerlinClockTex(),transparent:true,depthWrite:false}));
+  bc.position.set(cx+2.7-Math.sin(-0.5)*1.2,1.35,cz+2.5-Math.cos(-0.5)*1.2);
+  bc.rotation.y=-0.5+Math.PI; bc.castShadow=false; xrayGroup.add(bc);
+  interactables.push({x:cx+2.7,z:cz+1.2,r:2.0,dead:false,label:'read the Kryptos scroll',
+    fn:()=>msg('Kryptos, section four \u2014 ninety-seven letters, unsolved for decades. OBKR... The sculptor\\u2019s clue said NORTHEAST, then BERLIN, then... perhaps the goggles see what the eye cannot.')});
+  // ENIGMA replica on a steel table
+  const eg=new THREE.Group(); eg.position.set(cx-2.9,0,cz+2.6); eg.rotation.y=0.5; scene.add(eg);
+  box(1.6,0.08,1.2,steel(1),0,0.95,0,eg);
+  [[-0.65,-0.45],[0.65,-0.45],[-0.65,0.45],[0.65,0.45]].forEach(([lx,lz])=>cyl(0.05,0.05,0.95,6,lam(0x3a3f47),lx,0.475,lz,eg));
+  box(1.15,0.32,0.85,lam(0x4b3a26,{emissive:0x140e07}),0,1.16,0,eg);            // oak case
+  for(let i=0;i<3;i++) { const rot=cyl(0.09,0.09,0.14,10,lam(0x8d939d,{emissive:0x24262b}),-0.28+i*0.28,1.36,-0.22,eg); rot.rotation.z=Math.PI/2; }
+  for(let r2=0;r2<3;r2++) for(let i=0;i<8;i++)                                   // lampboard + keys
+    sph(0.028,lam(r2===0?0xd8cf9a:0x23262c,{emissive:r2===0?0x3a3410:0x0a0b0e}),-0.42+i*0.12,1.335-r2*0.001,0.02+r2*0.14,eg,6,6);
+  addColliderBox(cx-2.9,cz+2.6,1.9,1.5,0.15);
+  interactables.push({x:cx-2.9,z:cz+1.3,r:1.9,dead:false,label:'examine the Enigma machine',
+    fn:()=>msg('A three-rotor Enigma. Every keypress lights a different letter \u2014 the settings changed daily, and the Allies broke it anyway.')});
+  // CRYPTEX on a pedestal
+  const pg=new THREE.Group(); pg.position.set(cx,0,cz-2.9); scene.add(pg);
+  cyl(0.34,0.42,1.05,10,M.marbleSh,0,0.52,0,pg);
+  const cxg=new THREE.Group(); cxg.position.set(0,1.28,0); cxg.rotation.z=Math.PI/2; pg.add(cxg);
+  cyl(0.14,0.14,0.9,12,M.gold,0,0,0,cxg);
+  for(let i=0;i<5;i++){ const ring=cyl(0.175,0.175,0.13,12,lam(0x6a4a2a,{emissive:0x1c1208}),0,-0.3+i*0.15,0,cxg);
+    ring.rotation.y=i*0.5; }
+  sph(0.16,M.gold,0,0.5,0,cxg,8,8); sph(0.16,M.gold,0,-0.5,0,cxg,8,8);
+  addColliderBox(cx,cz-2.9,1.2,1.2,0.15);
+  interactables.push({x:cx,z:cz-2.0,r:1.7,dead:false,label:'try the cryptex',
+    fn:()=>msg('A brass cryptex \u2014 five lettered rings guard the scroll inside. The rings spin freely... it wants a five-letter word.')});
+  // ZODIAC cipher picture on the north-east panel
+  framedPicture(makeZodiacTex(),1.6,1.6,cx+3.65,2.6,cz-5.48,0);
+  interactables.push({x:cx+3.65,z:cz-4.6,r:1.7,dead:false,label:'study the Zodiac cipher',
+    fn:()=>msg('The Zodiac\\u2019s 340-character cipher \u2014 mailed to newspapers, taunting. Cracked at last in 2020 by three amateurs and a lot of patience.')});
+  // cold industrial light
+  const kl=new THREE.PointLight(0xcfe4ff,0.55,26); kl.position.set(cx,4.2,cz); scene.add(kl);
+}
 // ---------- picture-on-canvas helper for exhibit walls ----------
 function makePictureMat(kind){
   const cv=document.createElement('canvas'); cv.width=256; cv.height=192; const c=cv.getContext('2d');
@@ -2713,7 +2973,7 @@ function buildEgyptRoom(cx,cz){
     label:()=>hasItem('goggles')?'':'take the survey goggles',
     cond:()=>!hasItem('goggles'),
     fn:()=>{ giveItem('goggles'); scene.remove(gg); applyGoggles();
-      msg('Survey goggles acquired \u2014 worn from here on. Radioactive traces now glow.'); }});
+      msg('Survey goggles acquired \u2014 tap the GOGGLES button for a 10-second scan (20s recharge).'); }});
 }
 
 // ---------- JURASSIC HALL ----------
@@ -2809,6 +3069,7 @@ placeBone(LX-15,LZ+4,'in');          // inside Leerson — Portrait Room
 let clickAcc=0;
 function updateTools(dt,t){
   for(const g of toolSpin) g.rotation.y=t*1.2;
+  tickGoggles();
   if(!hasItem('geiger')) return;
   let nearest=1e9;
   for(const r of radioactives){ if(r.dead) continue;
@@ -3603,10 +3864,10 @@ function buildAlzaraRoom(cx,cz,abs){
     cyl(0.06,0.06,CASE_H,8,lam(0xd8d2c4,{emissive:0x2a2820}),mx+sx*0.65,CASE_Y,mz+sz*0.56)));
   const caseGlass=M.glass.clone();
   caseGlass.depthWrite=false;                       // never depth-occlude what's inside
-  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.34,CASE_H,1.18),caseGlass);
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.34,CASE_H-0.04,1.18),caseGlass);
   glass.renderOrder=2;                              // draw after the crystal ball
   glass.castShadow=false; glass.receiveShadow=false;
-  glass.position.set(mx,CASE_Y,mz); scene.add(glass);
+  glass.position.set(mx,CASE_Y+0.02,mz); scene.add(glass); // bottom clear of the trim: no z-fight
   box(1.50,0.09,1.32,woodDk,mx,CASE_TOP+0.04,mz);
   // ---- header board with the ALZARA sign ----
   const HEAD_Y=CASE_TOP+0.34;
@@ -3617,12 +3878,18 @@ function buildAlzaraRoom(cx,cz,abs){
   arch.position.set(mx,HEAD_Y+0.22,mz-0.16); scene.add(arch);
   // ---- Alzara himself ----
   const A=new THREE.Group(); A.position.set(mx,CAB_H+0.10,mz-0.04); scene.add(A);
-  // warm brown skin, rich purple robe — per the reference machine
-  const robe=lam(0x7c3f88,{emissive:0x241028}), skin=lam(0x8a5a38,{emissive:0x241408});
+  // per the reference photo: red robe, blue V-lapels with grey trim, blue turban
+  const robe=lam(0xb8362e,{emissive:0x2e0b09}), skin=lam(0x8a5a38,{emissive:0x241408});
   const dark=lam(0x1c1a22,{emissive:0x08080c});
-  cyl(0.24,0.30,0.74,10,robe,0,0.37,0,A);                        // robed body: slim at chest, wide at base
+  const blue=lam(0x3947a2,{emissive:0x101534}), grey=lam(0x9aa0ac,{emissive:0x24262b});
+  cyl(0.20,0.30,0.74,10,robe,0,0.37,-0.06,A);                    // slim chest, set back so the beard reads
   box(0.58,0.11,0.22,robe,0,0.70,0,A);                           // shoulders
-  sph(0.028,M.gold,0,0.575,0.26,A,8,6);                          // pendant on the chest
+  [-1,1].forEach(sx=>{                                           // blue V-lapels, grey-edged
+    const lap=box(0.34,0.095,0.025,blue,sx*0.12,0.60,0.165,A); lap.rotation.z=sx*0.69; lap.castShadow=false;
+    const trim=box(0.32,0.028,0.026,grey,sx*0.098,0.565,0.168,A); trim.rotation.z=sx*0.69; trim.castShadow=false;
+    box(0.20,0.055,0.20,blue,sx*0.19,0.765,0.01,A).castShadow=false;  // blue shoulder tops
+  });
+  sph(0.028,M.gold,0,0.505,0.19,A,8,6);                          // pendant at the base of the V
   // arms bend at the elbow (mid-arm), hands cupping the crystal ball
   function limbSeg(a,b,r0,r1,mat){
     const av=new THREE.Vector3(...a), bv=new THREE.Vector3(...b);
@@ -3633,48 +3900,58 @@ function buildAlzaraRoom(cx,cz,abs){
     m.castShadow=true; m.receiveShadow=true; A.add(m); return m;
   }
   [-1,1].forEach(sx=>{
-    const S=[sx*0.25,0.66,0.05], E=[sx*0.34,0.46,0.24], H=[sx*0.16,0.45,0.44]; // shoulder / elbow / hand on ball
+    const S=[sx*0.25,0.66,0.05], E=[sx*0.34,0.47,0.24], H=[sx*0.16,0.49,0.44]; // shoulder / elbow / hand on ball
     limbSeg(S,E,0.066,0.058,robe);                 // upper arm
     limbSeg(E,H,0.056,0.045,robe);                 // forearm
     sph(0.055,skin,E[0],E[1],E[2],A,8,6);          // elbow joint
     const hand=sph(0.062,skin,H[0],H[1],H[2],A,8,6); // hand resting on the ball
     hand.scale.set(1.0,0.8,1.15);
   });
-  sph(0.135,skin,0,0.86,0,A,12,10);                              // head
-  // sharp pointed goatee, angled forward so the point stands clear of the chest
-  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.075,0.28,8),dark);
-  beard.position.set(0,0.70,0.10); beard.rotation.x=Math.PI-0.38; A.add(beard);
-  box(0.15,0.026,0.04,dark,0,0.845,0.125,A);                     // moustache
-  // dark eyebrows above the eyes
-  [-1,1].forEach(sx=>{ const b=box(0.055,0.014,0.02,dark,sx*0.05,0.915,0.126,A);
-    b.rotation.z=sx*0.18; b.castShadow=false; });
+  sph(0.135,skin,0,0.86,0.05,A,12,10);                           // head, brought forward of the chest
+  // full dark beard: chin mass, jaw sides, and the pointed goatee — his main feature
+  const chinB=sph(0.085,dark,0,0.765,0.125,A,10,8); chinB.scale.set(0.95,0.72,0.75); chinB.castShadow=false;
+  [-1,1].forEach(sx=>{ const jaw=sph(0.05,dark,sx*0.092,0.80,0.105,A,8,6);
+    jaw.scale.set(0.75,1.25,0.75); jaw.castShadow=false; });
+  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.058,0.22,8),dark);
+  beard.position.set(0,0.655,0.155); beard.rotation.x=Math.PI-0.18; A.add(beard);
+  box(0.15,0.026,0.04,dark,0,0.845,0.175,A);                     // moustache
+  [-1,1].forEach(sx=>{ const curl=box(0.055,0.018,0.02,dark,sx*0.098,0.862,0.168,A);
+    curl.rotation.z=sx*0.55; curl.castShadow=false; });          // curled tips
+  [-1,1].forEach(sx=>{                                           // gold earrings
+    sph(0.020,M.gold,sx*0.132,0.845,0.07,A,6,6).castShadow=false;
+    sph(0.013,M.gold,sx*0.138,0.805,0.07,A,6,6).castShadow=false;
+  });
   alzara.eyes=[];
   [-1,1].forEach(sx=>{
     // oval white of the eye
-    const e=sph(0.022,new THREE.MeshBasicMaterial({color:0xf2f4ff}),sx*0.05,0.885,0.120,A,8,8);
+    const e=sph(0.022,new THREE.MeshBasicMaterial({color:0xf2f4ff}),sx*0.05,0.885,0.170,A,8,8);
     e.scale.set(1.55,1.0,0.55); e.castShadow=false; alzara.eyes.push(e);
     // dark pupil, sitting just proud of the white
-    const p=sph(0.010,new THREE.MeshBasicMaterial({color:0x14141c}),sx*0.05,0.885,0.134,A,6,6);
-    p.scale.set(1.1,1.3,0.5); p.castShadow=false;
+    const p=sph(0.013,new THREE.MeshBasicMaterial({color:0x10131c}),sx*0.05,0.885,0.187,A,6,6);
+    p.scale.set(1.15,1.45,0.5); p.castShadow=false;
   });
   // hair: a slightly larger sphere set back, so it shows at the back and sides only
   const hairMat=lam(0x201a26,{emissive:0x0a080e});
-  const hair=sph(0.138,hairMat,0,0.855,-0.035,A,12,10);
+  const hair=sph(0.138,hairMat,0,0.855,0.015,A,12,10);
   hair.scale.set(1.04,1.0,0.85); hair.castShadow=false;
-  [-1,1].forEach(sx=>{ const tuft=sph(0.045,hairMat,sx*0.125,0.83,-0.02,A,8,6); tuft.scale.set(0.7,1.5,0.9); tuft.castShadow=false; });
-  // cream turban: full dome with a wrapped band and a red centre jewel
-  const turb=lam(0xe9e2d2,{emissive:0x2c2a24}), turbDk=lam(0xd2c9b6,{emissive:0x242018});
-  const dome=sph(0.150,turb,0,1.015,0,A,12,10); dome.scale.set(1.0,0.82,1.0);
-  cyl(0.158,0.168,0.10,12,turbDk,0,0.955,0,A);                   // wrap band around the brow
-  const knot=sph(0.055,turb,0,1.135,0,A,8,6); knot.scale.set(1.2,0.8,1.2);
-  box(0.045,0.06,0.02,lam(0x8a1c14,{emissive:0x2a0806}),0,0.965,0.168,A); // red jewel on the band
-  sph(0.016,M.gold,0,1.005,0.168,A,6,6);                         // gold pin above the jewel
-  // table, cloth and the blue crystal ball — well forward of the body so nothing intersects
-  box(0.78,0.05,0.46,lam(0xcfc6b4,{emissive:0x2a2620}),0,0.20,0.38,A);
-  cyl(0.12,0.135,0.05,10,M.gold,0,0.25,0.44,A);                  // brass stand on the table
+  [-1,1].forEach(sx=>{ const tuft=sph(0.045,hairMat,sx*0.125,0.83,0.03,A,8,6); tuft.scale.set(0.7,1.5,0.9); tuft.castShadow=false; });
+  // blue turban: full dome, darker wrap band, light strap arcing over the top
+  const turb=lam(0x3d4da8,{emissive:0x121838}), turbDk=lam(0x2c3a86,{emissive:0x0c1230});
+  const dome=sph(0.150,turb,0,0.995,0.05,A,12,10); dome.scale.set(1.0,0.82,1.0);
+  cyl(0.158,0.168,0.09,12,turbDk,0,0.945,0.05,A);                // wrap band, low over the brow
+  const knot=sph(0.055,turb,0,1.115,0.05,A,8,6); knot.scale.set(1.2,0.8,1.2);
+  const strap=new THREE.Mesh(new THREE.TorusGeometry(0.148,0.022,6,14,Math.PI),
+    lam(0x8891c9,{emissive:0x262c48}));
+  strap.position.set(0,0.992,0.05); strap.rotation.y=Math.PI/2; strap.castShadow=false; A.add(strap);
+  // solid white partition: fills the case from just above the trim up to counter height,
+  // so the lower torso is enclosed and nothing below the counter is see-through
+  const part=box(1.30,0.315,1.12,lam(0xf2f2ee,{emissive:0x3a3830}),0,0.0675,0.04,A);
+  part.castShadow=false;
+  cyl(0.16,0.175,0.045,10,lam(0x6a2c20,{emissive:0x1c0b07}),0,0.2475,0.44,A); // dark wood base
+  cyl(0.12,0.135,0.05,10,M.gold,0,0.295,0.44,A);                 // gold plate on top
   const ballMat=new THREE.MeshPhongMaterial({color:0x4f8ae8,emissive:0x1e50c0,
     emissiveIntensity:0.9,transparent:true,opacity:0.88,shininess:110});
-  alzara.ball=sph(0.155,ballMat,0,0.43,0.44,A,16,14); alzara.ball.castShadow=false;
+  alzara.ball=sph(0.155,ballMat,0,0.475,0.44,A,16,14); alzara.ball.castShadow=false;
   const bl=new THREE.PointLight(0x5aa0ff,0.75,4.5); bl.position.set(mx,CAB_H+0.55,mz+0.40); scene.add(bl);
   alzara.ballLight=bl;
   // ---- wall socket + cable ----
@@ -3733,7 +4010,7 @@ const NIGHT_WORDS=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight
 function nightWord(n){ return NIGHT_WORDS[n]!==undefined?NIGHT_WORDS[n]:String(n); }
 
 // her face, painted: pale skin, auburn bob and fringe, the dark domino mask
-function makeMaryFace(){
+function makeMaryFaceCanvas(){
   const W=256,H=320, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
   const c=cv.getContext('2d');
   const SKIN='#d4d1da', SKIN_HI='#e9e6ee', SKIN_SH='#b3b1c0', SKIN_SH2='#9b99ab';
@@ -3779,22 +4056,22 @@ function makeMaryFace(){
   function socket(ex,ey,rx,ry){
     c.fillStyle=SKIN; c.beginPath(); c.ellipse(ex,ey,rx,ry,0,0,Math.PI*2); c.fill();
   }
-  socket(94,135,31,25); socket(166,135,31,25);
+  socket(94,135,34,28); socket(166,135,34,28);
   // ---- eyes ----
   function eye(ex,ey,flip){
     c.save(); c.translate(ex,ey); if(flip) c.scale(-1,1);
     c.fillStyle='#f4f3f6';                                  // sclera
-    c.beginPath(); c.moveTo(-25,2);
-    c.bezierCurveTo(-16,-15,16,-17,25,-1);
-    c.bezierCurveTo(16,15,-14,16,-25,2); c.closePath(); c.fill();
-    c.fillStyle='#7d8496'; c.beginPath(); c.arc(2,0,11.5,0,Math.PI*2); c.fill();   // iris
-    c.fillStyle='#4c5464'; c.beginPath(); c.arc(2,0,8,0,Math.PI*2); c.fill();
-    c.fillStyle='#12141c'; c.beginPath(); c.arc(2,0,4.6,0,Math.PI*2); c.fill();    // pupil
-    c.fillStyle='#ffffff'; c.beginPath(); c.arc(-3,-5,3.1,0,Math.PI*2); c.fill();  // catchlight
+    c.beginPath(); c.moveTo(-28,2);
+    c.bezierCurveTo(-18,-17,18,-19,28,-1);
+    c.bezierCurveTo(18,17,-16,18,-28,2); c.closePath(); c.fill();
+    c.fillStyle='#8b93a4'; c.beginPath(); c.arc(2,0,13,0,Math.PI*2); c.fill();     // iris
+    c.fillStyle='#525a6a'; c.beginPath(); c.arc(2,0,9,0,Math.PI*2); c.fill();
+    c.fillStyle='#12141c'; c.beginPath(); c.arc(2,0,5.4,0,Math.PI*2); c.fill();    // pupil
+    c.fillStyle='#ffffff'; c.beginPath(); c.arc(-3.5,-5.5,3.8,0,Math.PI*2); c.fill(); // catchlight
     c.strokeStyle='#23252e'; c.lineWidth=3.4; c.lineCap='round';                   // upper lash line
-    c.beginPath(); c.moveTo(-25,1); c.bezierCurveTo(-16,-16,16,-18,25,-2); c.stroke();
+    c.beginPath(); c.moveTo(-28,1); c.bezierCurveTo(-18,-18,18,-20,28,-2); c.stroke();
     c.strokeStyle='#5d5f6b'; c.lineWidth=1.6;
-    c.beginPath(); c.moveTo(-22,5); c.bezierCurveTo(-12,14,12,15,23,3); c.stroke(); // lower lid
+    c.beginPath(); c.moveTo(-25,6); c.bezierCurveTo(-14,16,14,17,26,3); c.stroke(); // lower lid
     c.restore();
   }
   eye(94,135,false); eye(166,135,true);
@@ -3841,48 +4118,66 @@ function makeMaryFace(){
   c.fillStyle=HAIR_HI;
   c.beginPath(); c.moveTo(204,140); c.bezierCurveTo(214,186,212,226,202,258);
   c.lineTo(192,254); c.bezierCurveTo(202,214,204,180,198,142); c.closePath(); c.fill();
+  return cv;
+}
+// wrap the painted face around the head sphere: hair colour everywhere, face at the front (-z => u=0.75)
+function makeMaryHeadMat(){
+  const cv=document.createElement('canvas'); cv.width=1024; cv.height=512;
+  const c=cv.getContext('2d');
+  c.fillStyle='#4a2620'; c.fillRect(0,0,1024,512);           // auburn base all round
+  c.strokeStyle='rgba(20,10,8,0.35)'; c.lineWidth=2;         // soft strand lines
+  for(let i=0;i<60;i++){ const x=Math.random()*1024;
+    c.beginPath(); c.moveTo(x,0); c.bezierCurveTo(x-14,170,x+14,340,x+(Math.random()*30-15),512); c.stroke(); }
+  c.fillStyle='#3f1f18'; c.fillRect(0,470,1024,42);          // darker underside
+  c.drawImage(makeMaryFaceCanvas(),768-220,30,441,423);      // the painted face: wide, and 15% taller
   const tex=new THREE.CanvasTexture(cv);
-  return new THREE.MeshLambertMaterial({map:tex,transparent:true,emissive:0x33363f,emissiveIntensity:0.55});
+  return new THREE.MeshLambertMaterial({map:tex,emissive:0x140a08});  // same tones as the hair material
 }
 function buildMary(x,z,yaw){
   const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=yaw; scene.add(g);
   const coat=lam(0x1b1f2b,{emissive:0x080a10}), coatDk=lam(0x11141d,{emissive:0x05070c});
-  const red=lam(0xb0362c,{emissive:0x3a100c}), skin=lam(0xc9ccd6,{emissive:0x2a2e38});
+  const skin=lam(0xc9ccd6,{emissive:0x2a2e38});
   const hair=lam(0x4a2620,{emissive:0x140a08}), blk=lam(0x0d0d12,{emissive:0x050508});
-  // legs
-  [-0.16,0.16].forEach(sx=>cyl(0.11,0.09,0.86,8,blk,sx,0.43,0,g));
+  // legs and black shoes (toes toward her front, -z)
+  [-0.16,0.16].forEach(sx=>{
+    cyl(0.11,0.09,0.86,8,blk,sx,0.43,0,g);
+    box(0.17,0.10,0.32,blk,sx,0.05,-0.07,g);
+    const toe=sph(0.085,blk,sx,0.05,-0.21,g,8,6); toe.scale.set(1.0,0.65,1.0);
+  });
   // long coat, flared
   cyl(0.40,0.30,0.92,10,coat,0,1.24,0,g);
   cyl(0.30,0.34,0.62,10,coat,0,1.98,0,g);
-  // red piping down the front + sash
-  box(0.05,0.86,0.03,red,0.10,1.28,0.29,g);
-  const sash=box(0.5,0.06,0.04,red,0,1.62,0.30,g); sash.rotation.z=-0.5;
-  // shoulders with red flashes
-  box(0.62,0.14,0.34,coatDk,0,2.28,0,g);
-  [-1,1].forEach(sx=>box(0.20,0.07,0.30,red,sx*0.22,2.34,0,g));
-  // arms — the right one raised, as in the photograph
-  const armL=new THREE.Group(); armL.position.set(-0.34,2.2,0); armL.rotation.z=0.18; g.add(armL);
-  cyl(0.10,0.09,0.86,8,coat,0,-0.43,0,armL); sph(0.09,blk,0,-0.9,0,armL,8,6);
-  const armR=new THREE.Group(); armR.position.set(0.34,2.2,0); armR.rotation.z=-1.15; g.add(armR);
-  cyl(0.10,0.09,0.82,8,coat,0,-0.41,0,armR);
-  const fore=new THREE.Group(); fore.position.set(0,-0.82,0); fore.rotation.z=-0.65; armR.add(fore);
-  cyl(0.085,0.08,0.62,8,coat,0,-0.31,0,fore); sph(0.095,blk,0,-0.66,0,fore,8,6);  // gloved hand
-  // black turtleneck
-  cyl(0.17,0.17,0.28,10,blk,0,2.48,0,g);
-  // head
-  const head=sph(0.235,skin,0,2.78,0,g,14,12); head.scale.set(1,1.12,0.94);
-  // painted face on the front of the head (portrait aspect, 256x320)
-  const face=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.575),makeMaryFace());
-  face.position.set(0,2.79,-0.222); face.rotation.y=Math.PI; g.add(face);
-  // auburn bob — volume behind and to the sides, kept clear of the painted face
-  const bob=sph(0.262,hair,0,2.80,0.035,g,14,12); bob.scale.set(1.04,1.06,0.98);
-  box(0.50,0.28,0.26,hair,0,2.60,0.09,g);                       // the blunt cut at the jaw
-  [-1,1].forEach(sx=>box(0.09,0.40,0.20,hair,sx*0.245,2.66,0.02,g));  // side lengths
-  // beret, tilted
-  const ber=new THREE.Group(); ber.position.set(0,3.02,0.03); ber.rotation.set(0.18,0,0.22); g.add(ber);
-  cyl(0.30,0.28,0.13,14,lam(0x3a2b3c,{emissive:0x140e16}),0,0,0,ber);
-  cyl(0.31,0.31,0.05,14,red,0,-0.07,0,ber);                     // red band beneath
-  sph(0.045,lam(0x3a2b3c),0,0.09,0,ber,8,6);
+  // she is dressed all in black — no red trim
+  box(0.62,0.14,0.34,coatDk,0,2.28,0,g);                         // shoulders
+  // arms — built point-to-point: left hangs at her left, right raised at her right (as in the photo)
+  function limbM(a,b,r0,r1,mat){
+    const av=new THREE.Vector3(...a), bv=new THREE.Vector3(...b);
+    const dir=bv.clone().sub(av), len=dir.length();
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,8),mat);
+    m.position.copy(av.clone().add(bv).multiplyScalar(0.5));
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+    m.castShadow=true; g.add(m); return m;
+  }
+  // both arms relaxed at her sides, gentle elbow bend toward her front (-z)
+  [-1,1].forEach(sx=>{
+    limbM([sx*0.36,2.26,0],[sx*0.45,1.84,-0.01],0.10,0.088,coat);   // upper arm
+    limbM([sx*0.45,1.84,-0.01],[sx*0.42,1.42,-0.06],0.082,0.072,coat); // forearm
+    sph(0.055,coat,sx*0.45,1.84,-0.01,g,8,6);                       // elbow joint
+    sph(0.095,blk,sx*0.42,1.38,-0.07,g,8,6);                        // gloved hand
+  });
+  // slim black turtleneck
+  cyl(0.115,0.13,0.20,10,blk,0,2.53,0,g);
+  // head — the painted face wrapped around the sphere itself (no floating plane, no bare skull)
+  const head=sph(0.235,makeMaryHeadMat(),0,2.78,0,g,18,14); head.scale.set(1,1.12,0.94);
+  // neat 3D auburn bob: volume above/behind, sides framing, blunt cut — face arc left open
+  // tight bob: crown volume with a taper that tucks in at the jaw
+  const bob=sph(0.255,hair,0,2.83,0.055,g,14,12); bob.scale.set(1.03,0.98,0.88); bob.castShadow=false;
+  const taper=sph(0.24,hair,0,2.64,0.08,g,12,10); taper.scale.set(0.92,0.55,0.75); taper.castShadow=false;
+  // beret settled on the bob, tipped slightly toward her front
+  const ber=new THREE.Group(); ber.position.set(0,3.07,0.02); ber.rotation.set(-0.08,0,0.10); g.add(ber);
+  const cap=sph(0.25,lam(0x3a2b3c,{emissive:0x140e16}),0,0.02,0,ber,12,10); cap.scale.set(1.05,0.42,1.05);
+  cyl(0.21,0.22,0.05,14,lam(0x241a28,{emissive:0x0c0810}),0,-0.045,0,ber); // dark under-band
+  sph(0.04,lam(0x3a2b3c),0,0.125,0,ber,6,6);                    // stalk
   g.visible=false;
   return g;
 }
@@ -3943,6 +4238,9 @@ function endCinematic(){
   else initTouch();
   byId('cogBtn').style.display='flex';
   renderInv(); renderRes(); renderSteps(); applyGoggles();
+  byId('gogBtn').addEventListener('pointerdown',e=>{e.preventDefault();activateGoggles();});
+  const _gf=FLOORS.find(fl=>fl.name==='Ground Floor');
+  if(_gf) buildGroundCipher(_gf);                                  // after xrayGroup exists
   setTimeout(()=>{ const h=byId('hint'); if(h && !intel.visible) h.style.opacity='0'; },9000);
   setTimeout(()=>{ const tp=byId('titlePlate'); if(tp) tp.style.opacity='0'; },7000);
 }
