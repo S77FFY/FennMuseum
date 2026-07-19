@@ -208,7 +208,7 @@
   .toolBtn{position:fixed;z-index:12;width:54px;height:54px;border-radius:50%;display:none;
     align-items:center;justify-content:center;font-size:26px;color:#cfe6cf;
     background:rgba(30,50,34,.5);border:1px solid rgba(120,200,140,.7);font-family:Georgia,serif;}
-  #invHud{position:fixed;z-index:11;left:14px;bottom:70px;display:flex;gap:6px;pointer-events:none;}
+  #invHud{position:fixed;z-index:11;left:14px;top:112px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;pointer-events:none;}
   #invHud .item{background:rgba(21,24,28,.72);border:1px solid rgba(194,163,90,.6);border-radius:4px;
     padding:5px 9px;color:#efe9dc;font-family:Georgia,serif;font-size:12px;letter-spacing:.04em;
     display:flex;align-items:center;gap:5px;}
@@ -284,7 +284,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.2.3</div>
+    <div id="verTag">v3.3.5</div>
   </div>
 </div>
 
@@ -400,7 +400,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.2.3';
+const VERSION='v3.3.5';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -998,8 +998,10 @@ const _wpCache={};
 function wallpaperById(id){
   if(!_wpCache[id]){
     const w=WALLPAPERS.find(p=>p.id===id)||WALLPAPERS[0];
-    _wpCache[id]=new THREE.MeshLambertMaterial({map:makeWallpaperTexture(w.bg,w.mo),
-      emissive:w.em,emissiveIntensity:0.42});
+    const tex=makeWallpaperTexture(w.bg,w.mo);
+    // emissive is modulated by the texture itself, so black stays truly black
+    _wpCache[id]=new THREE.MeshLambertMaterial({map:tex,
+      emissive:0xffffff,emissiveMap:tex,emissiveIntensity:0.34});
   }
   return _wpCache[id];
 }
@@ -1191,24 +1193,180 @@ const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
   });
 
   // ------- GRAND ENTRANCE HALL interior -------
-  box(7.0,3.1,16.4,M.marble,0,7.55,11.8,museum);
-  box(27.6,1.0,17.6,M.marble,0,9.5,-4,museum);
-  box(26,0.12,16,M.marbleSh,0,0.06,-4,museum);
-  box(6.4,0.12,15.6,M.marbleSh,0,0.06,11.7,museum);
+  // soft cloudy marble, from the reference photo — breaks up the flat greys
+  function makeCloudyMarbleTex(){
+    const cv=document.createElement('canvas'); cv.width=512; cv.height=512;
+    const c=cv.getContext('2d');
+    c.fillStyle='#e8e7e0'; c.fillRect(0,0,512,512);
+    function blob(x,y,r,col,a){
+      const g=c.createRadialGradient(x,y,r*0.15,x,y,r);
+      g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A','0'));
+      c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill();
+    }
+    for(let i=0;i<26;i++)                                     // grey-green clouds
+      blob(Math.random()*512,Math.random()*512,60+Math.random()*130,'rgba(168,175,166,A)',(0.10+Math.random()*0.16).toFixed(2));
+    for(let i=0;i<14;i++)                                     // cooler grey drifts
+      blob(Math.random()*512,Math.random()*512,50+Math.random()*110,'rgba(148,156,164,A)',(0.08+Math.random()*0.12).toFixed(2));
+    for(let i=0;i<16;i++)                                     // bright breaks
+      blob(Math.random()*512,Math.random()*512,40+Math.random()*90,'rgba(250,250,246,A)',(0.14+Math.random()*0.18).toFixed(2));
+    c.globalAlpha=0.045; c.strokeStyle='#6a716c'; c.lineWidth=1;   // faint diagonal grain
+    for(let d=-512;d<512;d+=9){ c.beginPath(); c.moveTo(d,0); c.lineTo(d+512,512); c.stroke(); }
+    c.globalAlpha=1;
+    const t=new THREE.CanvasTexture(cv);
+    t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+  }
+  const _cloudyBase=makeCloudyMarbleTex();
+  function cloudyMat(rx,ry,tint){
+    const t=_cloudyBase.clone(); t.needsUpdate=true;
+    t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry);
+    return new THREE.MeshLambertMaterial({map:t,color:tint||0xffffff,emissive:0x2e2d2a});
+  }
+  box(7.0,3.1,16.4,cloudyMat(2,1,0xf2f0ea),0,7.55,11.8,museum);      // upper wall
+  box(27.6,1.0,17.6,cloudyMat(3.4,2.2,0xf2f0ea),0,9.5,-4,museum);    // ceiling
+  box(26,0.12,16,cloudyMat(3.2,2),0,0.06,-4,museum);                 // main floor
+  box(6.4,0.12,15.6,cloudyMat(1,2.4),0,0.06,11.7,museum);            // vestibule floor
   box(2.4,0.06,22,M.royal,0,0.15,8,museum).receiveShadow=true;
+
+  // --- warm panelled wall texture, from the reference photo ---
+  function makeHallWallTex(){
+    const cv=document.createElement('canvas'); cv.width=512; cv.height=512;
+    const c=cv.getContext('2d');
+    const g=c.createLinearGradient(0,0,0,512);
+    g.addColorStop(0,'#c7ab8a'); g.addColorStop(0.45,'#d8bd9c'); g.addColorStop(1,'#b89a78');
+    c.fillStyle=g; c.fillRect(0,0,512,512);
+    // one tall dark inset panel per tile (repeats into a row, as in the photo)
+    function inset(cx,cy,w,h){
+      const n=Math.min(w,h)*0.22;
+      c.beginPath();
+      c.moveTo(cx-w/2+n,cy-h/2); c.lineTo(cx+w/2-n,cy-h/2); c.lineTo(cx+w/2,cy-h/2+n);
+      c.lineTo(cx+w/2,cy+h/2-n); c.lineTo(cx+w/2-n,cy+h/2); c.lineTo(cx-w/2+n,cy+h/2);
+      c.lineTo(cx-w/2,cy+h/2-n); c.lineTo(cx-w/2,cy-h/2+n); c.closePath();
+      c.fillStyle='#5b6478'; c.fill();
+      c.lineWidth=7; c.strokeStyle='#ead9bd'; c.stroke();
+    }
+    inset(256,150,120,240);
+    c.fillStyle='rgba(90,70,50,0.14)'; c.fillRect(0,470,512,42);   // skirting shade
+    const tex=new THREE.CanvasTexture(cv);
+    tex.wrapS=tex.wrapT=THREE.RepeatWrapping; return tex;
+  }
+  const hallWallTexN=makeHallWallTex(), hallWallTexS=makeHallWallTex();
+  function hallWallMat(tex,rep){ const t=tex.clone(); t.needsUpdate=true;
+    t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rep,1);
+    return new THREE.MeshLambertMaterial({map:t,emissive:0x3a2f22}); }
+  // interior wall facing: north wall either side of the door, and the east/west walls
+  box(10.6,8.8,0.16,hallWallMat(hallWallTexN,2),-7.7,4.4,-11.38,museum).castShadow=false;
+  box(10.6,8.8,0.16,hallWallMat(hallWallTexN,2), 7.7,4.4,-11.38,museum).castShadow=false;
+  [-1,1].forEach(sx=>{
+    const wA=box(0.16,8.8,4.8,hallWallMat(hallWallTexS,1),sx*12.45,4.4,-8.9,museum);
+    const wB=box(0.16,8.8,13.2,hallWallMat(hallWallTexS,2.4),sx*12.45,4.4,5.0,museum);
+    wA.castShadow=false; wB.castShadow=false;
+  });
+
+  // --- gold oval framed paintings, flanking the north door ---
+  function makeOvalPaintingTex(){
+    const cv=document.createElement('canvas'); cv.width=512; cv.height=384;
+    const c=cv.getContext('2d');
+    c.clearRect(0,0,512,384);
+    // scrollwork frame
+    c.fillStyle='#c8a23c';
+    c.beginPath(); c.ellipse(256,192,236,168,0,0,Math.PI*2); c.fill();
+    [[256,36],[256,348],[60,120],[452,120],[60,264],[452,264]].forEach(([x,y])=>{
+      c.beginPath(); c.arc(x,y,26,0,Math.PI*2); c.fill(); });
+    c.fillStyle='#e2c060';
+    c.beginPath(); c.ellipse(256,192,212,146,0,0,Math.PI*2); c.fill();
+    // faint pink landscape
+    c.fillStyle='#eed6c8';
+    c.beginPath(); c.ellipse(256,192,192,128,0,0,Math.PI*2); c.fill();
+    c.strokeStyle='#c9968a'; c.lineWidth=3; c.globalAlpha=0.75;
+    c.beginPath(); c.moveTo(90,220); c.quadraticCurveTo(190,140,300,200); c.quadraticCurveTo(380,240,420,190); c.stroke();
+    c.beginPath(); c.moveTo(120,250); c.quadraticCurveTo(250,210,400,255); c.stroke();
+    for(let i=0;i<7;i++){ const x=120+i*42;
+      c.beginPath(); c.moveTo(x,236); c.lineTo(x,208); c.stroke();
+      c.beginPath(); c.arc(x,200,10,0,Math.PI*2); c.stroke(); }
+    c.globalAlpha=1;
+    const t=new THREE.CanvasTexture(cv); return t;
+  }
+  [-1,1].forEach(sx=>{
+    const pt=new THREE.Mesh(new THREE.PlaneGeometry(3.7,2.78),
+      new THREE.MeshLambertMaterial({map:makeOvalPaintingTex(),transparent:true,emissive:0x453422}));
+    pt.position.set(sx*7.7,5.1,-11.28); pt.castShadow=false; pt.receiveShadow=true; museum.add(pt);
+  });
+
+  // --- hanging lanterns in the style of the photo, casting true shadows ---
+  function hangingLantern(px,py,pz){
+    const L=new THREE.Group(); L.position.set(px,0,pz); museum.add(L);
+    cyl(0.02,0.02,9.0-py-0.35,5,M.slate,0,(9.0+py+0.35)/2,0,L);   // cord from the ceiling
+    cyl(0.16,0.20,0.10,6,M.slate,0,py+0.30,0,L);                  // cap
+    const glass=cyl(0.19,0.23,0.44,6,new THREE.MeshLambertMaterial(
+      {color:0xffe6b0,emissive:0xd89a3c,emissiveIntensity:0.95}),0,py,0,L);
+    glass.castShadow=false;
+    cyl(0.22,0.16,0.10,6,M.slate,0,py-0.30,0,L);                  // base
+    sph(0.05,M.slate,0,py-0.40,0,L,6,6);
+    const lt=new THREE.PointLight(0xffd9a0,0.95,20,2);
+    lt.position.set(px,py,pz); lt.castShadow=true;
+    lt.shadow.mapSize.set(256,256); lt.shadow.bias=-0.004;
+    museum.add(lt);
+    return L;
+  }
+  hangingLantern(-7.7,5.9,-9.6);
+  hangingLantern( 7.7,5.9,-9.6);
+
+  // --- four columns in dark grey marble ---
+  function makeDarkMarbleTex(){
+    const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+    const c=cv.getContext('2d');
+    c.fillStyle='#33373d'; c.fillRect(0,0,256,256);
+    for(let i=0;i<26;i++){
+      c.strokeStyle=i%3?'rgba(120,128,140,0.30)':'rgba(170,178,190,0.35)';
+      c.lineWidth=i%3?1:1.8;
+      let x=Math.random()*256,y=0; c.beginPath(); c.moveTo(x,y);
+      while(y<256){ x+=(Math.random()-0.45)*34; y+=12+Math.random()*22; c.lineTo(x,y); }
+      c.stroke();
+    }
+    c.fillStyle='rgba(0,0,0,0.18)';
+    for(let i=0;i<400;i++) c.fillRect(Math.random()*256,Math.random()*256,1,1);
+    const t=new THREE.CanvasTexture(cv);
+    t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,3); return t;
+  }
+  const darkMarble=new THREE.MeshLambertMaterial({map:makeDarkMarbleTex(),emissive:0x0c0d10});
   [[-8.5,0.5],[8.5,0.5],[-8.5,-9],[8.5,-9]].forEach(([cx,cz])=>{
-    cyl(0.55,0.65,9,12,M.marble,cx,4.5,cz,museum);
+    cyl(0.55,0.65,9,12,darkMarble,cx,4.5,cz,museum);
     cyl(0.8,0.8,0.3,12,M.gold,cx,8.75,cz,museum);
     cyl(0.85,0.95,0.35,12,M.marbleSh,cx,0.2,cz,museum);
   });
-  const l1=new THREE.PointLight(0xffe2b8,0.8,36); l1.position.set(0,7.5,-4); museum.add(l1);
-  const l2=new THREE.PointLight(0xffe2b8,0.6,28); l2.position.set(0,6,12); museum.add(l2);
+  const l1=new THREE.PointLight(0xffe2b8,0.55,36); l1.position.set(0,7.5,-4); museum.add(l1);
+  const l2=new THREE.PointLight(0xffe2b8,0.55,28); l2.position.set(0,6,12); museum.add(l2);
 
-  box(3.6,0.18,2.2,M.wood,0,1.05,-5,museum);
-  box(3.1,0.28,1.8,lam(0x6a523c),0,0.85,-5,museum);
-  [[-1.55,-0.85],[1.55,-0.85],[-1.55,0.85],[1.55,0.85]].forEach(([lx,lz])=>{
-    box(0.18,0.95,0.18,M.wood,lx,0.48,-5+lz,museum);
-  });
+  // --- the main table: sparkly white marble, shaped legs, dark cloth (per the photo) ---
+  function makeWhiteMarbleTex(){
+    const cv=document.createElement('canvas'); cv.width=256; cv.height=256;
+    const c=cv.getContext('2d');
+    c.fillStyle='#f3f0e9'; c.fillRect(0,0,256,256);
+    for(let i=0;i<9;i++){
+      c.strokeStyle='rgba(150,155,165,'+(0.16+Math.random()*0.14)+')'; c.lineWidth=1+Math.random();
+      let x=Math.random()*256,y=0; c.beginPath(); c.moveTo(x,y);
+      while(y<256){ x+=(Math.random()-0.5)*44; y+=16+Math.random()*26; c.lineTo(x,y); }
+      c.stroke();
+    }
+    c.fillStyle='#ffffff';                                    // sparkle specks
+    for(let i=0;i<150;i++){ const s=Math.random()<0.2?2:1;
+      c.fillRect(Math.random()*256,Math.random()*256,s,s); }
+    const t=new THREE.CanvasTexture(cv);
+    t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+  }
+  const whiteMarble=new THREE.MeshPhongMaterial({map:makeWhiteMarbleTex(),
+    specular:0x9a9a9a,shininess:70,emissive:0x232019});
+  box(3.6,0.18,2.2,whiteMarble,0,1.05,-5,museum);             // marble top
+  box(3.3,0.06,1.95,whiteMarble,0,0.93,-5,museum);            // under-shelf lip
+  box(2.7,0.72,1.35,lam(0x39435c,{emissive:0x0e1119}),0,0.42,-5,museum); // dark cloth beneath
+  function balusterLeg(lx,lz){
+    box(0.28,0.12,0.28,whiteMarble,lx,0.06,-5+lz,museum);     // plinth
+    const bulb=sph(0.14,whiteMarble,lx,0.245,-5+lz,museum,10,8); bulb.scale.y=0.72;
+    cyl(0.072,0.105,0.46,8,whiteMarble,lx,0.55,-5+lz,museum); // tapered shaft
+    cyl(0.115,0.095,0.06,8,whiteMarble,lx,0.815,-5+lz,museum);// ring
+    box(0.24,0.09,0.24,whiteMarble,lx,0.885,-5+lz,museum);    // capital
+  }
+  [[-1.55,-0.85],[1.55,-0.85],[-1.55,0.85],[1.55,0.85]].forEach(([lx,lz])=>balusterLeg(lx,lz));
   const bp=new THREE.Mesh(new THREE.PlaneGeometry(2.7,1.8),makeBlueprintMaterial());
   bp.rotation.x=-Math.PI/2; bp.rotation.z=0.055;
   bp.position.set(0.05,1.155,-5); bp.receiveShadow=true; museum.add(bp);
@@ -1220,7 +1378,7 @@ const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
 
   function ornateDoor(px,pz,ry){
     const d=new THREE.Group(); d.position.set(px,0,pz); d.rotation.y=ry; museum.add(d);
-    box(4.8,7.2,0.3,M.marbleSh,0,3.6,0,d);
+    box(4.8,7.2,0.3,cloudyMat(1,1.4,0xefede6),0,3.6,0,d);
     box(3.0,5.2,0.36,M.darkWood,0,2.6,0.12,d);
     const arch=cyl(1.5,1.5,0.36,16,M.darkWood,0,5.2,0.12,d); arch.rotation.x=Math.PI/2;
     const ring=new THREE.Mesh(new THREE.TorusGeometry(1.55,0.1,8,20,Math.PI),M.gold);
@@ -2027,7 +2185,7 @@ const G=FLOORS[0];
     interactables.push({x:st.door.x,z:st.door.z,r:1.9,dead:false,
       label:()=> f.grid[st.r][st.c] ? ('enter '+roomById(f.grid[st.r][st.c].id).n) : 'draft a room',
       fn:()=>{ if(f.grid[st.r][st.c]) fadeTeleport(st.enter.x,st.enter.z,st.enter.yaw);
-               else openDraft({f:f,tc:st.c,tr:st.r,entry:st.entry}); }});
+               else openDraft({f:f,tc:st.c,tr:st.r,entry:st.entry,auto:st.enter}); }});
     teleports.push({x:st.ret.x,z:st.ret.z,r:1.6, tx:st.door.x,tz:st.door.z,yaw:st.door.yaw});
   });
   const L=new THREE.PointLight(0xffe2b8,0.7,44); L.position.set(f.ox,4.2,f.oz-8); scene.add(L);
@@ -3411,12 +3569,12 @@ function rebuildCable(){
   const grp=new THREE.Group(); grp.add(tube); grp.add(plug); scene.add(grp);
   alzara.cable=grp;
   if(!alzara.plugged){
-    // the loose plug falls through the floor and vanishes
-    const g=grp; let vy=0.006;
+    // the loose plug drops out of the socket and lands on the floor, staying visible
+    const g=grp; let vy=0.006; g.position.y=0.55;
     (function fall(){
       if(alzara.cable!==g) return;                 // superseded (re-plugged / room rebuilt)
       vy+=0.0035; g.position.y-=vy;                // accelerating drop
-      if(g.position.y<=-1.6){ g.visible=false; return; }
+      if(g.position.y<=0){ g.position.y=0; return; }   // rest on the floor
       requestAnimationFrame(fall);
     })();
   }
@@ -3432,21 +3590,24 @@ function buildAlzaraRoom(cx,cz,abs){
   const CASE_H=1.72, CASE_Y=CAB_H+CASE_H/2;        // glass case above it
   const CASE_TOP=CAB_H+CASE_H;                     // = 3.00, well under the 4.75 ceiling
   // ---- lower cabinet ----
-  box(1.52,CAB_H,0.88,wood,mx,CAB_Y,mz);
-  box(1.64,0.10,0.96,woodDk,mx,CAB_H-0.05,mz);
-  box(1.64,0.10,0.96,woodDk,mx,0.05,mz);
-  addColliderBox(mx,mz,1.7,1.0,0.1);
+  box(1.52,CAB_H,1.32,wood,mx,CAB_Y,mz);
+  box(1.64,0.10,1.44,woodDk,mx,CAB_H-0.05,mz);
+  box(1.64,0.10,1.44,woodDk,mx,0.05,mz);
+  addColliderBox(mx,mz,1.7,1.46,0.1);
   // coin slot + card mouth on the front panel
-  box(1.02,0.62,0.05,lam(0x6a5236,{emissive:0x1a1208}),mx,0.80,mz+0.45);
-  box(0.07,0.17,0.04,lam(0x14141a),mx+0.34,0.98,mz+0.48);        // coin slot
-  box(0.44,0.06,0.04,lam(0x14141a),mx,0.60,mz+0.48);             // card mouth
-  // ---- glass case ----
+  box(1.02,0.62,0.05,lam(0x6a5236,{emissive:0x1a1208}),mx,0.80,mz+0.67);
+  box(0.07,0.17,0.04,lam(0x14141a),mx+0.34,0.98,mz+0.70);        // coin slot
+  box(0.44,0.06,0.04,lam(0x14141a),mx,0.60,mz+0.70);             // card mouth
+  // ---- glass case, in the same glass as the museum domes ----
   [-1,1].forEach(sx=>[-1,1].forEach(sz=>
-    cyl(0.06,0.06,CASE_H,8,lam(0xd8d2c4,{emissive:0x2a2820}),mx+sx*0.65,CASE_Y,mz+sz*0.34)));
-  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.34,CASE_H,0.74),
-    new THREE.MeshPhongMaterial({color:0xaecbe6,transparent:true,opacity:0.14,shininess:100,side:THREE.DoubleSide}));
+    cyl(0.06,0.06,CASE_H,8,lam(0xd8d2c4,{emissive:0x2a2820}),mx+sx*0.65,CASE_Y,mz+sz*0.56)));
+  const caseGlass=M.glass.clone();
+  caseGlass.depthWrite=false;                       // never depth-occlude what's inside
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.34,CASE_H,1.18),caseGlass);
+  glass.renderOrder=2;                              // draw after the crystal ball
+  glass.castShadow=false; glass.receiveShadow=false;
   glass.position.set(mx,CASE_Y,mz); scene.add(glass);
-  box(1.50,0.09,0.86,woodDk,mx,CASE_TOP+0.04,mz);
+  box(1.50,0.09,1.32,woodDk,mx,CASE_TOP+0.04,mz);
   // ---- header board with the ALZARA sign ----
   const HEAD_Y=CASE_TOP+0.34;
   box(1.52,0.50,0.14,woodDk,mx,HEAD_Y,mz-0.16);
@@ -3945,6 +4106,11 @@ byId('draftCards').onclick=function(e){
   addRes('gems',-cost,true);
   closeOverlay();
   if(ctx) placeRoom(id,ctx);
+  // drafted from the Grand Entrance: walk straight in (unless the room sealed itself)
+  if(ctx && ctx.auto){
+    const rm2=roomById(id);
+    if(rm2 && rm2.d>0) setTimeout(()=>fadeTeleport(ctx.auto.x,ctx.auto.z,ctx.auto.yaw),380);
+  }
   draftCtx=null;
 };
 byId('draftReroll').onclick=draftReroll;
