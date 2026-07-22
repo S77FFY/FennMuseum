@@ -302,7 +302,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.9.0</div>
+    <div id="verTag">v3.9.1</div>
   </div>
 </div>
 
@@ -442,7 +442,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.9.0';
+const VERSION='v3.9.1';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -2498,9 +2498,18 @@ function wallRun(x1,z1,x2,z2,gaps){
   // ---- portico staircase to the Leerson upper floor ----
   for(let i=0;i<5;i++) box(1.6,0.22+i*0.22,1.0,plankMatDk(),W(2.9),0.11*(i+1),Z(15.6-i*0.9));
   box(0.08,1.1,4.4,M.wood,W(3.75),1.0,Z(13.9));
+  // the stairwell opening: a dark gap in the wall at the head of the stairs, wood-cased,
+  // with two further steps climbing away into it
+  box(2.1,0.16,0.16,M.wood,W(2.9),3.62,Z(11.15));                 // lintel
+  [-1,1].forEach(sd=>box(0.16,2.6,0.16,M.wood,W(2.9)+sd*0.98,2.34,Z(11.15)));  // jambs
+  const shaft=new THREE.Mesh(new THREE.PlaneGeometry(1.8,2.5),
+    new THREE.MeshBasicMaterial({color:0x05060a}));
+  shaft.position.set(W(2.9),2.32,Z(11.12)); shaft.castShadow=false; scene.add(shaft);
+  box(1.6,0.22,0.6,plankMatDk(),W(2.9),1.42,Z(11.35));            // phantom steps into the dark
+  box(1.6,0.22,0.6,plankMatDk(),W(2.9),1.66,Z(10.95));
   addColliderBox(W(2.9),Z(14.2),1.8,4.2,0.1);
-  interactables.push({x:W(2.9),z:Z(12.2),r:1.8,dead:false,label:'climb to the upper floor',
-    fn:()=>fadeTeleport(TOP_X-37,TOP_Z,Math.PI/2)});
+  interactables.push({x:W(2.9),z:Z(13.6),r:3.4,dead:false,prio:1,label:'climb to the upper floor',
+    fn:()=>fadeTeleport(TOP_X-36.5,TOP_Z,-Math.PI/2)});
   // gallery benches
   [[-5,3],[5,3]].forEach(([bx,bz])=>{
     box(2.6,0.22,0.9,M.wood,W(bx),0.72,Z(bz));
@@ -2877,7 +2886,7 @@ function fillNextBone(){
 
 
 // ============ THE SEVEN HANDS — Leerson upper floor quest ============
-const TOP_X=-600, TOP_Z=200;             // upper-floor pocket, reached from the portico stair
+const TOP_X=900, TOP_Z=400;              // upper-floor pocket — well beyond the mountain ring
 const topBarrierList=[];
 function exitSolved(n){ return store.get('fenn_exit'+n,0)===1; }
 function countHandCards(){ let n=0; for(let i=1;i<=5;i++) if(store.get('fenn_hc'+i,0)) n++; return n; }
