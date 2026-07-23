@@ -114,6 +114,7 @@
   .roomCard .rar.rare{color:#8a2320;} .roomCard .rar.unusual{color:#9a6a1a;}
   .roomCard .rar.standard{color:#5a7a4a;} .roomCard .rar.commonplace{color:#8a8171;}
   .roomCard .cost{color:#2a6a6a;font-weight:bold;} .roomCard .cost.no{color:#b03a2a;}
+  .roomCard .cost.waived{color:#b03a2a;} .roomCard .cost.waived s{color:#b03a2a;opacity:.85;margin-right:4px;}
   .roomCard.broke{opacity:.55;}
   .dirMeta{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8a8171;margin-left:8px;}
   .dirMeta .c{color:#2a6a6a;}
@@ -313,7 +314,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.10.7</div>
+    <div id="verTag">v3.11.0</div>
   </div>
 </div>
 
@@ -455,7 +456,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.10.7';
+const VERSION='v3.11.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -2067,8 +2068,7 @@ const ROOMS=[
   R('princesstudy','Prince\u2019s Study',1,P1,CM,'Leerson\u2019s desk, they say.'),
   R('observatory','Observatory',1,P1,CO),
   R('servicetunnel','Service Tunnel',1,P1,CS,'A maintenance hatch, half-hidden beneath the grating.','tunnel'),
-  R('brickedwing','Bricked Wing',0,[],CX,'Placing it seals the doorway for the night.'),
-  R('sealedvault','Sealed Vault',0,[],CX,'No way in. Placing it seals the doorway.')
+  R('crossinghall','Crossing Hall',4,P4,CG)
 ];
 function roomById(id){ for(const r of ROOMS) if(r.id===id) return r; return null; }
 // lift + stair specials, and floor-specific draft pools
@@ -3228,64 +3228,36 @@ function exitKeypad(n,code,title,hint){
     fn:()=>{ const n=countHandCards();
       if(n<5){ msg('Five card slots. You carry '+n+' of 5 \u2014 the museum still hides the rest.'); return; }
       clearExit(1); }});
-  // ---- CHAMBER 2: sixteen hands two ----
-  (function(){ const g=new THREE.Group(); g.position.set(X(-25),2.55,Z(-5.2)); scene.add(g);
-    box(2.4,1.9,0.08,lam(0x6a5432,{emissive:0x1a1208}),0,0,0,g);
-    const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.7),questPicMat('horse'));
-    pl.position.z=0.05; pl.castShadow=false; g.add(pl); })();
-  box(0.5,1.2,0.3,lam(0x30343b,{emissive:0x0c0d10}),X(-22),0.6,Z(-5.2));
-  interactables.push({x:X(-22),z:Z(-4.3),r:1.6,dead:false,cond:()=>!exitSolved(2),
-    label:'punch a code into the machine',
-    fn:()=>exitKeypad(2,'162','MEASURING MACHINE','The champion on the wall knows his height.')});
-  // ---- CHAMBER 3: the gift, hand to hand ----
-  (function(){ const g=new THREE.Group(); g.position.set(X(-15),2.55,Z(5.2)); g.rotation.y=Math.PI; scene.add(g);
-    box(2.4,1.9,0.08,lam(0x6a5432,{emissive:0x1a1208}),0,0,0,g);
-    const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.7),questPicMat('book'));
-    pl.position.z=0.05; pl.castShadow=false; g.add(pl); })();
-  interactables.push({x:X(-12),z:Z(3.6),r:1.6,dead:false,cond:()=>!exitSolved(3),
-    label:'enter the year on the lock',
-    fn:()=>exitKeypad(3,'1984','BOOK LOCK','The title passes from hand to hand.')});
-  // ---- CHAMBER 4: the hands of the clock ----
-  (function(){ const g=new THREE.Group(); g.position.set(X(-5),2.7,Z(-5.2)); scene.add(g);
-    box(1.9,1.9,0.08,lam(0x4a3020,{emissive:0x120b06}),0,0,0,g);
-    const pl=new THREE.Mesh(new THREE.PlaneGeometry(1.7,1.7),questPicMat('clock'));
-    pl.position.z=0.05; pl.castShadow=false; g.add(pl); })();
-  interactables.push({x:X(-2),z:Z(-4.2),r:1.6,dead:false,cond:()=>!exitSolved(4),
-    label:'read the hands, enter the hour',
-    fn:()=>exitKeypad(4,['1012','0412'],'CLOCK LOCK','Hour hand, then minute hand \u2014 four digits.')});
-  // ---- CHAMBER 5: the signing hands ----
-  (function(){ const g=new THREE.Group(); g.position.set(X(5),2.55,Z(5.2)); g.rotation.y=Math.PI; scene.add(g);
-    box(2.4,1.9,0.08,lam(0x6a5432,{emissive:0x1a1208}),0,0,0,g);
-    const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.7),questPicMat('signs'));
-    pl.position.z=0.05; pl.castShadow=false; g.add(pl); })();
-  interactables.push({x:X(8),z:Z(3.6),r:1.6,dead:false,cond:()=>!exitSolved(5),
-    label:'enter what the hands are signing',
-    fn:()=>exitKeypad(5,'2018','SIGNED LOCK','Two numbers, signed left then right.')});
-  // ---- CHAMBER 6: a standing ovation ----
-  (function(){ const g=new THREE.Group(); g.position.set(X(15),2.6,Z(-5.2)); scene.add(g);
-    box(3.0,2.2,0.08,lam(0x1c1a22,{emissive:0x08070c}),0,0,0,g);
-    const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.8,2.0),questPicMat('odyssey'));
-    pl.position.z=0.05; pl.castShadow=false; g.add(pl); })();
+  // ---- a real keypad terminal beside each door ----
+  function doorKeypad(n,side,label,fn){
+    const dx=X(-40+n*10), px=dx-1.5, pz=Z(side*1.9);
+    const g=new THREE.Group(); g.position.set(px,0,pz); g.rotation.y=-Math.PI/2; scene.add(g);
+    cyl(0.09,0.11,1.15,8,lam(0x4a4f57,{emissive:0x121417}),0,0.57,0,g);      // stand
+    box(0.62,0.52,0.16,lam(0x30343b,{emissive:0x0c0d10}),0,1.34,0,g);        // housing
+    box(0.5,0.16,0.04,new THREE.MeshBasicMaterial({color:0x0e4a24}),0,1.5,0.09,g);  // screen
+    for(let r2=0;r2<3;r2++) for(let cch=0;cch<3;cch++)                        // 9 keys
+      box(0.1,0.08,0.03,lam(0x7f8792,{emissive:0x1a1c20}),-0.15+cch*0.15,1.31-r2*0.11,0.09,g);
+    sph(0.045,new THREE.MeshBasicMaterial({color:exitSolved(n)?0x4ade70:0xd8a23a}),0,1.62,0.08,g,6,6);
+    addColliderBox(px,pz,0.5,0.5,0.1);
+    interactables.push({x:px,z:pz+side*1.0,r:2.0,dead:false,prio:1,cond:()=>!exitSolved(n),label:label,fn:fn});
+  }
+  doorKeypad(2,-1,'use the measuring machine',
+    ()=>exitKeypad(2,'162','MEASURING MACHINE','A champion\u2019s height, in hands \u2014 hung in the Long Gallery.'));
+  doorKeypad(3,1,'use the book lock',
+    ()=>exitKeypad(3,'1984','BOOK LOCK','A title passed hand to hand \u2014 hung in the Reading Room.'));
+  doorKeypad(4,-1,'use the clock lock',
+    ()=>exitKeypad(4,['1012','0412'],'CLOCK LOCK','Hour hand, then minute hand \u2014 the face hangs in the Clock Room.'));
+  doorKeypad(5,1,'use the signed lock',
+    ()=>exitKeypad(5,'2018','SIGNED LOCK','Two numbers, signed left then right \u2014 seen in the Whispering Hall.'));
+  doorKeypad(7,1,'use the painted-court lock',
+    ()=>exitKeypad(7,'0705','THE PAINTED COURT','Left hands, then right hands, of the Leerson Portrait Room.'));
+  // ---- CHAMBER 6: a standing ovation, before the Dawn Scene (hung in the Observatory) ----
   dcRug(X(15),Z(-2.2),2.4,1.6,0x5a1c1c);
-  interactables.push({x:X(15),z:Z(-2.2),r:1.8,dead:false,cond:()=>!exitSolved(6),
+  (function(){ const g=new THREE.Group(); g.position.set(X(15),0,Z(-2.2)); scene.add(g);
+    box(1.1,0.14,0.5,lam(0x4a3826,{emissive:0x120d06}),0,0.07,0,g); })();
+  interactables.push({x:X(15),z:Z(-2.2),r:2.0,dead:false,cond:()=>!exitSolved(6),
     label:'give a standing ovation',
-    fn:()=>{ msg('You rise and applaud the dawn of it all. The hall approves.'); clearExit(6); }});
-  // ---- CHAMBER 7: the painted hands ----
-  (function(){ const g=new THREE.Group(); g.position.set(X(25),2.4,Z(5.2)); g.rotation.y=Math.PI; scene.add(g);
-    box(2.2,1.3,0.06,lam(0x30343b,{emissive:0x0c0d10}),0,0,0,g);
-    const cv=document.createElement('canvas'); cv.width=256; cv.height=128; const c=cv.getContext('2d');
-    c.fillStyle='#23262c'; c.fillRect(0,0,256,128);
-    c.fillStyle='#c2a35a'; c.font='bold 15px Georgia'; c.textAlign='center';
-    c.fillText('COUNT THE HANDS OF THE PAINTED COURT',128,44);
-    c.font='13px Georgia'; c.fillStyle='#e6e1d4';
-    c.fillText('below, in the Portrait Room:',128,72);
-    c.fillText('their LEFT hands, then their RIGHT.',128,94);
-    const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.0,1.1),
-      new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv),emissive:0x28241e}));
-    pl.position.z=0.04; pl.castShadow=false; g.add(pl); })();
-  interactables.push({x:X(28),z:Z(3.6),r:1.6,dead:false,cond:()=>!exitSolved(7),
-    label:'enter the count of painted hands',
-    fn:()=>exitKeypad(7,'0705','THE PAINTED COURT','Left hands, then right hands. Four digits.')});
+    fn:()=>{ msg('You take the mark and applaud the dawn of it all \u2014 the scene you saw in the Observatory. The hall approves.'); clearExit(6); }});
   // ---- FINAL CHAMBER (x 30..40): the Royal Flush plinth ----
   box(1.6,1.05,1.1,M.marbleSh,X(35),0.52,Z(0)); addColliderBox(X(35),Z(0),1.8,1.3,0.1);
   for(let i=0;i<5;i++) box(0.36,0.02,0.5,lam(0x2c0a0a,{emissive:0x120404}),X(35)-0.72+i*0.36,1.07,Z(0));
@@ -3456,7 +3428,8 @@ const DECOR={
   crossinghall:(cx,cz,W)=>{ dcBench(cx-2.4,cz-2.4,0.78); dcBench(cx+2.4,cz+2.4,0.78);
     if(W[0]) hangFrame(artMat('abstract',5),1.7,1.3,W[0]); },
   longgallery:(cx,cz,W)=>{ dcBench(cx,cz,0);
-    W.forEach((mt,i)=>hangFrame(artMat(['landscape','seascape','portrait'][i%3],20+i),1.9,1.4,mt)); },
+    W.forEach((mt,i)=>{ if(i<W.length-1) hangFrame(artMat(['landscape','seascape','portrait'][i%3],20+i),1.9,1.4,mt); });
+    questClue('horse',cx,cz,W,2.2,1.7); },                       // “SIXTEEN HANDS TWO”
   marblepassage:(cx,cz,W)=>{ dcPlinth(cx-3,cz-3,'urn',2); dcPlinth(cx+3,cz+3,'urn',3);
     if(W[0]) hangFrame(artMat('abstract',9),1.6,1.2,W[0]); },
   colonnade:(cx,cz)=>{ [[-2.6,-2.6],[2.6,-2.6],[-2.6,2.6],[2.6,2.6]].forEach(([ox,oz])=>{
@@ -3479,8 +3452,9 @@ const DECOR={
     W.forEach((mt,i)=>hangFrame(artMat('portrait',40+i),1.7,2.1,mt,2.7)); },
   sculpturecourt:(cx,cz)=>{ dcPlinth(cx-2.6,cz-1.5,'bust',1); dcPlinth(cx+2.6,cz-1.5,'statue',2);
     dcPlinth(cx,cz+2.6,'urn',3); },
-  whisperinghall:(cx,cz)=>{ [-1,1].forEach(sd=>{ for(let i=0;i<3;i++){
-    const a=(i-1)*0.5; dcBench(cx+sd*3.2-Math.abs(a)*sd*0.8,cz+a*2.6,sd>0?-Math.PI/2+a*0.4:Math.PI/2-a*0.4); } }); },
+  whisperinghall:(cx,cz,W)=>{ [-1,1].forEach(sd=>{ for(let i=0;i<3;i++){
+    const a=(i-1)*0.5; dcBench(cx+sd*3.2-Math.abs(a)*sd*0.8,cz+a*2.6,sd>0?-Math.PI/2+a*0.4:Math.PI/2-a*0.4); } });
+    questClue('signs',cx,cz,W,2.2,1.7); },                        // signing XX and XVIII
   scholarsstair:(cx,cz,W)=>{ if(W[0]) dcShelf(W[0],3.2,'books');
     cyl(0.3,0.36,0.9,10,lam(0x5a4632),cx+2.4,0.45,cz+2.4);
     sph(0.34,lam(0x3a5a8a,{emissive:0x101a2c}),cx+2.4,1.2,cz+2.4,undefined,12,10);
@@ -3540,7 +3514,8 @@ const DECOR={
     glassDome(0.5,5,scene).position.set(cx+2,0.92,cz-2);
     sph(0.2,M.gold,cx+2,1.06,cz-2,undefined,8,6); addColliderBox(cx+2,cz-2,1.4,1.1,0.1);
     if(W[0]) hangFrame(artMat('portrait',70),1.5,2.0,W[0],2.7); },
-  readingroom:(cx,cz,W)=>{ if(W[0]) dcShelf(W[0],3.0,'books');
+  readingroom:(cx,cz,W)=>{ if(W.length>1) dcShelf(W[0],3.0,'books');
+    questClue('book',cx,cz,W,2.2,1.7);                            // the 1984 handover
     [[-1.6,1.2,0.5],[1.6,1.2,-0.5]].forEach(([ox,oz,ry])=>{
       const g=new THREE.Group(); g.position.set(cx+ox,0,cz+oz); g.rotation.y=ry; scene.add(g);
       box(0.9,0.45,0.8,lam(0x6a3a34,{emissive:0x180d0b}),0,0.35,0,g);
@@ -3587,6 +3562,7 @@ const DECOR={
       const v=sph(0.16,lam(0xe8ecf2,{emissive:0x2e3238}),vx,1.24,vz,undefined,10,8); v.scale.y=1.4;
       cyl(0.07,0.1,0.1,8,lam(0x4a6a9a,{emissive:0x101a28}),vx,1.5,vz); } }); },
   clockroom:(cx,cz,W)=>{
+    questClue('clock',cx,cz,W,1.7,1.7);                           // hands at 10 and 12
     box(0.9,3.2,0.5,lam(0x4a3020,{emissive:0x120b06}),cx-3,1.6,cz-3); addColliderBox(cx-3,cz-3,1.1,0.7,0.1);
     cyl(0.3,0.3,0.06,14,lam(0xe8e2d2,{emissive:0x2e2c28}),cx-3,2.7,cz-2.72).rotation.x=Math.PI/2;
     cyl(0.05,0.05,1.1,6,M.gold,cx-3,1.35,cz-2.74);
@@ -3614,12 +3590,13 @@ const DECOR={
     if(W[0]) dcShelf(W[0],2.8,'books');
     if(W[1]) hangFrame(artMat('portrait',90),1.4,1.9,W[1],2.7); },
   observatory:(cx,cz,W)=>{
+    questClue('odyssey',cx,cz,W,2.4,1.8);                         // the Dawn Scene
     const g=new THREE.Group(); g.position.set(cx+1.5,0,cz+1.5); g.rotation.y=-0.7; scene.add(g);
     for(let i=0;i<3;i++){ const lg=cyl(0.05,0.06,1.6,6,lam(0x4a3826),0,0.8,0,g);
       lg.rotation.z=Math.sin(i*2.09)*0.4; lg.rotation.x=Math.cos(i*2.09)*0.4; }
     const tube=cyl(0.22,0.3,2.4,10,lam(0x8a6c3a,{emissive:0x1c1409}),0,2.0,0.4,g);
     tube.rotation.x=-0.7; addColliderBox(cx+1.5,cz+1.5,1.4,1.4,0.1);
-    if(W[0]) hangFrame(artMat('starchart',95),2.0,1.5,W[0]); },
+    if(W.length>1) hangFrame(artMat('starchart',95),2.0,1.5,W[0]); },
   gallerylong:(cx,cz,W)=>{ dcBench(cx,cz,Math.PI/2);
     W.forEach((mt,i)=>hangFrame(artMat(['landscape','abstract','seascape'][i%3],100+i),1.9,1.4,mt)); },
   domechamber:(cx,cz)=>{ dcRug(cx,cz,4.4,4.4,0x3a3020);
@@ -3638,6 +3615,24 @@ const DECOR={
       const a=i*2.1; sph(pr,lam(col,{emissive:0x101014}),cx+Math.cos(a)*r2,2.55,cz+Math.sin(a)*r2,undefined,8,6); });
     if(W[0]) hangFrame(artMat('starchart',115),1.8,1.3,W[0]); }
 };
+function questClue(kind,cx,cz,W,w,h){
+  if(W&&W.length){ const mt=W[W.length-1];
+    const g=new THREE.Group(); g.position.set(mt.x,2.55,mt.z); g.rotation.y=mt.ry; scene.add(g);
+    box(w+0.22,h+0.22,0.08,lam(0x6a5432,{emissive:0x1a1208}),0,0,0,g);
+    const pl=new THREE.Mesh(new THREE.PlaneGeometry(w,h),questPicMat(kind));
+    pl.position.z=0.05; pl.castShadow=false; g.add(pl);
+    return;
+  }
+  // every wall has a doorway — stand it on an easel in the room instead
+  const g=new THREE.Group(); g.position.set(cx+3.2,0,cz+3.2); g.rotation.y=-0.7; scene.add(g);
+  [[-0.5,0.35],[0.5,0.35],[0,-0.45]].forEach(([lx,lz])=>{
+    const leg=cyl(0.04,0.05,2.1,6,lam(0x5a4632),lx,1.05,lz,g);
+    leg.rotation.z=lx*0.12; leg.rotation.x=lz*0.12; });
+  box(w+0.22,h+0.22,0.08,lam(0x6a5432,{emissive:0x1a1208}),0,1.6,0,g);
+  const pl=new THREE.Mesh(new THREE.PlaneGeometry(w,h),questPicMat(kind));
+  pl.position.set(0,1.6,0.05); pl.castShadow=false; g.add(pl);
+  addColliderBox(cx+3.2,cz+3.2,1.2,1.2,0.1);
+}
 function decorateRoom(room,cx,cz,abs){
   const fn=DECOR[room.id]; if(!fn) return;
   try{ fn(cx,cz,wallMounts(cx,cz,abs)); }catch(e){}
@@ -5529,17 +5524,32 @@ function openDraft(target){
   openOverlay(byId('draftOverlay'));
 }
 let draftChoices=[];
+let waivedId=null;                 // when nothing is affordable, one room comes free
+function computeWaiver(){
+  waivedId=null;
+  if(!draftChoices.length) return;
+  if(draftChoices.some(r=>res.gems>=roomCost(r))) return;   // something is affordable already
+  let best=draftChoices[0];
+  draftChoices.forEach(r=>{ if(roomCost(r)<roomCost(best)) best=r; });
+  waivedId=best.id;                                          // cheapest card is waived
+}
+function costFor(r){ return (waivedId===r.id)?0:roomCost(r); }
 function renderDraftCards(){
+  computeWaiver();
   let html='';
   draftChoices.forEach(r=>{
     let pips='';
     for(let i=0;i<4;i++) pips+='<span class="pip'+(i<r.d?'':' off')+'"></span>';
-    const cost=roomCost(r), rar=roomRarity(r), afford=res.gems>=cost;
+    const cost=roomCost(r), rar=roomRarity(r);
+    const waived=(waivedId===r.id), afford=waived||res.gems>=cost;
+    const costHtml=waived
+      ? '<span class="cost waived">\u25C7 <s>'+cost+'</s> FREE</span>'
+      : '<span class="cost'+(afford?'':' no')+'">\u25C7 '+cost+'</span>';
     html+='<div class="roomCard'+(afford?'':' broke')+'" data-id="'+r.id+'"><div class="rn">'+r.n+'</div>'+
           '<div class="rd">'+pips+'</div>'+
           '<div class="rmeta"><span class="rar '+rar.toLowerCase()+'">'+rar+'</span>'+
-          '<span class="cost'+(afford?'':' no')+'">\u25C7 '+cost+'</span></div>'+
-          '<div class="rnote">'+(r.note||(r.d?'Empty \u2014 awaiting curation.':''))+'</div></div>';
+          costHtml+'</div>'+
+          '<div class="rnote">'+(waived?'The curator waives the fee \u2014 take it.':(r.note||(r.d?'Empty \u2014 awaiting curation.':'')))+'</div></div>';
   });
   byId('draftCards').innerHTML=html;
   const rb=byId('draftReroll');
@@ -5565,7 +5575,7 @@ byId('draftCards').onclick=function(e){
   while(el && el!==this){ if(el.dataset && el.dataset.id) break; el=el.parentNode; }
   if(!el || el===this || !el.dataset || !el.dataset.id) return;
   const id=el.dataset.id, ctx=draftCtx;
-  const rm=roomById(id), cost=rm?roomCost(rm):0;
+  const rm=roomById(id), cost=rm?costFor(rm):0;
   if(res.gems<cost){ msg('Not enough gems \u2014 '+rm.n+' costs '+cost+'.'); return; }
   addRes('gems',-cost,true);
   closeOverlay();
