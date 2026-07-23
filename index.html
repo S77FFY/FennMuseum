@@ -313,7 +313,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.10.4</div>
+    <div id="verTag">v3.10.5</div>
   </div>
 </div>
 
@@ -455,7 +455,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.10.4';
+const VERSION='v3.10.5';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -2670,12 +2670,8 @@ function wallRun(x1,z1,x2,z2,gaps){
   addColliderBox(W(2.9),Z(14.2),1.8,4.2,0.1);
   interactables.push({x:W(2.9),z:Z(13.6),r:3.4,dead:false,prio:1,label:'climb to the upper floor',
     fn:()=>fadeTeleport(TOP_X-36.5,TOP_Z,-Math.PI/2)});
-  // gallery benches
-  [[-5,3],[5,3]].forEach(([bx,bz])=>{
-    box(2.6,0.22,0.9,M.wood,W(bx),0.72,Z(bz));
-    box(0.22,0.6,0.8,M.wood,W(bx-1.1),0.36,Z(bz));
-    box(0.22,0.6,0.8,M.wood,W(bx+1.1),0.36,Z(bz));
-  });
+  // gallery benches — same build as the Portrait Room bench
+  [[-5,3],[5,3]].forEach(([bx,bz])=>dcBench(W(bx),Z(bz),Math.PI/2));
   // lights
   const p1=new THREE.PointLight(0xffe2b8,0.6,18); p1.position.set(W(0),3.8,Z(13.5)); scene.add(p1);
   const p2=new THREE.PointLight(0xffe2b8,0.8,26); p2.position.set(W(0),4.2,Z(2)); scene.add(p2);
