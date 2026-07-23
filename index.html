@@ -313,7 +313,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.10.5</div>
+    <div id="verTag">v3.10.6</div>
   </div>
 </div>
 
@@ -455,7 +455,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.10.5';
+const VERSION='v3.10.6';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -3046,6 +3046,9 @@ const TOP_X=900, TOP_Z=400;              // upper-floor pocket — well beyond t
 const topBarrierList=[];
 function exitSolved(n){ return store.get('fenn_exit'+n,0)===1; }
 function countHandCards(){ let n=0; for(let i=1;i<=5;i++) if(store.get('fenn_hc'+i,0)) n++; return n; }
+const cardGlints=[];
+const CARD_WHERE=['the Grand Entrance Hall','the entrance table','the Leerson portico',
+                  'the Leerson Portrait Room','the entrance vestibule'];
 // ---- five playing cards hidden around the museum ----
 function makeCardTex(label,red){
   const cv=document.createElement('canvas'); cv.width=96; cv.height=136;
@@ -3062,15 +3065,19 @@ function placeHandCard(i,x,y,z,label,red){
     new THREE.MeshLambertMaterial({map:makeCardTex(label,red),emissive:0x34322c,side:THREE.DoubleSide}));
   m.rotation.x=-Math.PI/2; m.rotation.z=(i*1.3)%1.4-0.7; m.position.set(x,y,z);
   m.castShadow=false; scene.add(m);
+  const glint=sph(0.055,new THREE.MeshBasicMaterial({color:0xffe9a8}),x,y+0.42,z,undefined,6,6);
+  glint.castShadow=false; cardGlints.push(glint);
   interactables.push({x:x,z:z,r:2.3,dead:false,prio:2,label:'pick up the playing card',
     cond:()=>!store.get('fenn_hc'+i,0),
-    fn:()=>{ store.set('fenn_hc'+i,1); scene.remove(m);
-      msg('Playing card found ('+countHandCards()+'/5). Something upstairs in Leerson Hall wants a hand of five.'); }});
+    fn:()=>{ store.set('fenn_hc'+i,1); scene.remove(m); scene.remove(glint);
+      const left=[]; for(let k=1;k<=5;k++) if(!store.get('fenn_hc'+k,0)) left.push(CARD_WHERE[k-1]);
+      msg('Playing card found ('+countHandCards()+'/5).'+
+        (left.length?' Still to search: '+left.join(', ')+'.':' A full hand \u2014 the pedestal upstairs in Leerson Hall awaits.')); }});
 }
 placeHandCard(1, 47.3,0.17,19.2,'7',false);        // Grand Entrance, by the west column
 placeHandCard(2, 56.6,1.17,13.6,'3',true);         // on the blueprint table
 placeHandCard(3, LX+1.6,0.17,LZ+14.6,'9',false);   // Leerson portico
-placeHandCard(4, LX-8,0.17,LZ-18,'5',true);        // Leerson corridor
+placeHandCard(4, LX-12.5,0.17,LZ+5.2,'5',true);    // Leerson Portrait Room floor
 placeHandCard(5, 55.9,0.20,26.8,'2',false);        // vestibule carpet
 // ---- the museum lavatory (Grand Entrance, north-west corner) ----
 (function(){
@@ -6000,6 +6007,8 @@ function tickBody(){
   if(cageG&&cageG.visible) cageG.position.y=lerpTo(cageG.position.y,cageG.userData.ty,dt,6);
   if(shutterMesh) shutterMesh.position.y=lerpTo(shutterMesh.position.y,shutterMesh.userData.ty,dt,3);
   for(const tb of topBarrierList) tb.mesh.position.y=lerpTo(tb.mesh.position.y,tb.mesh.userData.ty,dt,3);
+  for(let i=0;i<cardGlints.length;i++){ const g=cardGlints[i];
+    g.position.y+= (Math.sin(t*2.2+i)*0.0016); g.visible=(Math.sin(t*3+i)>-0.55); }
   if(secDoor) secDoor.position.x=lerpTo(secDoor.position.x,secDoor.userData.tx,dt,3);
   for(const id in switchKnobs){ const k=switchKnobs[id];
     k.position.x=lerpTo(k.position.x,k.userData.tx,dt,10); }
