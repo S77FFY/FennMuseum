@@ -302,7 +302,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.9.1</div>
+    <div id="verTag">v3.9.2</div>
   </div>
 </div>
 
@@ -442,7 +442,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.9.1';
+const VERSION='v3.9.2';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -1181,11 +1181,31 @@ function plaza(x,z,r,mat){
   const m=new THREE.Mesh(new THREE.CircleGeometry(r,28),mat||M.path);
   m.rotation.x=-Math.PI/2; m.position.set(x,0.055,z); m.receiveShadow=true; scene.add(m);
 }
+// regions the mountains must never touch: Leerson Hall, the drafted-floor pockets,
+// and the Leerson upper-floor corridor
+const MT_EXCLUDE=[
+  {minX:-655,maxX:-565,minZ:-48,maxZ:42},    // Leerson Hall + portico
+  {minX:535, maxX:1255,minZ:-90,maxZ:28},    // the three floor pockets
+  {minX:825, maxX:975, minZ:375,maxZ:425}    // the Seven Exits corridor
+];
+function mountainSpotOK(x,z,w){
+  for(const r of MT_EXCLUDE){
+    const nx=Math.max(r.minX,Math.min(r.maxX,x)), nz=Math.max(r.minZ,Math.min(r.maxZ,z));
+    if(Math.hypot(x-nx,z-nz)<w+6) return false;
+  }
+  return true;
+}
 for(let i=0;i<26;i++){
-  const a=(i/26)*Math.PI*2+Math.random()*0.15, r=430+Math.random()*120;
-  const h=90+Math.random()*130, w=90+Math.random()*90;
+  let a,r,w,x,z,ok=false;
+  const h=90+Math.random()*130;
+  for(let t=0;t<24&&!ok;t++){
+    a=(i/26)*Math.PI*2+Math.random()*0.15+t*0.045; r=430+Math.random()*120;
+    w=90+Math.random()*90; x=Math.cos(a)*r; z=Math.sin(a)*r;
+    ok=mountainSpotOK(x,z,w);
+  }
+  if(!ok){ w=44; if(!mountainSpotOK(x,z,w)) continue; }   // last resort: small or skipped
   const mt=new THREE.Mesh(new THREE.ConeGeometry(w,h,5),M.mountain);
-  mt.position.set(Math.cos(a)*r,h/2-6,Math.sin(a)*r);
+  mt.position.set(x,h/2-6,z);
   mt.rotation.y=Math.random()*Math.PI; scene.add(mt);
 }
 for(let i=0;i<40;i++){
@@ -5736,7 +5756,10 @@ function resolveCollisions(){
   }
   // bounds: outdoors vs interior pockets
   const fl=activeFloor(player.x);
-  if(fl){
+  if(player.x>TOP_X-60&&player.x<TOP_X+60&&player.z>TOP_Z-60&&player.z<TOP_Z+60){
+    player.x=Math.max(TOP_X-41.5,Math.min(TOP_X+41.5,player.x));
+    player.z=Math.max(TOP_Z-6.2,Math.min(TOP_Z+6.2,player.z));
+  }else if(fl){
     const hw=fl.gw*CS_/2+10;
     player.x=Math.max(fl.ox-hw,Math.min(fl.ox+hw,player.x));
     player.z=Math.max(fl.oz-fl.gh*CS_-16,Math.min(fl.oz+16,player.z));
