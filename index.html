@@ -313,7 +313,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.10.6</div>
+    <div id="verTag">v3.10.7</div>
   </div>
 </div>
 
@@ -455,7 +455,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.10.6';
+const VERSION='v3.10.7';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -3128,9 +3128,20 @@ function questPicMat(kind){
     c.beginPath(); c.arc(128,96,72,0,6.28); c.stroke();
     c.fillStyle='#2c2a24'; c.font='bold 16px Georgia'; c.textAlign='center';
     c.fillText('12',128,42); c.fillText('3',188,102); c.fillText('6',128,158); c.fillText('9',68,102);
-    c.lineWidth=8; c.beginPath(); c.moveTo(128,96);                            // hour hand -> 10
-    c.lineTo(128+Math.cos(-Math.PI*2*(2/12)-Math.PI/2+Math.PI)*38,96+Math.sin(-Math.PI*2*(2/12)-Math.PI/2+Math.PI)*38); c.stroke();
-    c.lineWidth=5; c.beginPath(); c.moveTo(128,96); c.lineTo(128,36); c.stroke();  // minute -> 12
+    // hour ticks
+    c.strokeStyle='#2c2a24'; c.lineWidth=3;
+    for(let i=0;i<12;i++){ const th=i/12*Math.PI*2;
+      c.beginPath();
+      c.moveTo(128+Math.sin(th)*66,96-Math.cos(th)*66);
+      c.lineTo(128+Math.sin(th)*58,96-Math.cos(th)*58); c.stroke(); }
+    // hands: angle measured CLOCKWISE from 12 (canvas y is down)
+    function clockHand(hour,len,w){
+      const th=hour/12*Math.PI*2;
+      c.lineWidth=w; c.lineCap='round'; c.beginPath(); c.moveTo(128,96);
+      c.lineTo(128+Math.sin(th)*len, 96-Math.cos(th)*len); c.stroke();
+    }
+    clockHand(10,38,8);                                            // hour hand -> 10
+    clockHand(12,60,5);                                            // minute hand -> 12
     c.beginPath(); c.arc(128,96,6,0,6.28); c.fill();
   }else if(kind==='signs'){
     c.fillStyle='#26303a'; c.fillRect(0,0,256,192);
@@ -3175,9 +3186,10 @@ function clearExit(n,quiet){
   if(!quiet) msg('A heavy steel wall grinds down into the floor. EXIT '+n+' of 7 is clear.');
 }
 function exitKeypad(n,code,title,hint){
+  const codes=Array.isArray(code)?code:[code];
   openTerminal({title:title,lines:[hint,'','ENTER CODE:'],
-    pad:{kind:'numeric',len:Math.max(4,code.length),submit:'> UNLOCK',fn:v=>{
-      if(v===code){ closeTerminal(); clearExit(n); }
+    pad:{kind:'numeric',len:Math.max(4,codes[0].length),submit:'> UNLOCK',fn:v=>{
+      if(codes.indexOf(v)>=0){ closeTerminal(); clearExit(n); }
       else { closeTerminal(); msg('The keypad blinks red. Wrong code.'); }
     }},closeLabel:'> STEP BACK'});
 }
@@ -3240,7 +3252,7 @@ function exitKeypad(n,code,title,hint){
     pl.position.z=0.05; pl.castShadow=false; g.add(pl); })();
   interactables.push({x:X(-2),z:Z(-4.2),r:1.6,dead:false,cond:()=>!exitSolved(4),
     label:'read the hands, enter the hour',
-    fn:()=>exitKeypad(4,'1012','CLOCK LOCK','Hour hand, then minute hand.')});
+    fn:()=>exitKeypad(4,['1012','0412'],'CLOCK LOCK','Hour hand, then minute hand \u2014 four digits.')});
   // ---- CHAMBER 5: the signing hands ----
   (function(){ const g=new THREE.Group(); g.position.set(X(5),2.55,Z(5.2)); g.rotation.y=Math.PI; scene.add(g);
     box(2.4,1.9,0.08,lam(0x6a5432,{emissive:0x1a1208}),0,0,0,g);
