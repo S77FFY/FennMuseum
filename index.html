@@ -302,7 +302,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.9.2</div>
+    <div id="verTag">v3.9.4</div>
   </div>
 </div>
 
@@ -442,7 +442,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.9.2';
+const VERSION='v3.9.4';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -2926,7 +2926,7 @@ function placeHandCard(i,x,y,z,label,red){
     new THREE.MeshLambertMaterial({map:makeCardTex(label,red),emissive:0x34322c,side:THREE.DoubleSide}));
   m.rotation.x=-Math.PI/2; m.rotation.z=(i*1.3)%1.4-0.7; m.position.set(x,y,z);
   m.castShadow=false; scene.add(m);
-  interactables.push({x:x,z:z,r:1.5,dead:false,label:'pick up the playing card',
+  interactables.push({x:x,z:z,r:2.3,dead:false,prio:2,label:'pick up the playing card',
     cond:()=>!store.get('fenn_hc'+i,0),
     fn:()=>{ store.set('fenn_hc'+i,1); scene.remove(m);
       msg('Playing card found ('+countHandCards()+'/5). Something upstairs in Leerson Hall wants a hand of five.'); }});
@@ -5200,7 +5200,8 @@ const cine={active:false,t:0,mary:null,dur:9.6};
 let CINE_KEYS=[];
 function startCinematic(){
   const sx=player.x, sz=player.z;
-  if(!cine.mary) cine.mary=buildMary(sx,sz,0);      // she stands exactly where you spawn
+  if(!cine.mary){ cine.mary=buildMary(sx,sz,0);      // she stands exactly where you spawn
+    cine.mary.position.y=0.24; }                       // clearly proud of the pavement
   cine.mary.visible=true;
   CINE_KEYS=[
     [0.00, sx, 1.72, sz-13.0, Math.PI,       0.04],   // ahead of her, looking back at her face
@@ -5250,6 +5251,7 @@ function endCinematic(){
   if(!isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
   else initTouch();
   byId('cogBtn').style.display='flex';
+  const tp=byId('titlePlate'); if(tp) tp.style.display='none';   // title screen only
   renderInv(); renderRes(); renderSteps(); applyGoggles();
   byId('gogBtn').addEventListener('pointerdown',e=>{e.preventDefault();activateGoggles();});
 
@@ -5739,7 +5741,7 @@ function onTE(e){
 function toggleIntel(){
   intel.visible=!intel.visible;
   byId('hint').style.display=intel.visible?'none':'block';
-  byId('intelPlate').style.display=intel.visible?'block':'none';
+  byId('intelPlate').style.display='none';   // banner retired — markers alone tell the story
 }
 function resolveCollisions(){
   const R=0.55;
