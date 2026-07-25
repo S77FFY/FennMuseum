@@ -314,7 +314,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.11.0</div>
+    <div id="verTag">v3.15.0</div>
   </div>
 </div>
 
@@ -456,7 +456,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.11.0';
+const VERSION='v3.15.0';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -662,7 +662,7 @@ const COL={ sky:0xdfe7ee, fog:0xcfd9e0, grass:0x9db38e, grassDk:0x8aa37c, path:0
   pathEdge:0xa9aeb6, marble:0xece8df, marbleSh:0xd8d3c7, slate:0x93a1b4, stone:0xcfc9bb,
   stoneDk:0xb2ab9a, roof:0x9aa7b8, glass:0xdfeaf2, gold:0xc2a35a, royal:0xa52f2c,
   royalDk:0x7e211f, wood:0x7c6248, leaf:0x7e9a6d, leafDk:0x6a8a5c, trunk:0x6f5d49,
-  water:0x9fb9c6, mountain:0xaebccb, statue:0xa2453a, rock:0x9aa0a4 };
+  water:0x9fb9c6, mountain:0xaebccb, statue:0x8e4c34, rock:0x9aa0a4 };
 
 // ---------- renderer / scene ----------
 const canvas=document.getElementById('c');
@@ -783,7 +783,7 @@ const M={
   glass:pho(COL.glass,{transparent:true,opacity:0.42,shininess:90,specular:0xffffff,side:THREE.DoubleSide}),
   leaf:lam(COL.leaf), leafDk:lam(COL.leafDk), trunk:lam(COL.trunk),
   water:pho(COL.water,{transparent:true,opacity:0.8,shininess:80,specular:0xffffff}),
-  mountain:lam(COL.mountain), statue:pho(COL.statue,{shininess:14,specular:0x331a15}),
+  mountain:lam(COL.mountain), statue:pho(COL.statue,{shininess:26,specular:0x63382a,emissive:0x2e150c}),
   rock:lam(COL.rock), dark:lam(0x3a4048), window:lam(0x2a2415,{emissive:0xdca24a}),
   darkWood:lam(0x4a3626), metal:lam(0x6a7076), laser:new THREE.MeshBasicMaterial({color:0xff2a1a}),
   velvet:lam(0x8e1f1c), concrete:lam(0x4b4f54),
@@ -1783,7 +1783,217 @@ function pentagonPoints(cx,cz,r,rot){
     const a=rot+(i/10)*Math.PI*2+0.31;
     const h=sph(1.6,M.leafDk,PARK.x+Math.cos(a)*24,1.2,PARK.z+Math.sin(a)*24); h.scale.y=0.75;
   }
+  // ---- formal gardens: urns on stepped plinths, balustrades, flagged paving ----
+  function gardenUrn(x,z,sc){
+    sc=sc||1;
+    const g=new THREE.Group(); g.position.set(x,0,z); g.scale.setScalar(sc); scene.add(g);
+    box(1.30,0.26,1.30,M.stoneDk,0,0.13,0,g);                    // base slab
+    box(1.05,0.30,1.05,M.stone,0,0.41,0,g);                      // plinth
+    box(1.16,0.14,1.16,M.stoneDk,0,0.63,0,g);                    // cap
+    const stem=cyl(0.20,0.30,0.34,4,M.stone,0,0.87,0,g); stem.rotation.y=Math.PI/4;
+    const bowl=cyl(0.72,0.34,1.00,4,M.stone,0,1.54,0,g);         // tapered square urn
+    bowl.rotation.y=Math.PI/4;
+    const rim=cyl(0.80,0.78,0.14,4,M.stoneDk,0,2.08,0,g); rim.rotation.y=Math.PI/4;
+    const soil=cyl(0.66,0.66,0.10,4,lam(0x4a3f30,{emissive:0x120e08}),0,2.10,0,g);
+    soil.rotation.y=Math.PI/4;
+    const bush=sph(0.52,M.potLeaf,0,2.34,0,g,10,8); bush.scale.y=0.72;
+    addColliderBox(x,z,1.4*sc,1.4*sc,0.1);
+    return g;
+  }
+  function balustrade(x1,z1,x2,z2){
+    const dx=x2-x1, dz=z2-z1, len=Math.hypot(dx,dz), ry=-Math.atan2(dz,dx);
+    const mx=(x1+x2)/2, mz=(z1+z2)/2;
+    box(len,0.16,0.42,M.stoneDk,mx,0.16,mz).rotation.y=ry;        // kerb
+    box(len,0.20,0.34,M.stone,mx,0.94,mz).rotation.y=ry;          // handrail
+    box(len,0.16,0.28,M.stoneDk,mx,1.06,mz).rotation.y=ry;
+    const n=Math.max(2,Math.round(len/1.15));
+    for(let i=0;i<=n;i++){                                        // turned balusters
+      const t=i/n, bx=x1+dx*t, bz=z1+dz*t;
+      const b=cyl(0.10,0.13,0.62,6,M.stone,bx,0.55,bz);
+      sph(0.11,M.stone,bx,0.80,bz,undefined,6,6);
+    }
+    addColliderSegment(x1,z1,x2,z2,0.35);
+  }
+  // urns line the five approach paths to the monument, balustrades edge the outer walks
+  const midR=pentagonPoints(PARK.x,PARK.z,23.5,rot+0.05);
+  midR.forEach(([x,z])=>{
+    const a=Math.atan2(z-PARK.z,x-PARK.x);
+    const px=Math.cos(a+Math.PI/2), pz=Math.sin(a+Math.PI/2);
+    gardenUrn(x+px*3.4,z+pz*3.4); gardenUrn(x-px*3.4,z-pz*3.4);
+  });
+  // set between the spokes, never on them
+  const outerU=pentagonPoints(PARK.x,PARK.z,13.5,rot+Math.PI/5);
+  outerU.forEach(([x,z])=>gardenUrn(x,z,0.85));
+  const balR=pentagonPoints(PARK.x,PARK.z,26.5,rot);
+  for(let i=0;i<5;i++){
+    if(i===2) continue;                                           // leave the main approach open
+    const [x1,z1]=balR[i], [x2,z2]=balR[(i+1)%5];
+    const dx=x2-x1, dz=z2-z1;
+    balustrade(x1+dx*0.16,z1+dz*0.16,x1+dx*0.84,z1+dz*0.84);
+  }
+  // flagged paving over the plaza, as in the gardens
+  for(let r=0;r<3;r++) for(let i=0;i<10;i++){
+    const a=rot+(i/10)*Math.PI*2+0.15, rad=11.5+r*2.6;
+    const fl=box(2.3,0.05,2.3,r%2?M.marbleSh:M.pathEdge,
+      PARK.x+Math.cos(a)*rad,0.075,PARK.z+Math.sin(a)*rad);
+    fl.rotation.y=-a; fl.castShadow=false; fl.receiveShadow=true;
+  }
 })();
+
+// ---------- THE WINGED KING — Tiskin Park statue (shared with the model viewer) ----------
+function statueWing(fig,S,side,sweep,scale){
+  const outer=new THREE.Group();
+  outer.position.set(side*0.85,6.35,-0.75);
+  if(side<0) outer.rotation.y=Math.PI;          // mirrored by nesting: normals stay correct
+  fig.add(outer);
+  // NOTE: rotation.y must carry the side's sign, or the 180° outer flip sweeps this wing
+  // FORWARDS across the sword arm. Positive local Y here takes the wing behind the shoulders.
+  const g=new THREE.Group();
+  g.rotation.set(0,side*(sweep===undefined?0.62:sweep),0.46);
+  g.scale.setScalar(scale||1);
+  outer.add(g);
+  sph(0.52,S,0,0.1,0.1,g,10,8);                 // wing root at the shoulder
+  // archangel span: a long curved leading edge rising well above the head
+  const sh=new THREE.Shape();
+  sh.moveTo(0,-0.70);
+  sh.bezierCurveTo(2.3,1.20,5.6,3.40,10.4,6.40);   // leading edge sweeping up and out
+  sh.bezierCurveTo(11.2,5.70,11.2,4.55,10.5,4.00); // the point
+  sh.bezierCurveTo(7.6,2.70,5.0,1.40,3.6,0.10);    // trailing edge
+  sh.bezierCurveTo(2.6,-0.80,1.3,-1.35,0,-1.45);
+  sh.closePath();
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:0.30,bevelEnabled:true,
+    bevelThickness:0.09,bevelSize:0.09,bevelSegments:1});
+  const w=new THREE.Mesh(geo,S); w.position.z=-0.15;
+  w.castShadow=true; w.receiveShadow=true; g.add(w);
+  box(12.6,0.26,0.44,S,5.7,3.20,0.22,g).rotation.z=0.60;     // leading-edge bone
+  for(let i=0;i<5;i++){                                       // long primary feathers
+    const a=0.26+i*0.095, L=5.6+i*1.9;
+    const f=box(L,0.16,0.36,S,0.9+Math.cos(a)*L/2,-0.55+Math.sin(a)*L/2,0.22,g);
+    f.rotation.z=a;
+  }
+  for(let i=0;i<4;i++){                                       // a second bank of coverts
+    const a=0.16+i*0.10, L=2.6+i*0.8;
+    const f=box(L,0.14,0.30,S,0.6+Math.cos(a)*L/2,-0.20+Math.sin(a)*L/2,-0.16,g);
+    f.rotation.z=a;
+  }
+}
+function buildStatueFigure(host,S){
+  // the reference view has the sword to the left and the wing sweeping right:
+  // build in local space, then mirror once (three.js flips winding for negative scale)
+  const fig=new THREE.Group(); fig.scale.x=-1; host.add(fig);
+  // an armoured shoe: flat sole, domed instep, rounded toe — no slab on the front
+  function sabaton(x,z){
+    box(0.86,0.22,1.24,S,x,0.11,z,fig);                            // sole
+    const up=sph(0.44,S,x,0.26,z-0.04,fig,12,10); up.scale.set(1.00,0.62,1.32);   // domed instep
+    const toe=sph(0.36,S,x,0.20,z+0.52,fig,12,10); toe.scale.set(1.10,0.72,1.05); // rounded toe
+    const heel=sph(0.30,S,x,0.20,z-0.56,fig,10,8); heel.scale.set(1.05,0.78,0.85);
+  }
+  // ---- legs: wide stance, plate armour ----
+  cyl(0.55,0.70,3.30,10,S,-0.78,1.70,0,fig);                       // planted leg
+  box(0.86,0.34,0.52,S,-0.78,3.10,0.06,fig);                       // cuisse
+  box(0.80,0.30,0.46,S,-0.78,1.55,0.04,fig);                       // knee cop
+  sabaton(-0.78,0.20);
+  const rTh=cyl(0.55,0.62,2.00,10,S,0.82,2.60,0.50,fig); rTh.rotation.x=-0.70;
+  const rSh=cyl(0.45,0.52,1.90,10,S,0.86,1.15,1.35,fig); rSh.rotation.x=0.15;
+  sph(0.50,S,0.84,1.90,1.00,fig,10,8);
+  sabaton(0.86,1.85);
+  // ---- fauld and the long tabard hanging between the legs ----
+  cyl(1.15,1.60,1.30,10,S,0,3.65,0.10,fig);
+  for(let i=0;i<3;i++){ const t=box(2.30-i*0.22,0.30,1.55-i*0.10,S,0,3.15+i*0.34,0.10,fig); t.scale.z=0.92; }
+  // ---- torso ----
+  const torso=cyl(1.25,1.05,2.60,10,S,0,5.40,0.10,fig); torso.scale.z=0.80;
+  box(0.34,2.10,0.30,S,0,5.55,0.92,fig);                           // sternum ridge
+  [-1,1].forEach(sx=>{ const pec=box(0.86,1.00,0.26,S,sx*0.52,5.85,0.80,fig); pec.rotation.z=sx*0.12; });
+  box(1.70,0.30,0.34,S,0,4.35,0.78,fig);                           // waist band
+  cyl(0.62,0.72,0.42,10,S,0,6.90,0.12,fig);                        // gorget
+  box(2.10,0.50,1.30,S,0,6.55,0.10,fig);
+  // joint positions first, so the shoulder armour can be aligned to each arm
+  // sword arm reaches FORWARD; shield arm hangs DOWN, so their lames differ
+  const SH_R=[1.40,6.44,0.16], EL_R=[1.34,6.00,1.42], HD_R=[1.30,6.04,3.04];
+  const SH_L=[-1.38,6.44,0.14], EL_L=[-1.80,5.06,0.46], HD_L=[-2.02,3.86,0.80];
+  function pauldron(SH,EL){
+    sph(0.74,S,SH[0],SH[1],SH[2],fig,12,10);                       // the cap
+    const dir=new THREE.Vector3(EL[0]-SH[0],EL[1]-SH[1],EL[2]-SH[2]).normalize();
+    const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+    for(let i=0;i<2;i++){                                          // lames stacked along the arm
+      const t=0.34+i*0.36, r0=0.72-i*0.12, r1=0.60-i*0.12;
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(r0,r1,0.34-i*0.04,10),S);
+      m.position.set(SH[0]+dir.x*t, SH[1]+dir.y*t, SH[2]+dir.z*t);
+      m.quaternion.copy(q);
+      m.castShadow=true; m.receiveShadow=true; fig.add(m);
+    }
+  }
+  pauldron(SH_R,EL_R); pauldron(SH_L,EL_L);
+  // ---- arms are built point-to-point, so every joint physically meets ----
+  function armSeg(a,b,r0,r1){
+    const av=new THREE.Vector3(a[0],a[1],a[2]), bv=new THREE.Vector3(b[0],b[1],b[2]);
+    const dir=bv.clone().sub(av), len=dir.length();
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r0,len,10),S);
+    m.position.copy(av.clone().add(bv).multiplyScalar(0.5));
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
+    m.castShadow=true; m.receiveShadow=true; fig.add(m); return m;
+  }
+  // ---- sword arm: out of the shoulder, slightly down to the elbow,
+  //      then straight out from the body, with the blade held vertical ----
+  armSeg(SH_R,EL_R,0.44,0.36);                                     // upper arm
+  sph(0.40,S,EL_R[0],EL_R[1],EL_R[2],fig,10,8);                    // elbow cop
+  armSeg(EL_R,HD_R,0.36,0.29);                                     // forearm, level
+  sph(0.34,S,HD_R[0],HD_R[1],HD_R[2],fig,10,8);                    // gauntlet
+  box(0.40,0.32,0.40,S,HD_R[0],HD_R[1]+0.13,HD_R[2],fig);
+  const sw=new THREE.Group(); sw.position.set(HD_R[0],HD_R[1],HD_R[2]); fig.add(sw);   // dead vertical
+  cyl(0.11,0.11,0.78,8,S,0,0.10,0,sw);                             // grip
+  sph(0.17,S,0,-0.36,0,sw,8,8);                                    // pommel
+  box(1.55,0.20,0.30,S,0,0.56,0,sw);                               // crossguard
+  [-1,1].forEach(sx=>box(0.22,0.30,0.30,S,sx*0.72,0.56,0,sw));     // guard finials
+  const blade=box(0.22,5.10,0.30,S,0,3.20,0,sw); blade.scale.z=0.65;
+  box(0.07,4.80,0.34,S,0,3.20,0,sw);                               // fuller
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.62,6),S);
+  tip.position.set(0,6.05,0); tip.castShadow=true; sw.add(tip);
+  // ---- left arm hanging down, gripping the rim of a grounded shield ----
+  armSeg(SH_L,EL_L,0.44,0.36);
+  sph(0.38,S,EL_L[0],EL_L[1],EL_L[2],fig,10,8);                    // elbow
+  armSeg(EL_L,HD_L,0.36,0.29);
+  box(0.44,0.34,0.44,S,HD_L[0],HD_L[1]-0.10,HD_L[2],fig);          // gauntlet on the rim
+  for(let i=0;i<4;i++) box(0.11,0.16,0.42,S,HD_L[0]-0.18+i*0.13,HD_L[1]-0.24,HD_L[2]+0.06,fig);  // fingers over the edge
+  (function(){
+    const g=new THREE.Group(); g.position.set(-2.05,2.55,0.95);
+    g.rotation.set(0.05,0.28,0.05); fig.add(g);
+    const sh=new THREE.Shape();                                    // heater shield, point down
+    sh.moveTo(-1.30,1.25); sh.lineTo(1.30,1.25);
+    sh.bezierCurveTo(1.34,0.10,1.05,-1.15,0,-2.55);
+    sh.bezierCurveTo(-1.05,-1.15,-1.34,0.10,-1.30,1.25);
+    const geo=new THREE.ExtrudeGeometry(sh,{depth:0.26,bevelEnabled:true,
+      bevelThickness:0.08,bevelSize:0.08,bevelSegments:1});
+    const shield=new THREE.Mesh(geo,S);
+    shield.castShadow=true; shield.receiveShadow=true; g.add(shield);
+    // the raised web of ribs from the reference: a hub, a spine, and radiating arms
+    // every rib is kept inside the shield outline with a clear margin (verified by harness)
+    const R=(w,h,x,y,rz)=>{ const r=box(w,h,0.15,S,x,y,0.28,g); r.rotation.z=rz||0; };
+    R(0.18,2.95,0,-0.50);                                          // central spine
+    R(2.05,0.18,0,0.92);                                           // top bar
+    R(1.21,0.17,-0.475,0.475,-0.667); R(1.21,0.17,0.475,0.475,0.667);   // upper arms
+    R(1.28,0.17,-0.40,-0.40,0.896);  R(1.28,0.17,0.40,-0.40,-0.896);    // lower arms
+    const hub=cyl(0.26,0.26,0.15,6,S,0,0.10,0.30,g); hub.rotation.x=Math.PI/2;
+  })();
+  // ---- head: bearded king beneath a spiked crown ----
+  sph(0.64,S,0,7.52,0.15,fig,12,10);
+  box(0.90,0.34,0.72,S,0,7.30,0.30,fig);                           // jaw
+  [-1,1].forEach(sx=>box(0.30,0.14,0.22,S,sx*0.30,7.78,0.62,fig)); // brows
+  box(0.16,0.30,0.24,S,0,7.60,0.66,fig);                           // nose
+  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.52,1.15,8),S);
+  beard.rotation.x=Math.PI+0.18; beard.position.set(0,6.80,0.50); beard.castShadow=true; fig.add(beard);
+  [-1,1].forEach(sx=>{ const chop=sph(0.26,S,sx*0.46,7.18,0.42,fig,8,6); chop.scale.set(0.8,1.5,0.9); });
+  cyl(0.58,0.66,0.44,10,S,0,8.10,0.15,fig);                        // crown band
+  box(1.24,0.13,1.24,S,0,8.30,0.15,fig);
+  for(let i=0;i<7;i++){
+    const a=(i/7)*Math.PI*2;
+    const spike=new THREE.Mesh(new THREE.ConeGeometry(0.13,0.78,5),S);
+    spike.position.set(Math.cos(a)*0.52,8.66,0.15+Math.sin(a)*0.52);
+    spike.castShadow=true; fig.add(spike);
+  }
+  statueWing(fig,S,-1,0.55,1.00);      // shield side: fully spread, the wing you see
+  statueWing(fig,S, 1,1.15,0.86);      // sword side: swept hard back, clear of the blade
+}
 (function buildMonument(){
   const g=new THREE.Group(); g.position.set(PARK.x,0,PARK.z); scene.add(g);
   cyl(7.5,8,1.1,5,M.stoneDk,0,0.55,0,g);
@@ -1792,65 +2002,21 @@ function pentagonPoints(cx,cz,r,rot){
   cyl(2.6,3.0,2.2,5,M.stone,0,4.6,0,g);
   addColliderBox(PARK.x,PARK.z,15,15);
   const fig=new THREE.Group(); fig.position.y=5.7; g.add(fig);
-  const S=M.statue;
-  cyl(0.55,0.7,3.4,10,S,-0.75,1.7,0,fig);
-  const rThigh=cyl(0.55,0.62,2.0,10,S,0.8,2.6,0.5,fig); rThigh.rotation.x=-0.7;
-  const rShin=cyl(0.45,0.5,1.9,10,S,0.85,1.15,1.35,fig); rShin.rotation.x=0.15;
-  box(0.9,0.5,1.5,S,0.85,0.3,1.8,fig);
-  box(0.9,0.5,1.4,S,-0.75,0.25,0.15,fig);
-  cyl(0.9,1.1,0.7,10,S,0.85,0.35,1.9,fig);
-  cyl(1.15,1.6,1.4,10,S,0,3.6,0.1,fig);
-  const torso=cyl(1.25,1.05,2.6,10,S,0,5.4,0.1,fig); torso.scale.z=0.8;
-  box(2.1,0.5,1.3,S,0,6.55,0.1,fig);
-  sph(0.72,S,-1.35,6.5,0.1,fig); sph(0.72,S,1.35,6.5,0.1,fig);
-  const rUp=cyl(0.38,0.44,1.6,8,S,1.75,7.3,0.1,fig); rUp.rotation.z=-0.9;
-  const rFo=cyl(0.3,0.36,1.5,8,S,2.5,8.4,0.1,fig); rFo.rotation.z=-0.25;
-  sph(0.38,S,2.75,9.1,0.1,fig);
-  const blade=box(0.16,4.6,0.5,S,2.75,11.7,0.1,fig); blade.scale.z=0.55;
-  box(1.5,0.22,0.34,S,2.75,9.5,0.1,fig);
-  cyl(0.12,0.12,0.7,8,S,2.75,9.0,0.1,fig);
-  sph(0.18,S,2.75,8.6,0.1,fig);
-  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.6,6),S); tip.position.set(2.75,14.3,0.1); fig.add(tip);
-  const lUp=cyl(0.38,0.44,1.5,8,S,-1.6,6.6,0.35,fig); lUp.rotation.z=0.7;
-  const lFo=cyl(0.3,0.35,1.4,8,S,-2.05,5.4,0.7,fig); lFo.rotation.z=0.25; lFo.rotation.x=-0.3;
-  (function(){
-    const sh=new THREE.Shape();
-    sh.moveTo(0,1.9); sh.quadraticCurveTo(1.2,1.6,1.15,0.4);
-    sh.quadraticCurveTo(1.0,-1.4,0,-2.4);
-    sh.quadraticCurveTo(-1.0,-1.4,-1.15,0.4);
-    sh.quadraticCurveTo(-1.2,1.6,0,1.9);
-    const geo=new THREE.ExtrudeGeometry(sh,{depth:0.28,bevelEnabled:true,bevelThickness:0.08,bevelSize:0.08,bevelSegments:1});
-    const shield=new THREE.Mesh(geo,S);
-    shield.castShadow=true; shield.receiveShadow=true;
-    shield.position.set(-2.1,3.6,1.2); shield.rotation.y=0.25; shield.rotation.x=0.06;
-    fig.add(shield);
-  })();
-  sph(0.62,S,0,7.5,0.15,fig);
-  const beard=new THREE.Mesh(new THREE.ConeGeometry(0.42,0.85,8),S);
-  beard.rotation.x=Math.PI; beard.position.set(0,6.95,0.55); fig.add(beard);
-  cyl(0.55,0.6,0.4,8,S,0,8.05,0.15,fig);
-  for(let i=0;i<6;i++){
-    const a=(i/6)*Math.PI*2;
-    const spike=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.55,5),S);
-    spike.position.set(Math.cos(a)*0.5,8.45,0.15+Math.sin(a)*0.5); fig.add(spike);
+  buildStatueFigure(fig,M.statue);
+  // the night sky here is blue; without warm light on it the bronze reads grey,
+  // so the monument is floodlit from its base the way a real one would be.
+  for(let i=0;i<4;i++){
+    const a2=(i/4)*Math.PI*2+0.6, r2=5.2;
+    const lx=Math.cos(a2)*r2, lz=Math.sin(a2)*r2;
+    cyl(0.30,0.36,0.30,8,M.stoneDk,lx,1.25,lz,g);                  // fitting
+    const lens=cyl(0.22,0.22,0.06,8,new THREE.MeshBasicMaterial({color:0xffd9a8}),lx,1.42,lz,g);
+    lens.castShadow=false;
+    const fl=new THREE.PointLight(0xffb070,0.85,26,2);
+    fl.position.set(PARK.x+lx,3.0,PARK.z+lz); scene.add(fl);
   }
-  function wing(mirror){
-    const w=new THREE.Shape();
-    w.moveTo(0,0);
-    w.quadraticCurveTo(1.5,2.8,4.6,5.6);
-    w.quadraticCurveTo(6.4,7.2,7.4,7.0);
-    w.quadraticCurveTo(6.2,5.2,5.4,3.4);
-    w.quadraticCurveTo(4.2,1.0,2.2,-0.4);
-    w.quadraticCurveTo(1.0,-0.9,0,-0.6);
-    const geo=new THREE.ExtrudeGeometry(w,{depth:0.22,bevelEnabled:false});
-    const m=new THREE.Mesh(geo,S); m.castShadow=true; m.receiveShadow=true;
-    m.position.set(mirror*0.4,6.2,-0.55);
-    m.rotation.y=mirror*(Math.PI*0.62); m.rotation.z=0.12*mirror;
-    if(mirror<0) m.scale.x=-1;
-    fig.add(m);
-  }
-  wing(1); wing(-1);
-  fig.rotation.y=Math.PI*0.9;
+  const crownGlow=new THREE.PointLight(0xffc890,0.5,22,2);
+  crownGlow.position.set(PARK.x,13.5,PARK.z); scene.add(crownGlow);
+  fig.rotation.y=Math.PI*1.9;      // turned right around
 })();
 
 // =====================================================================
@@ -2942,6 +3108,8 @@ function activateGoggles(){
   if(now<gogActiveUntil||now<gogCdUntil) return;
   gogActiveUntil=now+10000; gogCdUntil=gogActiveUntil+20000;
   applyGoggles();
+  const _fl=activeFloor(player.x);
+  if(_fl&&_fl.name==='Ground Floor') noteCipherProgress('glyphs');
 }
 function tickGoggles(){
   try{
@@ -3045,24 +3213,91 @@ function fillNextBone(){
 const TOP_X=900, TOP_Z=400;              // upper-floor pocket — well beyond the mountain ring
 const topBarrierList=[];
 function exitSolved(n){ return store.get('fenn_exit'+n,0)===1; }
+// The cipher must actually be READ before any of this makes sense: you need the pigpen
+// key (the Cryptography Vault charts) and you need to have seen the pens themselves
+// glowing on the ground-floor walls through the survey goggles.
+function knowsHands(){ return store.get('fenn_knowHands',0)===1; }
+function noteCipherProgress(which){
+  if(knowsHands()) return;
+  store.set('fenn_'+which,1);
+  if(store.get('fenn_key',0)&&store.get('fenn_glyphs',0)){
+    store.set('fenn_knowHands',1);
+    msg('The pens resolve into words: SOLVE SEVEN HANDS MAKES CLEAR SEVEN EXITS. '+
+        'Seven hands. Seven exits. Something above Leerson Hall has been waiting.');
+  } else if(which==='key'){
+    msg('You copy down the pigpen key. Now you need to find the writing it unlocks.');
+  } else {
+    msg('Shapes glow on the walls in every room — pens, each holding a letter you cannot read. '+
+        'Somewhere there must be a key.');
+  }
+}
 function countHandCards(){ let n=0; for(let i=1;i<=5;i++) if(store.get('fenn_hc'+i,0)) n++; return n; }
 const cardGlints=[];
 const CARD_WHERE=['the Grand Entrance Hall','the entrance table','the Leerson portico',
                   'the Leerson Portrait Room','the entrance vestibule'];
 // ---- five playing cards hidden around the museum ----
-function makeCardTex(label,red){
+// A straight, not a straight flush: five running ranks across four different suits.
+const HAND_CARDS=[
+  {r:5, lab:'5', suit:'\u2665',red:true},   // 5 of hearts
+  {r:3, lab:'3', suit:'\u2666',red:true},   // 3 of diamonds
+  {r:7, lab:'7', suit:'\u2663',red:false},  // 7 of clubs
+  {r:4, lab:'4', suit:'\u2663',red:false},  // 4 of clubs
+  {r:6, lab:'6', suit:'\u2665',red:true}    // 6 of hearts
+];
+// The spades hide in drafted rooms: three on the ground floor, two on the
+// Upper Gallery, one in the Cupola. Only A K Q J 10 make the royal flush —
+// the nine is a red herring.
+const SPADE_CARDS=[
+  {r:9, lab:'9',  floor:0},
+  {r:10,lab:'10', floor:0},
+  {r:11,lab:'J',  floor:0},
+  {r:12,lab:'Q',  floor:1},
+  {r:14,lab:'A',  floor:1},
+  {r:13,lab:'K',  floor:2}
+];
+const ROYAL=[10,11,12,13,14];
+function spadeHeld(i){ return store.get('fenn_sp'+i,0)===1; }
+function spadeFlushed(i){ return store.get('fenn_spf'+i,0)===1; }
+function royalFlushed(){ return SPADE_CARDS.every((c,i)=>ROYAL.indexOf(c.r)<0||spadeFlushed(i)); }
+function cardName(i){ const c=HAND_CARDS[i-1]; return c.lab+c.suit; }
+function makeCardTex(label,suit,red){
   const cv=document.createElement('canvas'); cv.width=96; cv.height=136;
   const c=cv.getContext('2d');
   c.fillStyle='#f2efe6'; c.fillRect(0,0,96,136);
   c.strokeStyle='#b8b2a2'; c.lineWidth=4; c.strokeRect(3,3,90,130);
   c.fillStyle=red?'#b02a24':'#20222a'; c.font='bold 34px Georgia'; c.textAlign='center';
-  c.fillText(label,48,60); c.font='30px Georgia'; c.fillText(red?'\u2665':'\u2660',48,102);
+  c.fillText(label,48,60); c.font='30px Georgia'; c.fillText(suit,48,102);
+  c.font='bold 15px Georgia'; c.fillText(label,14,24); c.fillText(label,82,124);
   return new THREE.CanvasTexture(cv);
 }
-function placeHandCard(i,x,y,z,label,red){
-  if(store.get('fenn_hc'+i,0)) return;
+// each floor's spades appear in the rooms drafted on that floor, in order,
+// with a gap of a room or two between finds so they feel scattered
+function maybeSpawnSpade(f,cx,cz){
+  const mine=[]; SPADE_CARDS.forEach((c,i)=>{ if(c.floor===f.idx&&!spadeHeld(i)&&!store.get('fenn_spOut'+i,0)) mine.push(i); });
+  if(!mine.length) return;
+  const key='fenn_spCount'+f.idx;
+  const n=store.get(key,0)+1; store.set(key,n);
+  if(n%2!==1) return;                                   // roughly every other room
+  const i=mine[0];
+  store.set('fenn_spOut'+i,1);                          // this one is now in the world
+  const c=SPADE_CARDS[i];
+  const x=cx+(Math.random()-0.5)*6.4, z=cz+(Math.random()-0.5)*6.4;
   const m=new THREE.Mesh(new THREE.PlaneGeometry(0.34,0.48),
-    new THREE.MeshLambertMaterial({map:makeCardTex(label,red),emissive:0x34322c,side:THREE.DoubleSide}));
+    new THREE.MeshLambertMaterial({map:makeCardTex(c.lab,'\u2660',false),emissive:0x34322c,side:THREE.DoubleSide}));
+  m.rotation.x=-Math.PI/2; m.rotation.z=Math.random()*1.4-0.7; m.position.set(x,0.17,z);
+  m.castShadow=false; scene.add(m);
+  const glint=sph(0.055,new THREE.MeshBasicMaterial({color:0xffe9a8}),x,0.59,z,undefined,6,6);
+  glint.castShadow=false; cardGlints.push(glint);
+  interactables.push({x:x,z:z,r:2.3,dead:false,prio:2,label:'pick up the playing card',
+    cond:()=>!spadeHeld(i),
+    fn:()=>{ store.set('fenn_sp'+i,1); scene.remove(m); scene.remove(glint);
+      msg('The '+c.lab+'\u2660. A spade, this one \u2014 it does not belong with the others.'); }});
+}
+function placeHandCard(i,x,y,z){
+  if(store.get('fenn_hc'+i,0)) return;
+  const cd=HAND_CARDS[i-1];
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(0.34,0.48),
+    new THREE.MeshLambertMaterial({map:makeCardTex(cd.lab,cd.suit,cd.red),emissive:0x34322c,side:THREE.DoubleSide}));
   m.rotation.x=-Math.PI/2; m.rotation.z=(i*1.3)%1.4-0.7; m.position.set(x,y,z);
   m.castShadow=false; scene.add(m);
   const glint=sph(0.055,new THREE.MeshBasicMaterial({color:0xffe9a8}),x,y+0.42,z,undefined,6,6);
@@ -3071,14 +3306,16 @@ function placeHandCard(i,x,y,z,label,red){
     cond:()=>!store.get('fenn_hc'+i,0),
     fn:()=>{ store.set('fenn_hc'+i,1); scene.remove(m); scene.remove(glint);
       const left=[]; for(let k=1;k<=5;k++) if(!store.get('fenn_hc'+k,0)) left.push(CARD_WHERE[k-1]);
-      msg('Playing card found ('+countHandCards()+'/5).'+
-        (left.length?' Still to search: '+left.join(', ')+'.':' A full hand \u2014 the pedestal upstairs in Leerson Hall awaits.')); }});
+      const n=countHandCards();
+      msg('The '+cardName(i)+'. You are carrying '+n+'.'+
+        (left.length?' Others may still lie in '+left.join(', ')+'.'
+                    :' Five cards \u2014 that makes a hand.')); }});
 }
-placeHandCard(1, 47.3,0.17,19.2,'7',false);        // Grand Entrance, by the west column
-placeHandCard(2, 56.6,1.17,13.6,'3',true);         // on the blueprint table
-placeHandCard(3, LX+1.6,0.17,LZ+14.6,'9',false);   // Leerson portico
-placeHandCard(4, LX-12.5,0.17,LZ+5.2,'5',true);    // Leerson Portrait Room floor
-placeHandCard(5, 55.9,0.20,26.8,'2',false);        // vestibule carpet
+placeHandCard(1, 47.3,0.17,19.2);        // Grand Entrance, by the west column
+placeHandCard(2, 56.6,1.17,13.6);        // on the blueprint table
+placeHandCard(3, LX+1.6,0.17,LZ+14.6);   // Leerson portico
+placeHandCard(4, LX-12.5,0.17,LZ+5.2);   // Leerson Portrait Room floor
+placeHandCard(5, 55.9,0.20,26.8);        // vestibule carpet
 // ---- the museum lavatory (Grand Entrance, north-west corner) ----
 (function(){
   const tx=44.6, tz=8.6;
@@ -3091,11 +3328,19 @@ placeHandCard(5, 55.9,0.20,26.8,'2',false);        // vestibule carpet
   box(0.6,0.7,0.24,lam(0xf2f2ee,{emissive:0x36342e}),tx-0.3,0.75,tz-0.42);   // cistern
   box(0.12,0.05,0.08,M.gold,tx-0.12,1.02,tz-0.42);                            // flush button
   addColliderBox(tx-0.3,tz-0.1,0.9,1.0,0.1);
-  interactables.push({x:tx-0.3,z:tz+0.9,r:1.7,dead:false,
-    label:()=>store.get('fenn_flush',0)?'the lavatory':'something is jammed in the lavatory',
-    fn:()=>{ if(store.get('fenn_flush',0)){ msg('The museum lavatory. Spotless, now.'); return; }
-      store.set('fenn_flush',1);
-      msg('You roll up a sleeve. Wedged in the trap: five sodden cards \u2014 A\u2660 K\u2660 Q\u2660 J\u2660 10\u2660. A Royal Flush, flushed.'); }});
+  // a sign, so the lavatory can actually be found
+  (function(){
+    const cv=document.createElement('canvas'); cv.width=128; cv.height=64;
+    const c=cv.getContext('2d');
+    c.fillStyle='#20242c'; c.fillRect(0,0,128,64);
+    c.fillStyle='#e8e2d2'; c.font='bold 22px Georgia'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('LAVATORY',64,32);
+    const sg=new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.75),
+      new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));
+    sg.position.set(tx,2.05,tz+1.42); sg.rotation.y=Math.PI; sg.castShadow=false; scene.add(sg);
+  })();
+  interactables.push({x:tx-0.3,z:tz+0.9,r:1.9,dead:false,prio:1,
+    label:'use the lavatory', fn:openToilet});
 })();
 // ---- picture canvases for the seven chambers ----
 function questPicMat(kind){
@@ -3185,7 +3430,95 @@ function clearExit(n,quiet){
   if(b.col){ removeCollider(b.col); b.col=null; }
   if(!quiet) msg('A heavy steel wall grinds down into the floor. EXIT '+n+' of 7 is clear.');
 }
+// ---- the lavatory: drop anything you like down it, then pull the flush ----
+let toiletBin=[];
+function toiletItems(){
+  const out=[];
+  HAND_CARDS.forEach((c,k)=>{ if(store.get('fenn_hc'+(k+1),0)) out.push({id:'h'+k,nm:c.lab+c.suit}); });
+  SPADE_CARDS.forEach((c,k)=>{ if(spadeHeld(k)) out.push({id:'s'+k,nm:c.lab+'\u2660'}); });
+  return out;
+}
+function openToilet(){
+  const items=toiletItems();
+  const inBowl=toiletBin.slice();
+  const bowlTxt=inBowl.length?inBowl.map(o=>o.nm).join('  '):'(empty)';
+  const btns=items.filter(o=>!inBowl.some(b=>b.id===o.id))
+    .map(o=>({t:'> drop the '+o.nm+' in',fn:()=>{ toiletBin.push(o); openToilet(); }}));
+  if(inBowl.length) btns.push({t:'> fish everything back out',fn:()=>{ toiletBin=[]; openToilet(); }});
+  btns.push({t:'> PULL THE FLUSH',fn:flushToilet});
+  openTerminal({title:'THE LAVATORY',
+    lines:['A museum lavatory. Cracked seat, brass handle.','','In the bowl:  '+bowlTxt],
+    buttons:btns, closeLabel:'> wash your hands and leave'});
+}
+function flushToilet(){
+  const went=toiletBin.slice(); toiletBin=[];
+  if(!went.length){
+    openTerminal({title:'THE LAVATORY',lines:['The cistern refills.','','Nothing happens, because nothing was in it.'],
+      buttons:[{t:'> again',fn:openToilet}],closeLabel:'> leave'}); return;
+  }
+  went.forEach(o=>{ if(o.id[0]==='s') store.set('fenn_spf'+o.id.slice(1),1); });
+  openTerminal({title:'THE LAVATORY',
+    lines:['The water turns over and swallows: '+went.map(o=>o.nm).join('  '),'',
+           'Nothing happens.','','You watch the bowl settle. Nothing happens at all.'],
+    buttons:[{t:'> again',fn:openToilet}],closeLabel:'> leave'});
+}
+// ---- the final plinth: a royal flush, and only if it has been through the water ----
+let finalRow=[], finalCert=null;
+function openFinalPlinth(){
+  const held=[]; SPADE_CARDS.forEach((c,i)=>{ if(spadeHeld(i)) held.push(i); });
+  const row=[0,1,2,3,4].map(k=>finalRow[k]!==undefined?(' '+SPADE_CARDS[finalRow[k]].lab+'\u2660 '):' \u2022\u2022 ').join('|');
+  const avail=held.filter(i=>finalRow.indexOf(i)<0);
+  const btns=avail.map(i=>({t:'> lay the '+SPADE_CARDS[i].lab+'\u2660',
+    fn:()=>{ finalRow.push(i); finalPlaced(); }}));
+  if(finalRow.length) btns.push({t:'> gather them up again',fn:()=>{ finalRow=[]; openFinalPlinth(); }});
+  openTerminal({title:'THE CRIMSON PLINTH',
+    lines:['Five recesses, lined deep in crimson.','','|'+row+'|'],
+    buttons:btns, closeLabel:'> step back'});
+}
+function finalPlaced(){
+  if(finalRow.length<5){ openFinalPlinth(); return; }
+  const r=finalRow.map(i=>SPADE_CARDS[i].r);
+  const run=d=>r.every((v,k)=>k===0||v===r[k-1]+d);
+  const isRoyal=r.slice().sort((a,b)=>a-b).join(',')===ROYAL.join(',') && (run(1)||run(-1));
+  const laid=finalRow.map(i=>SPADE_CARDS[i].lab+'\u2660').join(' ');
+  if(isRoyal && royalFlushed()){
+    closeTerminal(); store.set('fenn_truth',1); if(finalCert) finalCert.visible=true;
+    msg('A\u2660 K\u2660 Q\u2660 J\u2660 10\u2660 \u2014 a Royal Flush, and every card of it has been through the water. '+
+        'The wall opens a frame: Mary Jones is MARY MATTHEW EPSEN, daughter of Kaitlyn Je Ari, blood of Orindia and Eraja. '+
+        'The museum was always hers.');
+    finalRow=[]; return;
+  }
+  const lines=isRoyal
+    ? [laid,'','The right five. The stone still does not move.','','They are too clean. Every one of them is too clean.']
+    : [laid,'','The stone does not stir. These five are not the hand it wants.'];
+  finalRow=[];
+  openTerminal({title:'THE CRIMSON PLINTH',lines:lines,
+    buttons:[{t:'> gather them up and think again',fn:()=>openFinalPlinth()}], closeLabel:'> step back'});
+}
+let pedRow=[];
+function openPedestal(){
+  const held=[]; for(let i=1;i<=5;i++) if(store.get('fenn_hc'+i,0)) held.push(i);
+  const row=[0,1,2,3,4].map(k=>pedRow[k]?(' '+cardName(pedRow[k])+' '):' \u2022\u2022 ').join('|');
+  const avail=held.filter(i=>pedRow.indexOf(i)<0);
+  const btns=avail.map(i=>({t:'> lay the '+cardName(i),fn:()=>{ pedRow.push(i); pedestalPlaced(); }}));
+  if(pedRow.length) btns.push({t:'> gather them up again',fn:()=>{ pedRow=[]; openPedestal(); }});
+  openTerminal({title:'THE PEDESTAL',
+    lines:['Five shallow recesses, worn smooth by long use.','','|'+row+'|'],
+    buttons:btns, closeLabel:'> step back'});
+}
+function pedestalPlaced(){
+  if(pedRow.length<5){ openPedestal(); return; }
+  const r=pedRow.map(i=>HAND_CARDS[i-1].r);
+  const run=d=>r.every((v,k)=>k===0||v===r[k-1]+d);
+  if(run(1)||run(-1)){ closeTerminal(); clearExit(2); return; }   // a straight, either way along
+  const row=pedRow.map(i=>cardName(i)).join(' ');
+  pedRow=[];
+  openTerminal({title:'THE PEDESTAL',
+    lines:[row,'','The stone does not stir. Whatever these five are meant to say,','they do not say it in that arrangement.'],
+    buttons:[{t:'> gather them up and think again',fn:()=>openPedestal()}], closeLabel:'> step back'});
+}
 function exitKeypad(n,code,title,hint){
+  // no knowledge flag here: knowing the CODE is the puzzle, so the pad is always live
   const codes=Array.isArray(code)?code:[code];
   openTerminal({title:title,lines:[hint,'','ENTER CODE:'],
     pad:{kind:'numeric',len:Math.max(4,codes[0].length),submit:'> UNLOCK',fn:v=>{
@@ -3220,14 +3553,15 @@ function exitKeypad(n,code,title,hint){
     const col=exitSolved(n)?null:addColliderBox(dx,Z(0),0.5,3.2,0.15);
     topBarrierList.push({mesh:steel,col:col});
   }
-  // ---- CHAMBER 1 (x -40..-30): a hand of five ----
-  box(1.2,1.0,1.2,M.marbleSh,X(-33),0.5,Z(-2.5)); addColliderBox(X(-33),Z(-2.5),1.4,1.4,0.1);
-  for(let i=0;i<5;i++) box(0.36,0.02,0.5,lam(0x2c2a24,{emissive:0x0c0b09}),X(-33)-0.7+i*0.35,1.02,Z(-2.5));
-  interactables.push({x:X(-33),z:Z(-1.4),r:1.8,dead:false,cond:()=>!exitSolved(1),
-    label:'lay down a hand of five cards',
-    fn:()=>{ const n=countHandCards();
-      if(n<5){ msg('Five card slots. You carry '+n+' of 5 \u2014 the museum still hides the rest.'); return; }
-      clearExit(1); }});
+  // ---- CHAMBER 2 (x -30..-20): the hand of five, reachable only past the first door ----
+  box(1.2,1.0,1.2,M.marbleSh,X(-23),0.5,Z(-2.5)); addColliderBox(X(-23),Z(-2.5),1.4,1.4,0.1);
+  for(let i=0;i<5;i++) box(0.36,0.02,0.5,lam(0x2c2a24,{emissive:0x0c0b09}),X(-23)-0.7+i*0.35,1.02,Z(-2.5));
+  interactables.push({x:X(-23),z:Z(-1.4),r:1.8,dead:false,cond:()=>!exitSolved(2),
+    label:()=>countHandCards()?'lay out your cards':'examine the worn pedestal',
+    fn:()=>{
+      if(countHandCards()===0){
+        msg('Five shallow recesses worn into the stone, side by side. You have nothing to lay in them.'); return; }
+      pedRow=[]; openPedestal(); }});
   // ---- a real keypad terminal beside each door ----
   function doorKeypad(n,side,label,fn){
     const dx=X(-40+n*10), px=dx-1.5, pz=Z(side*1.9);
@@ -3241,23 +3575,27 @@ function exitKeypad(n,code,title,hint){
     addColliderBox(px,pz,0.5,0.5,0.1);
     interactables.push({x:px,z:pz+side*1.0,r:2.0,dead:false,prio:1,cond:()=>!exitSolved(n),label:label,fn:fn});
   }
-  doorKeypad(2,-1,'use the measuring machine',
-    ()=>exitKeypad(2,'162','MEASURING MACHINE','A champion\u2019s height, in hands \u2014 hung in the Long Gallery.'));
-  doorKeypad(3,1,'use the book lock',
-    ()=>exitKeypad(3,'1984','BOOK LOCK','A title passed hand to hand \u2014 hung in the Reading Room.'));
-  doorKeypad(4,-1,'use the clock lock',
-    ()=>exitKeypad(4,['1012','0412'],'CLOCK LOCK','Hour hand, then minute hand \u2014 the face hangs in the Clock Room.'));
-  doorKeypad(5,1,'use the signed lock',
-    ()=>exitKeypad(5,'2018','SIGNED LOCK','Two numbers, signed left then right \u2014 seen in the Whispering Hall.'));
-  doorKeypad(7,1,'use the painted-court lock',
-    ()=>exitKeypad(7,'0705','THE PAINTED COURT','Left hands, then right hands, of the Leerson Portrait Room.'));
-  // ---- CHAMBER 6: a standing ovation, before the Dawn Scene (hung in the Observatory) ----
-  dcRug(X(15),Z(-2.2),2.4,1.6,0x5a1c1c);
-  (function(){ const g=new THREE.Group(); g.position.set(X(15),0,Z(-2.2)); scene.add(g);
+  // EXIT 1: an unmarked keypad and nothing else. Only someone who has understood
+  // 'seven hands' would think to go and count the hands in the Portrait Room.
+  doorKeypad(1,-1,'use the unmarked keypad',
+    ()=>exitKeypad(1,'0705','UNMARKED KEYPAD','No label. No instructions. Four digits.'));
+  doorKeypad(3,1,'use the measuring machine',
+    ()=>exitKeypad(3,'162','MEASURING MACHINE','A champion\u2019s height, in hands \u2014 hung in the Long Gallery.'));
+  doorKeypad(4,-1,'use the book lock',
+    ()=>exitKeypad(4,'1984','BOOK LOCK','A title passed hand to hand \u2014 hung in the Reading Room.'));
+  doorKeypad(5,1,'use the clock lock',
+    ()=>exitKeypad(5,['1012','0412'],'CLOCK LOCK','Hour hand, then minute hand \u2014 the face hangs in the Clock Room.'));
+  doorKeypad(6,-1,'use the signed lock',
+    ()=>exitKeypad(6,'2018','SIGNED LOCK','Two numbers, signed left then right \u2014 seen in the Whispering Hall.'));
+  // ---- CHAMBER 7: a standing ovation, before the Dawn Scene (hung in the Observatory) ----
+  dcRug(X(25),Z(-2.2),2.4,1.6,0x5a1c1c);
+  (function(){ const g=new THREE.Group(); g.position.set(X(25),0,Z(-2.2)); scene.add(g);
     box(1.1,0.14,0.5,lam(0x4a3826,{emissive:0x120d06}),0,0.07,0,g); })();
-  interactables.push({x:X(15),z:Z(-2.2),r:2.0,dead:false,cond:()=>!exitSolved(6),
-    label:'give a standing ovation',
-    fn:()=>{ msg('You take the mark and applaud the dawn of it all \u2014 the scene you saw in the Observatory. The hall approves.'); clearExit(6); }});
+  interactables.push({x:X(25),z:Z(-2.2),r:2.0,dead:false,cond:()=>!exitSolved(7),
+    label:'stand on the worn mark',
+    fn:()=>{
+      msg('You take the mark and applaud the dawn of it all \u2014 the scene you saw in the Observatory. The hall approves.');
+      clearExit(7); }});
   // ---- FINAL CHAMBER (x 30..40): the Royal Flush plinth ----
   box(1.6,1.05,1.1,M.marbleSh,X(35),0.52,Z(0)); addColliderBox(X(35),Z(0),1.8,1.3,0.1);
   for(let i=0;i<5;i++) box(0.36,0.02,0.5,lam(0x2c0a0a,{emissive:0x120404}),X(35)-0.72+i*0.36,1.07,Z(0));
@@ -3286,13 +3624,11 @@ function exitKeypad(n,code,title,hint){
     pl.position.z=0.06; pl.castShadow=false; certG.add(pl);
   })();
   interactables.push({x:X(35),z:Z(1.4),r:1.9,dead:false,
-    label:()=>store.get('fenn_truth',0)?'the Royal Flush, laid true':'lay the Royal Flush',
+    label:()=>store.get('fenn_truth',0)?'the hand, laid true':'lay out your cards',
     fn:()=>{
       if(store.get('fenn_truth',0)){ msg('A\u2660 K\u2660 Q\u2660 J\u2660 10\u2660 \u2014 the truth stands framed beside them.'); return; }
-      if(!store.get('fenn_flush',0)){ msg('Five crimson-lined slots. They want a very particular hand \u2014 one someone tried to flush away.'); return; }
-      store.set('fenn_truth',1); certG.visible=true;
-      msg('A\u2660 K\u2660 Q\u2660 J\u2660 10\u2660 \u2014 the Royal Flush. The wall opens a frame: Mary Jones is MARY MATTHEW EPSEN, daughter of Kaitlyn Je Ari, blood of Orindia and Eraja. The museum was always hers.');
-    }});
+      if(!SPADE_CARDS.some((c,i)=>spadeHeld(i))){ msg('Five recesses, lined in crimson. You have nothing to lay in them.'); return; }
+      finalRow=[]; finalCert=certG; openFinalPlinth(); }});
 })();
 // ---------- ROOM DECOR — themed props for every named room ----------
 // wall mounts only ever land on CLOSED walls, so nothing covers a doorway
@@ -3980,7 +4316,9 @@ function buildCryptoRoom(cx,cz,abs){
   framedChart(makePigpenChartTex(2),1.7,1.7,cx+5.48,2.6,cz-3.65,-Math.PI/2);
   framedChart(makePigpenChartTex(3),1.7,1.7,cx+5.48,2.6,cz+3.65,-Math.PI/2);
   interactables.push({x:cx-5.0,z:cz,r:5.6,dead:false,label:'study the cipher charts',
-    fn:()=>msg('The pigpen key: each letter lives in a pen. The pen IS the letter \u2014 a square is E, dotted square is N, a plain vee is S, a dotted vee is W.')});
+    fn:()=>{ msg('The pigpen key: each letter lives in a pen. The pen IS the letter \u2014 '+
+      'a square is E, dotted square is N, a plain vee is S, a dotted vee is W.');
+      noteCipherProgress('key'); }});
   // KRYPTOS — medium curved copper scroll on a stone base, OBKR section legible
   const kg=new THREE.Group(); kg.position.set(cx+2.7,0,cz+2.5); kg.rotation.y=-0.5; scene.add(kg);
   cyl(0.5,0.6,0.9,10,M.marbleSh,0,0.45,0,kg);
@@ -4868,6 +5206,7 @@ function addPickup(kind,x,y,z,label){
 // scatter loot for a freshly drafted room
 function spawnRoomLoot(f,cx,cz,room){
   if(room.d===0) return;
+  maybeSpawnSpade(f,cx,cz);
   const rar=roomRarity(room);
   const rnd=()=>(Math.random()-0.5)*7.4;
   // a piece of furniture in roughly half of the plain rooms (dice & keys need somewhere to sit)
@@ -5170,12 +5509,30 @@ const NIGHT_WORDS=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight
 function nightWord(n){ return NIGHT_WORDS[n]!==undefined?NIGHT_WORDS[n]:String(n); }
 
 // her face, painted: pale skin, auburn bob and fringe, the dark domino mask
+function makeFluffTex(){
+  const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
+  const c=cv.getContext('2d');
+  c.fillStyle='#141416'; c.fillRect(0,0,128,128);
+  for(let i=0;i<1100;i++){                                        // felted wool nap
+    const x=Math.random()*128, y=Math.random()*128, r=1+Math.random()*2.8;
+    c.fillStyle=Math.random()<0.5?'rgba(64,64,72,0.42)':'rgba(0,0,0,0.55)';
+    c.beginPath(); c.arc(x,y,r,0,6.28); c.fill();
+  }
+  c.lineWidth=1;
+  for(let i=0;i<340;i++){                                         // stray fibres
+    const x=Math.random()*128,y=Math.random()*128,a=Math.random()*6.28,L=2+Math.random()*4.5;
+    c.strokeStyle=Math.random()<0.5?'rgba(90,90,100,0.30)':'rgba(0,0,0,0.5)';
+    c.beginPath(); c.moveTo(x,y); c.lineTo(x+Math.cos(a)*L,y+Math.sin(a)*L); c.stroke();
+  }
+  const t=new THREE.CanvasTexture(cv);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(3,3); return t;
+}
 function makeMaryFaceCanvas(){
   const W=256,H=320, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
   const c=cv.getContext('2d');
   const SKIN='#d4d1da', SKIN_HI='#e9e6ee', SKIN_SH='#b3b1c0', SKIN_SH2='#9b99ab';
   const HAIR='#5c2f24', HAIR_DK='#3f1f18', HAIR_HI='#8d4030';
-  const MASK='#3b3e49', MASK_DK='#2a2c36';
+  const MASK='#121317', MASK_DK='#050507';
   c.clearRect(0,0,W,H);
   // ---- hair mass behind the head ----
   c.fillStyle=HAIR;
@@ -5326,7 +5683,8 @@ function buildMary(x,z,yaw){
     sph(0.095,blk,sx*0.42,1.38,-0.07,g,8,6);                        // gloved hand
   });
   // slim black turtleneck
-  cyl(0.115,0.13,0.20,10,blk,0,2.53,0,g);
+  cyl(0.115,0.155,0.40,10,blk,0,2.44,0,g);                       // neck, down onto the shoulders
+  sph(0.15,blk,0,2.30,0,g,10,8);                                 // where it meets the coat
   // head — the painted face wrapped around the sphere itself (no floating plane, no bare skull)
   const head=sph(0.235,makeMaryHeadMat(),0,2.78,0,g,18,14); head.scale.set(1,1.12,0.94);
   // neat 3D auburn bob: volume above/behind, sides framing, blunt cut — face arc left open
@@ -5335,9 +5693,10 @@ function buildMary(x,z,yaw){
   const taper=sph(0.24,hair,0,2.64,0.08,g,12,10); taper.scale.set(0.92,0.55,0.75); taper.castShadow=false;
   // beret settled on the bob, tipped slightly toward her front
   const ber=new THREE.Group(); ber.position.set(0,3.07,0.02); ber.rotation.set(-0.08,0,0.10); g.add(ber);
-  const cap=sph(0.25,lam(0x3a2b3c,{emissive:0x140e16}),0,0.02,0,ber,12,10); cap.scale.set(1.05,0.42,1.05);
-  cyl(0.21,0.22,0.05,14,lam(0x241a28,{emissive:0x0c0810}),0,-0.045,0,ber); // dark under-band
-  sph(0.04,lam(0x3a2b3c),0,0.125,0,ber,6,6);                    // stalk
+  const fluff=new THREE.MeshLambertMaterial({map:makeFluffTex(),emissive:0x090909});
+  const cap=sph(0.25,fluff,0,0.02,0,ber,14,12); cap.scale.set(1.06,0.44,1.06);
+  cyl(0.21,0.22,0.06,14,fluff,0,-0.045,0,ber);                  // black under-band
+  sph(0.045,fluff,0,0.128,0,ber,8,6);                           // stalk
   g.visible=false;
   return g;
 }
