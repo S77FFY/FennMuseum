@@ -3316,31 +3316,99 @@ placeHandCard(2, 56.6,1.17,13.6);        // on the blueprint table
 placeHandCard(3, LX+1.6,0.17,LZ+14.6);   // Leerson portico
 placeHandCard(4, LX-12.5,0.17,LZ+5.2);   // Leerson Portrait Room floor
 placeHandCard(5, 55.9,0.20,26.8);        // vestibule carpet
-// ---- the museum lavatory (Grand Entrance, north-west corner) ----
-(function(){
-  const tx=44.6, tz=8.6;
-  box(0.14,2.2,2.6,lam(0xd9d4c6,{emissive:0x2c2a24}),tx+1.2,1.1,tz+0.2);
-  box(2.4,2.2,0.14,lam(0xd9d4c6,{emissive:0x2c2a24}),tx,1.1,tz+1.5);
-  addColliderBox(tx+1.2,tz+0.2,0.3,2.8,0.1); addColliderBox(tx,tz+1.5,2.6,0.3,0.1);
-  cyl(0.34,0.26,0.42,10,lam(0xf2f2ee,{emissive:0x36342e}),tx-0.3,0.21,tz);   // bowl
-  const seat=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.07,8,14),lam(0xf2f2ee,{emissive:0x36342e}));
-  seat.rotation.x=Math.PI/2; seat.position.set(tx-0.3,0.46,tz); scene.add(seat);
-  box(0.6,0.7,0.24,lam(0xf2f2ee,{emissive:0x36342e}),tx-0.3,0.75,tz-0.42);   // cistern
-  box(0.12,0.05,0.08,M.gold,tx-0.12,1.02,tz-0.42);                            // flush button
-  addColliderBox(tx-0.3,tz-0.1,0.9,1.0,0.1);
-  // a sign, so the lavatory can actually be found
-  (function(){
+// ---- THE PUBLIC CONVENIENCES: the brick outbuilding beside Leerson Hall ----
+const LOO_X=1500, LOO_Z=400;                 // its interior lives in a quiet pocket
+(function buildOuthouse(){
+  const bx=-62, bz=-36;                      // the little brick building in the city
+  function doorSign(text,x,z,locked){
     const cv=document.createElement('canvas'); cv.width=128; cv.height=64;
     const c=cv.getContext('2d');
-    c.fillStyle='#20242c'; c.fillRect(0,0,128,64);
-    c.fillStyle='#e8e2d2'; c.font='bold 22px Georgia'; c.textAlign='center'; c.textBaseline='middle';
-    c.fillText('LAVATORY',64,32);
-    const sg=new THREE.Mesh(new THREE.PlaneGeometry(1.5,0.75),
+    c.fillStyle=locked?'#3a2020':'#20242c'; c.fillRect(0,0,128,64);
+    c.strokeStyle='#e8e2d2'; c.lineWidth=3; c.strokeRect(5,5,118,54);
+    c.fillStyle='#e8e2d2'; c.font='bold 21px Georgia'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(text,64,32);
+    const sg=new THREE.Mesh(new THREE.PlaneGeometry(1.3,0.65),
       new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));
-    sg.position.set(tx,2.05,tz+1.42); sg.rotation.y=Math.PI; sg.castShadow=false; scene.add(sg);
+    sg.position.set(x,3.4,z+0.1); sg.castShadow=false; scene.add(sg);
+  }
+  // two doors on the south face of the outbuilding
+  [[-1.5,'LADIES',true],[1.5,'GENTS',false]].forEach(([ox,label,locked])=>{
+    const dx=bx+ox, dz=bz+3.55;
+    box(1.3,2.6,0.18,lam(locked?0x4a3226:0x5a4632,{emissive:0x140d08}),dx,1.3,dz);
+    box(1.5,0.2,0.3,M.stoneDk,dx,2.72,dz);                       // lintel
+    sph(0.07,M.gold,dx+0.45,1.35,dz+0.12,undefined,8,6);         // handle
+    doorSign(label,dx,dz,locked);
+    interactables.push({x:dx,z:dz+1.2,r:1.9,dead:false,
+      label:locked?'try the ladies\u2019 door':'enter the gents',
+      fn:()=>{ if(locked){ msg('The ladies\u2019 is locked. A brass plate: OUT OF ORDER \u2014 SEE ATTENDANT.'); return; }
+        fadeTeleport(LOO_X,LOO_Z+4.2,Math.PI); }});
+  });
+  box(7.4,0.5,0.6,M.stoneDk,bx,0.25,bz+3.7);                     // step
+  const ll=new THREE.PointLight(0xffe6c0,0.6,12); ll.position.set(bx,3.9,bz+4.4); scene.add(ll);
+
+  // ---------- the gents, inside ----------
+  const X=x=>LOO_X+x, Z=z=>LOO_Z+z;
+  const tile=lam(0xdfe3e6,{emissive:0x2e3234}), tileDk=lam(0x8f9aa2,{emissive:0x1e2226});
+  const porc=lam(0xf4f6f6,{emissive:0x383c3c});
+  box(9,0.12,11,tileDk,X(0),0.06,Z(0)).castShadow=false;         // floor
+  box(9,0.3,11,M.ceilIn,X(0),3.4,Z(0));
+  wallRun(X(-4.5),Z(-5.5),X(4.5),Z(-5.5),[]);
+  wallRun(X(-4.5),Z(5.5),X(4.5),Z(5.5),[]);
+  wallRun(X(-4.5),Z(-5.5),X(-4.5),Z(5.5),[]);
+  wallRun(X(4.5),Z(-5.5),X(4.5),Z(5.5),[]);
+  [[-4.35,0],[4.35,0],[0,-5.35],[0,5.35]].forEach(([wx,wz])=>{   // white tiling
+    const horiz=Math.abs(wz)>1;
+    box(horiz?8.8:0.1,2.2,horiz?0.1:10.8,tile,X(wx),1.1,Z(wz)).castShadow=false;
+  });
+  const gl=new THREE.PointLight(0xdff0ff,0.75,16); gl.position.set(X(0),3.0,Z(0)); scene.add(gl);
+  // the cubicle, north-west
+  box(0.12,2.3,2.6,tile,X(-1.4),1.15,Z(-3.6)); addColliderBox(X(-1.4),Z(-3.6),0.25,2.7,0.1);
+  box(3.0,2.3,0.12,tile,X(-2.9),1.15,Z(-2.3)); addColliderBox(X(-2.9),Z(-2.3),3.1,0.25,0.1);
+  cyl(0.34,0.26,0.44,10,porc,X(-3.1),0.22,Z(-4.0));
+  const seat=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.07,8,14),porc);
+  seat.rotation.x=Math.PI/2; seat.position.set(X(-3.1),0.48,Z(-4.0)); scene.add(seat);
+  box(0.62,0.72,0.24,porc,X(-3.1),0.78,Z(-4.5));                 // cistern
+  box(0.12,0.05,0.08,M.gold,X(-2.92),1.06,Z(-4.5));              // flush
+  addColliderBox(X(-3.1),Z(-4.2),1.0,1.2,0.1);
+  interactables.push({x:X(-3.1),z:Z(-2.9),r:2.0,dead:false,prio:1,
+    label:'use the toilet', fn:openToilet});
+  // two urinals on the east wall
+  [-1.1,0.5].forEach(uz=>{
+    const u=box(0.5,1.0,0.44,porc,X(4.1),1.05,Z(uz));
+    sph(0.24,porc,X(4.06),0.62,Z(uz),undefined,10,8).scale.set(1,1,0.8);
+    box(0.1,0.24,0.1,M.metal,X(4.28),1.62,Z(uz));                // pipe
+    box(0.12,0.06,0.5,tileDk,X(3.86),0.06,Z(uz)).castShadow=false;
+    addColliderBox(X(4.1),Z(uz),0.7,0.7,0.1);
+  });
+  box(0.1,2.0,2.6,tile,X(4.3),1.0,Z(-0.3)).castShadow=false;     // splashback
+  // two basins with a mirror above, on the south wall
+  [-1.2,1.2].forEach(sx=>{
+    box(0.9,0.16,0.55,porc,X(sx),0.92,Z(4.9));
+    const bowl=sph(0.3,porc,X(sx),0.9,Z(4.9),undefined,12,10); bowl.scale.set(1,0.55,0.75);
+    cyl(0.05,0.05,0.26,6,M.metal,X(sx),1.14,Z(5.1));             // tap
+    box(0.1,0.1,0.16,M.metal,X(sx),1.24,Z(5.02));
+    cyl(0.06,0.06,0.8,6,M.metal,X(sx),0.5,Z(5.05));              // waste pipe
+    addColliderBox(X(sx),Z(4.9),1.0,0.7,0.1);
+  });
+  (function(){                                                    // the mirror
+    const cv=document.createElement('canvas'); cv.width=128; cv.height=96;
+    const c=cv.getContext('2d');
+    const g=c.createLinearGradient(0,0,128,96);
+    g.addColorStop(0,'#c8d6de'); g.addColorStop(0.5,'#eef4f6'); g.addColorStop(1,'#aebcc6');
+    c.fillStyle=g; c.fillRect(0,0,128,96);
+    c.globalAlpha=0.25; c.fillStyle='#ffffff';
+    for(let i=0;i<7;i++) c.fillRect(6+i*18,4,7,88);               // faint streaks
+    c.globalAlpha=1;
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.3),
+      new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv),shininess:110,specular:0xffffff}));
+    m.position.set(X(0),2.0,Z(5.34)); m.rotation.y=Math.PI; m.castShadow=false; scene.add(m);
+    box(3.7,0.12,0.1,M.stoneDk,X(0),2.72,Z(5.36));
+    box(3.7,0.12,0.1,M.stoneDk,X(0),1.30,Z(5.36));
   })();
-  interactables.push({x:tx-0.3,z:tz+0.9,r:1.9,dead:false,prio:1,
-    label:'use the lavatory', fn:openToilet});
+  // the way out
+  box(1.3,2.4,0.16,lam(0x5a4632,{emissive:0x140d08}),X(0),1.2,Z(5.42));
+  interactables.push({x:X(0),z:Z(4.3),r:1.9,dead:false,label:'step back outside',
+    fn:()=>fadeTeleport(-62,-36+5.2,0)});
 })();
 // ---- picture canvases for the seven chambers ----
 function questPicMat(kind){
@@ -6279,7 +6347,10 @@ function resolveCollisions(){
   }
   // bounds: outdoors vs interior pockets
   const fl=activeFloor(player.x);
-  if(player.x>TOP_X-60&&player.x<TOP_X+60&&player.z>TOP_Z-60&&player.z<TOP_Z+60){
+  if(player.x>LOO_X-40&&player.x<LOO_X+40&&player.z>LOO_Z-40&&player.z<LOO_Z+40){
+    player.x=Math.max(LOO_X-4.1,Math.min(LOO_X+4.1,player.x));
+    player.z=Math.max(LOO_Z-5.1,Math.min(LOO_Z+5.1,player.z));
+  }else if(player.x>TOP_X-60&&player.x<TOP_X+60&&player.z>TOP_Z-60&&player.z<TOP_Z+60){
     player.x=Math.max(TOP_X-41.5,Math.min(TOP_X+41.5,player.x));
     player.z=Math.max(TOP_Z-6.2,Math.min(TOP_Z+6.2,player.z));
   }else if(fl){
