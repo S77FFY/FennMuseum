@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="app-repo" content="FennMuseum">
+<meta name="app-version" content="v3.21.1">
 <title>The Fenn Job — The Royal Museum</title>
 <style>
   :root{ --ink:#2b2e33; --parchment:#efe9dc; --royal:#a52f2c; --gold:#c2a35a; --slate:#8d9bb0; }
@@ -235,6 +237,14 @@
     color:#a8f2bf;font-family:monospace;font-size:14px;padding:10px 12px;border-radius:6px;
     margin:7px 0;cursor:pointer;}
   .termBtn:active{background:#0e3a1a;}
+  .cardRow{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0 4px;}
+  .pcard{width:44px;height:62px;border-radius:5px;background:#f2efe6;border:1px solid #b8b2a2;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;
+    font-family:Georgia,serif;font-weight:bold;font-size:18px;color:#20222a;
+    box-shadow:0 2px 7px rgba(0,0,0,.55);}
+  .pcard .su{font-size:15px;font-weight:normal;}
+  .pcard.red{color:#b02a24;}
+  .pcard.empty{background:rgba(120,240,170,0.07);border:1px dashed #2f7a4a;box-shadow:none;}
   #termDisp{background:#02180a;border:1px solid #2f7a4a;color:#c6ffd8;font-family:monospace;
     font-size:22px;letter-spacing:.34em;text-align:center;padding:10px 4px;border-radius:6px;
     margin:4px 0 10px;min-height:28px;}
@@ -314,7 +324,7 @@
       <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
-    <div id="verTag">v3.15.0</div>
+    <div id="verTag"></div>
   </div>
 </div>
 
@@ -415,7 +425,7 @@
 <div id="goggleFx"></div>
 <div id="gogBtn">◉ GOGGLES</div>
 <div id="term"><div id="termBox">
-  <div id="termTitle"></div><div id="termBody"></div><div id="termOpts"></div>
+  <div id="termTitle"></div><div id="termBody"></div><div id="termSlots"></div><div id="termOpts"></div>
 </div></div>
 <div id="cine">
   <div id="cineNight">Night One</div>
@@ -456,7 +466,7 @@
 (function(){
 'use strict';
 
-const VERSION='v3.15.0';
+const VERSION=(document.querySelector('meta[name="app-version"]')||{}).content||'v3.21.1';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -521,6 +531,19 @@ function openTerminal(cfg){
   const t=byId('term'); t.style.display='block';
   byId('termTitle').textContent=cfg.title||'TERMINAL';
   byId('termBody').textContent=(cfg.lines||[]).join('\n');
+  const sw=byId('termSlots'); sw.innerHTML='';
+  if(cfg.slots){
+    const row=document.createElement('div'); row.className='cardRow';
+    cfg.slots.forEach(c=>{
+      const d=document.createElement('div');
+      d.className='pcard'+(c?(c.red?' red':''):' empty');
+      if(c){ const a=document.createElement('span'); a.textContent=c.lab;
+             const b2=document.createElement('span'); b2.className='su'; b2.textContent=c.suit;
+             d.appendChild(a); d.appendChild(b2); }
+      row.appendChild(d);
+    });
+    sw.appendChild(row);
+  }
   const opts=byId('termOpts'); opts.innerHTML='';
   if(cfg.pad){
     let val='';
@@ -2713,6 +2736,16 @@ function wallRun(x1,z1,x2,z2,gaps){
   box(20,0.3,4.5,M.ceilIn,W(0),5.15,Z(-18.25));
   // walls
   wallRun(W(-4),Z(16.5),W(4),Z(16.5),[{at:W(0),w:2.6}]);      // portico south (front door)
+  // ...and the door itself, shut behind you, so the way out reads from inside
+  (function(){
+    const dg=new THREE.Group(); dg.position.set(W(0),0,Z(16.42)); scene.add(dg);
+    box(2.5,3.5,0.14,lam(0x6a4326,{emissive:0x1a0f07}),0,1.75,0,dg);        // the leaf
+    [-1,1].forEach(sx=>box(0.9,3.1,0.06,lam(0x7d5330,{emissive:0x201306}),sx*0.55,1.8,0.09,dg)); // panels
+    box(2.8,0.22,0.26,M.stoneDk,0,3.62,0,dg);                                // lintel
+    [-1,1].forEach(sx=>box(0.24,3.6,0.26,M.stoneDk,sx*1.38,1.8,0,dg));       // jambs
+    sph(0.09,M.gold,0.85,1.65,-0.12,dg,8,6);                                 // handle
+    cyl(0.16,0.16,0.05,10,M.gold,-0.85,1.9,-0.11,dg).rotation.x=Math.PI/2;   // knocker plate
+  })();
   wallRun(W(-4),Z(11),W(-4),Z(16.5),[]);                      // portico west
   wallRun(W(4),Z(11),W(4),Z(16.5),[]);                        // portico east
   wallRun(W(-10),Z(11),W(10),Z(11),[{at:W(0),w:2.6}]);        // gallery south
@@ -2822,7 +2855,11 @@ function wallRun(x1,z1,x2,z2,gaps){
   }
   chandelier(W(0),Z(6)); chandelier(W(0),Z(-1)); chandelier(W(-15),Z(2));
   // ---- portico staircase to the Leerson upper floor ----
-  for(let i=0;i<5;i++) box(1.6,0.22+i*0.22,1.0,plankMatDk(),W(2.9),0.11*(i+1),Z(15.6-i*0.9));
+  for(let i=0;i<5;i++){                                          // stacked, never overlapping
+    const h=0.22*(i+1);
+    box(1.6,h,0.88,plankMatDk(),W(2.9),0.12+h/2,Z(15.6-i*0.9));   // riser block, sat on the floor
+    box(1.68,0.06,0.94,M.wood,W(2.9),0.12+h+0.03,Z(15.6-i*0.9));  // tread nosing
+  }
   box(0.08,1.1,4.4,M.wood,W(3.75),1.0,Z(13.9));
   // the stairwell opening: a dark gap in the wall at the head of the stairs, wood-cased,
   // with two further steps climbing away into it
@@ -2922,7 +2959,7 @@ function wallRun(x1,z1,x2,z2,gaps){
   shutterMesh.userData.ty=2.1;
   // security door (passage, at gallery north wall gap x=8)
   secDoor=box(2.5,4.4,0.28,M.metal,W(8),2.2,Z(-6));
-  secDoor.userData.tx=W(8);
+  secDoor.userData.ty=2.2;
   secCol=addColliderBox(W(8),Z(-6),2.6,0.6,0.15);
   if(hasUnlock('staff')) staffDoorOpen();   // permanent direct access after first heist
   // ---- consolidated SECURITY CONTROL panel: slide-open cover + slide switches ----
@@ -3028,7 +3065,7 @@ function pressButton(id){
   else{ msg('Already disarmed.'); return; }
   if(allDisarmed()){
     heist.winUntil=performance.now()+WINDOW_MS;
-    secDoor.userData.tx=LX+10.3;
+    secDoor.userData.ty=6.9;
     if(secCol){ removeCollider(secCol); secCol=null; }
     liftCage();   // if the crown was caged from a mistake, this frees it
     msg('ALL SYSTEMS DOWN \u2014 round through the security door, quick!');
@@ -3042,7 +3079,7 @@ function rearm(){
   heist.alarm=true;
   ['rope','lasers','alarm'].forEach(k=>slideSwitch(k,false));
   if(hasUnlock('staff')){ staffDoorOpen(); }   // stays open permanently
-  else{ secDoor.userData.tx=LX+8; if(!secCol) secCol=addColliderBox(LX+8,LZ-6,2.6,0.6,0.15); }
+  else{ secDoor.userData.ty=2.2; if(!secCol) secCol=addColliderBox(LX+8,LZ-6,2.6,0.6,0.15); }
   msg('The systems re-arm \u2014 the window closed. Disarm them again to reopen it.');
 }
 function dropCage(text){
@@ -3061,7 +3098,7 @@ function liftCage(){
 }
 function staffDoorOpen(){        // permanent once Staff Access is unlocked
   if(!secDoor) return;
-  secDoor.userData.tx=LX+10.3;
+  secDoor.userData.ty=6.9;       // rises into the lintel rather than sliding across
   if(secCol){ removeCollider(secCol); secCol=null; }
 }
 function tryTakeCrown(){
@@ -3318,6 +3355,51 @@ placeHandCard(4, LX-12.5,0.17,LZ+5.2);   // Leerson Portrait Room floor
 placeHandCard(5, 55.9,0.20,26.8);        // vestibule carpet
 // ---- THE PUBLIC CONVENIENCES: the brick outbuilding beside Leerson Hall ----
 const LOO_X=1500, LOO_Z=400;                 // its interior lives in a quiet pocket
+let looDoor=null, looDoorCol=null, looDoorOpen=false;
+let bowlCards=null, bowlWater=null, flushSpin=0;   // declared before the outhouse builds them
+// ---- planar mirrors: a second camera renders the room from behind the glass ----
+const mirrors=[];
+let mirrorCam=null, selfie=null;
+function buildSelfie(){          // the figure you catch sight of in the glass
+  const g=new THREE.Group(); g.visible=false; scene.add(g);
+  const coat=lam(0x14161c,{emissive:0x05060a}), blk=lam(0x0a0b0e);
+  cyl(0.30,0.34,1.05,10,coat,0,0.55,0,g);                       // torso
+  box(0.62,0.14,0.34,coat,0,1.06,0,g);                          // shoulders
+  cyl(0.11,0.14,0.26,10,blk,0,1.20,0,g);                        // neck
+  const head=sph(0.235,lam(0xc9ccd6,{emissive:0x2a2e38}),0,1.44,0,g,14,12); head.scale.y=1.1;
+  const mask=box(0.40,0.12,0.06,lam(0x121317),0,1.47,0.20,g); mask.castShadow=false;
+  const bob=sph(0.255,lam(0x4a2620,{emissive:0x140a08}),0,1.47,-0.05,g,12,10); bob.scale.set(1.03,0.98,0.9);
+  const cap=sph(0.25,lam(0x141416,{emissive:0x090909}),0,1.66,0,g,12,10); cap.scale.set(1.06,0.44,1.06);
+  [-1,1].forEach(sx=>cyl(0.09,0.08,0.85,8,coat,sx*0.36,0.68,0,g));
+  return g;
+}
+function renderMirrors(){
+  if(!mirrors.length) return;
+  if(Math.abs(player.x-LOO_X)>14||Math.abs(player.z-LOO_Z)>14) return;   // only in the gents
+  if(!mirrorCam) mirrorCam=new THREE.PerspectiveCamera(72,1,0.05,60);
+  if(!selfie) selfie=buildSelfie();
+  selfie.position.set(player.x,0.02,player.z);
+  selfie.rotation.y=player.yaw+Math.PI;
+  selfie.visible=true;
+  const wasFog=scene.fog; scene.fog=null;
+  // the eye, and where it is looking
+  const eye={x:player.x,y:EYE,z:player.z};
+  const cp=Math.cos(player.pitch||0), sp=Math.sin(player.pitch||0);
+  const fwd={x:-Math.sin(player.yaw)*cp, y:sp, z:-Math.cos(player.yaw)*cp};
+  for(const m of mirrors){
+    // plane x = m.px with normal along x: reflect both the position and the direction
+    const ex=2*m.px-eye.x;
+    mirrorCam.position.set(ex,eye.y,eye.z);
+    mirrorCam.lookAt(ex-fwd.x, eye.y+fwd.y, eye.z+fwd.z);
+    m.mesh.visible=false;
+    renderer.setRenderTarget(m.rt);
+    renderer.render(scene,mirrorCam);
+    renderer.setRenderTarget(null);
+    m.mesh.visible=true;
+  }
+  selfie.visible=false;
+  scene.fog=wasFog;
+}
 (function buildOuthouse(){
   const bx=-62, bz=-36;                      // the little brick building in the city
   function doorSign(text,x,z,locked){
@@ -3361,17 +3443,48 @@ const LOO_X=1500, LOO_Z=400;                 // its interior lives in a quiet po
     box(horiz?8.8:0.1,2.2,horiz?0.1:10.8,tile,X(wx),1.1,Z(wz)).castShadow=false;
   });
   const gl=new THREE.PointLight(0xdff0ff,0.75,16); gl.position.set(X(0),3.0,Z(0)); scene.add(gl);
-  // the cubicle, north-west
+  // ---- the cubicle, north-west: partitions with a real hinged door ----
   box(0.12,2.3,2.6,tile,X(-1.4),1.15,Z(-3.6)); addColliderBox(X(-1.4),Z(-3.6),0.25,2.7,0.1);
-  box(3.0,2.3,0.12,tile,X(-2.9),1.15,Z(-2.3)); addColliderBox(X(-2.9),Z(-2.3),3.1,0.25,0.1);
+  box(0.9,2.3,0.12,tile,X(-4.05),1.15,Z(-2.3)); addColliderBox(X(-4.05),Z(-2.3),1.0,0.25,0.1);
+  box(1.2,2.3,0.12,tile,X(-1.95),1.15,Z(-2.3)); addColliderBox(X(-1.95),Z(-2.3),1.3,0.25,0.1);
+  const cubDoor=new THREE.Group(); cubDoor.position.set(X(-3.6),0,Z(-2.3)); scene.add(cubDoor);
+  box(1.0,2.1,0.1,lam(0x6a7a72,{emissive:0x141a18}),0.5,1.08,0,cubDoor);   // the door leaf
+  box(0.9,0.06,0.12,lam(0x8f9aa2),0.5,1.86,0.02,cubDoor);
+  sph(0.06,M.metal,0.92,1.06,0.09,cubDoor,8,6);                            // handle
+  looDoor=cubDoor; looDoorCol=addColliderBox(X(-3.1),Z(-2.3),1.1,0.25,0.1);
+  // the bowl itself
   cyl(0.34,0.26,0.44,10,porc,X(-3.1),0.22,Z(-4.0));
   const seat=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.07,8,14),porc);
   seat.rotation.x=Math.PI/2; seat.position.set(X(-3.1),0.48,Z(-4.0)); scene.add(seat);
   box(0.62,0.72,0.24,porc,X(-3.1),0.78,Z(-4.5));                 // cistern
-  box(0.12,0.05,0.08,M.gold,X(-2.92),1.06,Z(-4.5));              // flush
-  addColliderBox(X(-3.1),Z(-4.2),1.0,1.2,0.1);
-  interactables.push({x:X(-3.1),z:Z(-2.9),r:2.0,dead:false,prio:1,
-    label:'use the toilet', fn:openToilet});
+  box(0.16,0.07,0.1,M.gold,X(-2.88),1.06,Z(-4.5));               // the flush handle
+  cyl(0.05,0.05,0.16,6,M.gold,X(-2.9),1.02,Z(-4.42));
+  addColliderBox(X(-3.1),Z(-4.25),1.0,1.1,0.1);
+  // water in the pan, and the cards that get dropped into it
+  (function(){
+    const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
+    const c=cv.getContext('2d');
+    c.fillStyle='#cfe4ee'; c.fillRect(0,0,128,128);
+    for(let i=0;i<7;i++){                                        // swirl arcs
+      c.strokeStyle='rgba(255,255,255,'+(0.5-i*0.05)+')'; c.lineWidth=3+i*0.6;
+      c.beginPath(); c.arc(64,64,10+i*8,i*0.7,i*0.7+4.2); c.stroke();
+    }
+    c.strokeStyle='rgba(120,170,200,0.5)'; c.lineWidth=2;
+    for(let i=0;i<5;i++){ c.beginPath(); c.arc(64,64,14+i*10,i*1.2+2,i*1.2+5); c.stroke(); }
+    const w=new THREE.Mesh(new THREE.CircleGeometry(0.27,20),
+      new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv),transparent:true,
+        opacity:0.86,shininess:120,specular:0xffffff}));
+    w.rotation.x=-Math.PI/2; w.position.set(X(-3.1),0.36,Z(-4.0));
+    w.castShadow=false; scene.add(w); bowlWater=w;
+  })();
+  bowlCards=new THREE.Group(); bowlCards.position.set(X(-3.1),0.38,Z(-4.0)); scene.add(bowlCards);
+  interactables.push({x:X(-3.4),z:Z(-1.7),r:1.6,dead:false,prio:2,
+    label:()=>looDoorOpen?'close the cubicle door':'open the cubicle door',
+    fn:()=>{ looDoorOpen=!looDoorOpen;
+      if(looDoorOpen){ if(looDoorCol){ removeCollider(looDoorCol); looDoorCol=null; } }
+      else if(!looDoorCol){ looDoorCol=addColliderBox(X(-3.1),Z(-2.3),1.1,0.25,0.1); } }});
+  interactables.push({x:X(-3.1),z:Z(-3.6),r:1.5,dead:false,prio:1,
+    label:'use the toilet', cond:()=>looDoorOpen, fn:openToilet});
   // two urinals on the east wall
   [-1.1,0.5].forEach(uz=>{
     const u=box(0.5,1.0,0.44,porc,X(4.1),1.05,Z(uz));
@@ -3381,33 +3494,45 @@ const LOO_X=1500, LOO_Z=400;                 // its interior lives in a quiet po
     addColliderBox(X(4.1),Z(uz),0.7,0.7,0.1);
   });
   box(0.1,2.0,2.6,tile,X(4.3),1.0,Z(-0.3)).castShadow=false;     // splashback
-  // two basins with a mirror above, on the south wall
-  [-1.2,1.2].forEach(sx=>{
-    box(0.9,0.16,0.55,porc,X(sx),0.92,Z(4.9));
-    const bowl=sph(0.3,porc,X(sx),0.9,Z(4.9),undefined,12,10); bowl.scale.set(1,0.55,0.75);
-    cyl(0.05,0.05,0.26,6,M.metal,X(sx),1.14,Z(5.1));             // tap
-    box(0.1,0.1,0.16,M.metal,X(sx),1.24,Z(5.02));
-    cyl(0.06,0.06,0.8,6,M.metal,X(sx),0.5,Z(5.05));              // waste pipe
-    addColliderBox(X(sx),Z(4.9),1.0,0.7,0.1);
+  // two basins with a mirror above, on the WEST wall (the south wall is the doorway)
+  [1.0,3.0].forEach(sz=>{
+    box(0.55,0.16,0.9,porc,X(-4.0),0.92,Z(sz));
+    const bowl=sph(0.3,porc,X(-4.0),0.9,Z(sz),undefined,12,10); bowl.scale.set(0.75,0.55,1);
+    cyl(0.05,0.05,0.26,6,M.metal,X(-4.2),1.14,Z(sz));            // tap
+    box(0.16,0.1,0.1,M.metal,X(-4.12),1.24,Z(sz));
+    cyl(0.06,0.06,0.8,6,M.metal,X(-4.15),0.5,Z(sz));             // waste pipe
+    addColliderBox(X(-4.0),Z(sz),0.7,1.0,0.1);
   });
-  (function(){                                                    // the mirror
-    const cv=document.createElement('canvas'); cv.width=128; cv.height=96;
+  // a small mirror over each basin, each with its own live reflection
+  [1.0,3.0].forEach(sz=>{
+    const rt=new THREE.WebGLRenderTarget(256,256);
+    const mm=new THREE.Mesh(new THREE.PlaneGeometry(0.86,0.92),
+      new THREE.MeshBasicMaterial({map:rt.texture}));
+    mm.position.set(X(-4.36),1.86,Z(sz)); mm.rotation.y=Math.PI/2;
+    mm.castShadow=false; mm.receiveShadow=false; scene.add(mm);
+    box(0.06,1.04,0.06,M.stoneDk,X(-4.40),1.86,Z(sz-0.49));       // frame
+    box(0.06,1.04,0.06,M.stoneDk,X(-4.40),1.86,Z(sz+0.49));
+    box(0.06,0.06,1.04,M.stoneDk,X(-4.40),2.38,Z(sz));
+    box(0.06,0.06,1.04,M.stoneDk,X(-4.40),1.34,Z(sz));
+    mirrors.push({mesh:mm,rt:rt,nx:1,px:X(-4.36),py:1.86,pz:Z(sz)});   // normal points +x
+  });
+  // ---- the way out: a real doorway in the south wall, lit and signed ----
+  box(1.5,2.5,0.2,lam(0x5a4632,{emissive:0x1a1108}),X(0),1.25,Z(5.36));    // the door
+  box(1.9,0.24,0.3,M.stoneDk,X(0),2.62,Z(5.32));                           // lintel
+  [-1,1].forEach(sx=>box(0.22,2.6,0.3,M.stoneDk,X(sx*0.86),1.3,Z(5.32)));  // jambs
+  sph(0.08,M.gold,X(0.5),1.25,Z(5.24),undefined,8,6);                      // handle
+  (function(){                                                             // EXIT sign over the door
+    const cv=document.createElement('canvas'); cv.width=128; cv.height=48;
     const c=cv.getContext('2d');
-    const g=c.createLinearGradient(0,0,128,96);
-    g.addColorStop(0,'#c8d6de'); g.addColorStop(0.5,'#eef4f6'); g.addColorStop(1,'#aebcc6');
-    c.fillStyle=g; c.fillRect(0,0,128,96);
-    c.globalAlpha=0.25; c.fillStyle='#ffffff';
-    for(let i=0;i<7;i++) c.fillRect(6+i*18,4,7,88);               // faint streaks
-    c.globalAlpha=1;
-    const m=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.3),
-      new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(cv),shininess:110,specular:0xffffff}));
-    m.position.set(X(0),2.0,Z(5.34)); m.rotation.y=Math.PI; m.castShadow=false; scene.add(m);
-    box(3.7,0.12,0.1,M.stoneDk,X(0),2.72,Z(5.36));
-    box(3.7,0.12,0.1,M.stoneDk,X(0),1.30,Z(5.36));
+    c.fillStyle='#04220c'; c.fillRect(0,0,128,48);
+    c.fillStyle='#4ade70'; c.font='bold 30px Georgia'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('EXIT',64,25);
+    const sg=new THREE.Mesh(new THREE.PlaneGeometry(1.1,0.42),
+      new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));
+    sg.position.set(X(0),2.95,Z(5.26)); sg.rotation.y=Math.PI; sg.castShadow=false; scene.add(sg);
+    const dl=new THREE.PointLight(0xbfffd0,0.4,6); dl.position.set(X(0),2.7,Z(4.4)); scene.add(dl);
   })();
-  // the way out
-  box(1.3,2.4,0.16,lam(0x5a4632,{emissive:0x140d08}),X(0),1.2,Z(5.42));
-  interactables.push({x:X(0),z:Z(4.3),r:1.9,dead:false,label:'step back outside',
+  interactables.push({x:X(0),z:Z(4.1),r:4.4,dead:false,prio:1,label:'step back outside',
     fn:()=>fadeTeleport(-62,-36+5.2,0)});
 })();
 // ---- picture canvases for the seven chambers ----
@@ -3502,53 +3627,73 @@ function clearExit(n,quiet){
 let toiletBin=[];
 function toiletItems(){
   const out=[];
-  HAND_CARDS.forEach((c,k)=>{ if(store.get('fenn_hc'+(k+1),0)) out.push({id:'h'+k,nm:c.lab+c.suit}); });
-  SPADE_CARDS.forEach((c,k)=>{ if(spadeHeld(k)) out.push({id:'s'+k,nm:c.lab+'\u2660'}); });
+  HAND_CARDS.forEach((c,k)=>{ if(store.get('fenn_hc'+(k+1),0))
+    out.push({id:'h'+k,nm:c.lab+c.suit,lab:c.lab,suit:c.suit,red:c.red}); });
+  SPADE_CARDS.forEach((c,k)=>{ if(spadeHeld(k))
+    out.push({id:'s'+k,nm:c.lab+'\u2660',lab:c.lab,suit:'\u2660',red:false}); });
   return out;
 }
+// lay the dropped cards into the actual bowl, floating on the water
+function refreshBowl(){
+  if(!bowlCards) return;
+  while(bowlCards.children.length) bowlCards.remove(bowlCards.children[0]);
+  toiletBin.forEach((o,i)=>{
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(0.16,0.23),
+      new THREE.MeshLambertMaterial({map:makeCardTex(o.lab,o.suit,o.red),
+        emissive:0x3a3832,side:THREE.DoubleSide}));
+    m.rotation.x=-Math.PI/2; m.rotation.z=i*1.13;
+    const a=i*2.1, r=0.07+((i%3)*0.045);
+    m.position.set(Math.cos(a)*r,0.02+i*0.004,Math.sin(a)*r);
+    m.castShadow=false; bowlCards.add(m);
+  });
+}
 function openToilet(){
+  refreshBowl();
   const items=toiletItems();
   const inBowl=toiletBin.slice();
-  const bowlTxt=inBowl.length?inBowl.map(o=>o.nm).join('  '):'(empty)';
   const btns=items.filter(o=>!inBowl.some(b=>b.id===o.id))
     .map(o=>({t:'> drop the '+o.nm+' in',fn:()=>{ toiletBin.push(o); openToilet(); }}));
   if(inBowl.length) btns.push({t:'> fish everything back out',fn:()=>{ toiletBin=[]; openToilet(); }});
   btns.push({t:'> PULL THE FLUSH',fn:flushToilet});
   openTerminal({title:'THE LAVATORY',
-    lines:['A museum lavatory. Cracked seat, brass handle.','','In the bowl:  '+bowlTxt],
+    lines:['A cracked seat and a brass handle.',
+           inBowl.length?'In the bowl:':'The bowl is empty.'],
+    slots:inBowl.length?inBowl:null,
     buttons:btns, closeLabel:'> wash your hands and leave'});
 }
 function flushToilet(){
-  const went=toiletBin.slice(); toiletBin=[];
+  const went=toiletBin.slice();
   if(!went.length){
+    flushSpin=1.6;                                    // still flush, just empty water
     openTerminal({title:'THE LAVATORY',lines:['The cistern refills.','','Nothing happens, because nothing was in it.'],
       buttons:[{t:'> again',fn:openToilet}],closeLabel:'> leave'}); return;
   }
   went.forEach(o=>{ if(o.id[0]==='s') store.set('fenn_spf'+o.id.slice(1),1); });
-  openTerminal({title:'THE LAVATORY',
-    lines:['The water turns over and swallows: '+went.map(o=>o.nm).join('  '),'',
-           'Nothing happens.','','You watch the bowl settle. Nothing happens at all.'],
-    buttons:[{t:'> again',fn:openToilet}],closeLabel:'> leave'});
+  flushSpin=2.6;                                      // the swirl takes them down
+  closeTerminal();
+  msg('The water turns over and swallows them. Nothing happens. You watch the bowl settle \u2014 nothing happens at all.');
+  setTimeout(()=>{ toiletBin=[]; refreshBowl(); },2100);
 }
 // ---- the final plinth: a royal flush, and only if it has been through the water ----
 let finalRow=[], finalCert=null;
 function openFinalPlinth(){
   const held=[]; SPADE_CARDS.forEach((c,i)=>{ if(spadeHeld(i)) held.push(i); });
-  const row=[0,1,2,3,4].map(k=>finalRow[k]!==undefined?(' '+SPADE_CARDS[finalRow[k]].lab+'\u2660 '):' \u2022\u2022 ').join('|');
+  const slots=[0,1,2,3,4].map(k=>finalRow[k]!==undefined
+    ?{lab:SPADE_CARDS[finalRow[k]].lab,suit:'\u2660',red:false}:null);
   const avail=held.filter(i=>finalRow.indexOf(i)<0);
   const btns=avail.map(i=>({t:'> lay the '+SPADE_CARDS[i].lab+'\u2660',
     fn:()=>{ finalRow.push(i); finalPlaced(); }}));
   if(finalRow.length) btns.push({t:'> gather them up again',fn:()=>{ finalRow=[]; openFinalPlinth(); }});
   openTerminal({title:'THE CRIMSON PLINTH',
-    lines:['Five recesses, lined deep in crimson.','','|'+row+'|'],
-    buttons:btns, closeLabel:'> step back'});
+    lines:['Five recesses, lined deep in crimson.'],
+    slots:slots, buttons:btns, closeLabel:'> step back'});
 }
 function finalPlaced(){
   if(finalRow.length<5){ openFinalPlinth(); return; }
   const r=finalRow.map(i=>SPADE_CARDS[i].r);
   const run=d=>r.every((v,k)=>k===0||v===r[k-1]+d);
   const isRoyal=r.slice().sort((a,b)=>a-b).join(',')===ROYAL.join(',') && (run(1)||run(-1));
-  const laid=finalRow.map(i=>SPADE_CARDS[i].lab+'\u2660').join(' ');
+  const laidSlots=finalRow.map(i=>({lab:SPADE_CARDS[i].lab,suit:'\u2660',red:false}));
   if(isRoyal && royalFlushed()){
     closeTerminal(); store.set('fenn_truth',1); if(finalCert) finalCert.visible=true;
     msg('A\u2660 K\u2660 Q\u2660 J\u2660 10\u2660 \u2014 a Royal Flush, and every card of it has been through the water. '+
@@ -3557,32 +3702,33 @@ function finalPlaced(){
     finalRow=[]; return;
   }
   const lines=isRoyal
-    ? [laid,'','The right five. The stone still does not move.','','They are too clean. Every one of them is too clean.']
-    : [laid,'','The stone does not stir. These five are not the hand it wants.'];
+    ? ['The right five. The stone still does not move.','','They are too clean. Every one of them is too clean.']
+    : ['The stone does not stir. These five are not the hand it wants.'];
   finalRow=[];
-  openTerminal({title:'THE CRIMSON PLINTH',lines:lines,
+  openTerminal({title:'THE CRIMSON PLINTH',lines:lines,slots:laidSlots,
     buttons:[{t:'> gather them up and think again',fn:()=>openFinalPlinth()}], closeLabel:'> step back'});
 }
 let pedRow=[];
 function openPedestal(){
   const held=[]; for(let i=1;i<=5;i++) if(store.get('fenn_hc'+i,0)) held.push(i);
-  const row=[0,1,2,3,4].map(k=>pedRow[k]?(' '+cardName(pedRow[k])+' '):' \u2022\u2022 ').join('|');
+  const slots=[0,1,2,3,4].map(k=>pedRow[k]?HAND_CARDS[pedRow[k]-1]:null);
   const avail=held.filter(i=>pedRow.indexOf(i)<0);
   const btns=avail.map(i=>({t:'> lay the '+cardName(i),fn:()=>{ pedRow.push(i); pedestalPlaced(); }}));
   if(pedRow.length) btns.push({t:'> gather them up again',fn:()=>{ pedRow=[]; openPedestal(); }});
   openTerminal({title:'THE PEDESTAL',
-    lines:['Five shallow recesses, worn smooth by long use.','','|'+row+'|'],
-    buttons:btns, closeLabel:'> step back'});
+    lines:['Five shallow recesses, worn smooth by long use.'],
+    slots:slots, buttons:btns, closeLabel:'> step back'});
 }
 function pedestalPlaced(){
   if(pedRow.length<5){ openPedestal(); return; }
   const r=pedRow.map(i=>HAND_CARDS[i-1].r);
   const run=d=>r.every((v,k)=>k===0||v===r[k-1]+d);
   if(run(1)||run(-1)){ closeTerminal(); clearExit(2); return; }   // a straight, either way along
-  const row=pedRow.map(i=>cardName(i)).join(' ');
+  const shown=pedRow.map(i=>HAND_CARDS[i-1]);
   pedRow=[];
   openTerminal({title:'THE PEDESTAL',
-    lines:[row,'','The stone does not stir. Whatever these five are meant to say,','they do not say it in that arrangement.'],
+    lines:['The stone does not stir. Whatever these five are meant to say,','they do not say it in that arrangement.'],
+    slots:shown,
     buttons:[{t:'> gather them up and think again',fn:()=>openPedestal()}], closeLabel:'> step back'});
 }
 function exitKeypad(n,code,title,hint){
@@ -3606,9 +3752,26 @@ function exitKeypad(n,code,title,hint){
   for(let i=0;i<8;i++){ const l=new THREE.PointLight(0xffe2b8,0.5,13);
     l.position.set(X(-35+i*10),4.2,Z(0)); scene.add(l); }
   // way back down
-  interactables.push({x:X(-39.5),z:Z(0),r:2.0,dead:false,label:'descend to the portico',
+  interactables.push({x:X(-39.5),z:Z(0),r:3.0,dead:false,prio:1,label:'go back down the stairs',
     fn:()=>fadeTeleport(LX+1.2,LZ+13.2,Math.PI)});
-  box(1.6,1.1,1.0,plankMatDk(),X(-39.8),0.55,Z(0));
+  box(1.6,1.1,1.0,plankMatDk(),X(-39.8),0.55,Z(0));            // the top step
+  (function(){                                                  // a door in the west wall
+    const dg=new THREE.Group(); dg.position.set(X(-40.85),0,Z(0));
+    dg.rotation.y=Math.PI/2; scene.add(dg);
+    box(1.9,3.1,0.14,lam(0x6a4326,{emissive:0x1a0f07}),0,1.55,0,dg);
+    [-1,1].forEach(sx=>box(0.68,2.7,0.06,lam(0x7d5330,{emissive:0x201306}),sx*0.44,1.6,0.09,dg));
+    box(2.2,0.2,0.26,M.stoneDk,0,3.22,0,dg);
+    [-1,1].forEach(sx=>box(0.22,3.2,0.26,M.stoneDk,sx*1.06,1.6,0,dg));
+    sph(0.08,M.gold,0.66,1.45,-0.12,dg,8,6);
+    const cv=document.createElement('canvas'); cv.width=128; cv.height=48;
+    const c=cv.getContext('2d');
+    c.fillStyle='#04220c'; c.fillRect(0,0,128,48);
+    c.fillStyle='#4ade70'; c.font='bold 22px Georgia'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('DOWN',64,25);
+    const sg=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.38),
+      new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));
+    sg.position.set(0,3.5,-0.1); sg.rotation.y=Math.PI; sg.castShadow=false; dg.add(sg);
+  })();
   // the seven dividers with EXIT signs and steel barriers
   for(let n=1;n<=7;n++){
     const dx=X(-40+n*10);
@@ -6459,9 +6622,21 @@ function tickBody(){
   if(cageG&&cageG.visible) cageG.position.y=lerpTo(cageG.position.y,cageG.userData.ty,dt,6);
   if(shutterMesh) shutterMesh.position.y=lerpTo(shutterMesh.position.y,shutterMesh.userData.ty,dt,3);
   for(const tb of topBarrierList) tb.mesh.position.y=lerpTo(tb.mesh.position.y,tb.mesh.userData.ty,dt,3);
+  if(looDoor) looDoor.rotation.y=lerpTo(looDoor.rotation.y,looDoorOpen?-1.35:0,dt,6);
+  if(flushSpin>0){                                   // the water turns the cards down the pan
+    flushSpin=Math.max(0,flushSpin-dt);
+    const k=Math.min(1,flushSpin/2.6), spin=dt*(5.5+10*(1-k));
+    if(bowlWater){ bowlWater.rotation.z+=spin; bowlWater.position.y=0.36-0.05*(1-k); }
+    if(bowlCards){ bowlCards.rotation.y+=spin;
+      const sc=Math.max(0.05,k*1.2);
+      bowlCards.scale.set(sc,sc,sc); bowlCards.position.y=0.38-0.16*(1-k); }
+  } else if(bowlCards && bowlCards.scale.x!==1){
+    bowlCards.scale.set(1,1,1); bowlCards.position.y=0.38; bowlCards.rotation.y=0;
+    if(bowlWater){ bowlWater.position.y=0.36; }
+  }
   for(let i=0;i<cardGlints.length;i++){ const g=cardGlints[i];
     g.position.y+= (Math.sin(t*2.2+i)*0.0016); g.visible=(Math.sin(t*3+i)>-0.55); }
-  if(secDoor) secDoor.position.x=lerpTo(secDoor.position.x,secDoor.userData.tx,dt,3);
+  if(secDoor) secDoor.position.y=lerpTo(secDoor.position.y,secDoor.userData.ty,dt,3);
   for(const id in switchKnobs){ const k=switchKnobs[id];
     k.position.x=lerpTo(k.position.x,k.userData.tx,dt,10); }
   if(panelState.cover) panelState.cover.position.y=lerpTo(panelState.cover.position.y,panelState.cover.userData.ty,dt,4);
@@ -6512,6 +6687,7 @@ function tickBody(){
   }
   if(started){ playMs+=dt*1000; playSaveAcc+=dt;
     if(playSaveAcc>10){ playSaveAcc=0; store.set('fenn_playms',Math.round(playMs)); } }
+  renderMirrors();
   renderer.render(scene,camera);
 }
 tick();
@@ -6523,5 +6699,7 @@ addEventListener('resize',()=>{
 });
 })();
 </script>
+<script data-goatcounter="https://s77ffy.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
