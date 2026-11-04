@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="app-repo" content="FennMuseum">
-<meta name="app-version" content="v3.21.1">
+<meta name="app-version" content="v3.21.2">
 <title>The Fenn Job — The Royal Museum</title>
 <style>
   :root{ --ink:#2b2e33; --parchment:#efe9dc; --royal:#a52f2c; --gold:#c2a35a; --slate:#8d9bb0; }
@@ -466,7 +466,7 @@
 (function(){
 'use strict';
 
-const VERSION=(document.querySelector('meta[name="app-version"]')||{}).content||'v3.21.1';
+const VERSION=(document.querySelector('meta[name="app-version"]')||{}).content||'v3.21.2';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -1008,17 +1008,90 @@ function makeLabelSprite(text,sub){
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
   sp.scale.set(14,4.4,1); return sp;
 }
-function makeTag(text,dark){
+// one uniform sign plate for every room, so the signage reads as a set.
+// a name too long for a single row is split across two and set a size smaller,
+// which keeps the plate itself exactly the same size either way.
+function tagCanvas(text,dark){
   const cv=document.createElement('canvas'); cv.width=512; cv.height=128;
   const cx=cv.getContext('2d');
-  cx.fillStyle=dark?'rgba(30,32,36,0.85)':'rgba(239,233,220,0.92)';
-  roundRect(cx,8,24,496,80,8); cx.fill();
-  cx.strokeStyle=dark?'#c2a35a':'#8a8171'; cx.lineWidth=3; roundRect(cx,8,24,496,80,8); cx.stroke();
-  cx.fillStyle=dark?'#efe9dc':'#2b2e33'; cx.font='44px Georgia'; cx.textAlign='center';
-  cx.fillText(text,256,78);
-  const tex=new THREE.CanvasTexture(cv);
+  cx.fillStyle=dark?'rgba(30,32,36,0.88)':'rgba(239,233,220,0.94)';
+  roundRect(cx,2,2,508,124,10); cx.fill();
+  cx.strokeStyle=dark?'#c2a35a':'#8a8171'; cx.lineWidth=3;
+  roundRect(cx,10,10,492,108,7); cx.stroke();
+  const FITW=446, WRAPW=348;      // hard inner width, and the width past which a name reads cramped
+  let lines=[text], fs=46;
+  cx.font=fs+'px Georgia';
+  if(cx.measureText(text).width>WRAPW){
+    let parts=null;
+    const dash=text.split(' \u2014 ');               // 'LIFT \u2014 TOP FLOOR' breaks at the dash, dash dropped
+    if(dash.length===2) parts=dash;
+    else{
+      const w=text.split(' ');
+      if(w.length>1){
+        let best=null;                                // otherwise break where the two rows come out most even
+        for(let i=1;i<w.length;i++){
+          const a=w.slice(0,i).join(' '),b=w.slice(i).join(' ');
+          const wa=cx.measureText(a).width,wb=cx.measureText(b).width;
+          let sc=Math.max(wa,wb)+Math.abs(wa-wb)*0.4;
+          if(/[\u2014\u2013-]$/.test(a)) sc+=1000;     // never leave a dangling dash at the line end
+          if(!best||sc<best.sc) best={sc:sc,l:[a,b]};
+        }
+        parts=best.l;
+      }
+    }
+    if(parts){ lines=parts; fs=36; }
+  }
+  while(fs>18 && lines.some(l=>{cx.font=fs+'px Georgia'; return cx.measureText(l).width>FITW;})) fs-=2;
+  cx.font=fs+'px Georgia';
+  cx.fillStyle=dark?'#efe9dc':'#2b2e33'; cx.textAlign='center'; cx.textBaseline='middle';
+  if(lines.length>1){ const lh=fs*1.14; cx.fillText(lines[0],256,64-lh/2); cx.fillText(lines[1],256,64+lh/2); }
+  else cx.fillText(lines[0],256,66);
+  return cv;
+}
+function makeTag(text,dark){
+  const tex=new THREE.CanvasTexture(tagCanvas(text,dark));
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));
   sp.scale.set(6,1.5,1); return sp;
+}
+// the gallery name sign: a real two-sided panel slung under the ceiling on a
+// pair of rods, with mount plates and eye bolts, rather than text floating in air.
+// panel top stays at 4.32 (ceiling underside is 4.60) so the drop is visible but
+// the bottom edge stays well clear of the player's eye line at 2.45.
+function makeRoomSign(text,cx,cz,abs){
+  const tex=new THREE.CanvasTexture(tagCanvas(text,false));
+  const W=5.4,H=1.35,CEIL=4.60,TOP=4.17,yc=TOP-H/2;   // bottom edge 2.82, a clear 0.43 drop above it
+  const g=new THREE.Group();
+  const brass=new THREE.MeshLambertMaterial({color:0x9c7f41,emissive:0x2b2109,emissiveIntensity:0.6});
+  const steel=new THREE.MeshLambertMaterial({color:0x3c4046,emissive:0x121315,emissiveIntensity:0.6});
+  // the board itself, with real thickness so its edges catch the light
+  const body=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.1),
+    new THREE.MeshLambertMaterial({color:0xcbc3b0,emissive:0x35322c,emissiveIntensity:0.55}));
+  body.position.y=yc; g.add(body);
+  // printed face on each side, so the lettering reads the right way round from both
+  const faceGeo=new THREE.PlaneGeometry(W,H);
+  [1,-1].forEach(sd=>{
+    const m=new THREE.Mesh(faceGeo,new THREE.MeshBasicMaterial({map:tex,transparent:true}));
+    m.position.set(0,yc,sd*0.056); if(sd<0) m.rotation.y=Math.PI; g.add(m);
+  });
+  [TOP,TOP-H].forEach(ry=>{                                 // brass rail along top and bottom
+    const r=new THREE.Mesh(new THREE.CylinderGeometry(0.042,0.042,W,8),brass);
+    r.rotation.z=Math.PI/2; r.position.set(0,ry,0); g.add(r);
+  });
+  [-1,1].forEach(sd=>{                                      // suspension rods up into the ceiling
+    const x=sd*2.35, drop=CEIL-TOP;                   // inset from the ends, clear of the ceiling light ring
+    const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,drop,6),steel);
+    rod.position.set(x,TOP+drop/2,0); g.add(rod);
+    const plate=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.05,10),brass);
+    plate.position.set(x,CEIL-0.025,0); g.add(plate);
+    const eye=new THREE.Mesh(new THREE.TorusGeometry(0.055,0.016,5,10),brass);
+    eye.rotation.y=Math.PI/2; eye.position.set(x,TOP+0.01,0); g.add(eye);
+  });
+  // turn the board to face the walls that actually have doorways in them
+  const ns=!!(abs&&(abs.has('N')||abs.has('S'))), ew=!!(abs&&(abs.has('E')||abs.has('W')));
+  if(ew&&!ns) g.rotation.y=Math.PI/2;
+  g.position.set(cx,0,cz);
+  g.traverse(o=>{ if(o.isMesh) o.castShadow=false; });
+  scene.add(g); return g;
 }
 // the crew's marked-up plan, drawn to a canvas texture (on the hall table)
 // wooden plank floor — canvas texture, tileable, clear board seams
@@ -2456,7 +2529,7 @@ function buildRoomGeom(f,c,r,room,abs){
   fix.castShadow=false;
   const fr=new THREE.Mesh(new THREE.TorusGeometry(1.9,0.06,6,16),M.gold);
   fr.rotation.x=Math.PI/2; fr.position.set(cx,4.5,cz); scene.add(fr);
-  const tag=makeTag(room.n,false); tag.position.set(cx,3.55,cz); scene.add(tag);
+  makeRoomSign(room.n,cx,cz,abs);              // one sign per room, slung from the ceiling
   const paper=paperForRoom(room.id,f.idx);
   ORD.forEach(side=>{
     const info=edgeInfo(f,c,r,side);
@@ -4684,7 +4757,6 @@ function buildEgyptRoom(cx,cz){
   box(0.2,0.18,0.4,black,0,2.05,0.28,an);              // snout
   sph(0.06,goldMat,0,2.2,0.42,an,6,6);
   addColliderBox(cx+2.4,cz-2.6,1,1,0.05);
-  { const et=makeTag('EGYPTIAN ARCHAEOLOGY',false); et.position.set(cx,3.3,cz); scene.add(et); }
   // wall pictures — Valley of the Kings + hieroglyphs (on inner faces of two walls)
   framedPicture(cx,2.6,cz-5.7,0,'valley',3.0,1.9);
   framedPicture(cx-5.7,2.6,cz+1.5,Math.PI/2,'hiero',2.4,1.7);
@@ -4708,7 +4780,6 @@ function buildEgyptRoom(cx,cz){
 // ---------- JURASSIC HALL ----------
 function buildJurassicRoom(cx,cz,abs){
   const p=new THREE.PointLight(0xeaf0ff,0.55,22); p.position.set(cx,4.2,cz); scene.add(p);
-  { const jt=makeTag('JURASSIC HALL',false); jt.position.set(cx,3.3,cz); scene.add(jt); }
   jurassicSlots.length=0;
   // mounted skeleton on a base, facing +x, spanning the room
   const base=box(7.5,0.3,2.2,lam(0x3c3a34),cx,0.15,cz-0.5); addColliderBox(cx,cz-0.5,7.7,2.4,0.1);
@@ -4910,7 +4981,6 @@ function buildPlanetariumRoom(cx,cz,abs){
   const sky=new THREE.Mesh(new THREE.PlaneGeometry(11.6,11.6),
     new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc)}));
   sky.rotation.x=Math.PI/2; sky.position.set(cx,4.52,cz); scene.add(sky);
-  { const et=makeTag('PLANETARIUM',false); et.position.set(cx,3.4,cz); scene.add(et); }
   // signs on the two solid walls (whichever aren't doors)
   const solid=['N','E','S','W'].filter(s=>!abs.has(s));
   const layout=[];
@@ -5096,7 +5166,6 @@ function updateBox3D(bs){ for(let i=0;i<9;i++){ bs.tiles[i].material=lam(MORA_HE
 function buildMoraRoom(cx,cz,abs,rg){
   if(!rg) return;
   const p=new THREE.PointLight(0xffe6c0,0.6,20); p.position.set(cx,4.0,cz); scene.add(p);
-  { const et=makeTag(rg.name.toUpperCase(),false); et.position.set(cx,3.4,cz); scene.add(et); }
   // realm placard on a door-less wall
   const solid=['N','E','S','W'].filter(s=>!(abs&&abs.has(s)));
   const side=solid.length?solid[0]:'N';
@@ -5125,7 +5194,6 @@ function buildMoraRoom(cx,cz,abs,rg){
 
 function buildBlackBridgeRoom(cx,cz,abs){
   const p=new THREE.PointLight(0x9fb0d0,0.4,20); p.position.set(cx,4.0,cz); scene.add(p);
-  { const et=makeTag('THE BLACK BRIDGE',false); et.position.set(cx,3.4,cz); scene.add(et); }
   // a model of the cursed black bridge (a dark arch over a plinth)
   const bg=new THREE.Group(); bg.position.set(cx,0,cz-2.5); scene.add(bg);
   box(4.5,0.4,1.4,lam(0x2a2a2e),0,0.2,0,bg);
@@ -5262,7 +5330,6 @@ function lathePot(shape,h,maxR,mat){
 }
 function buildPotteryRoom(cx,cz,abs){
   const p=new THREE.PointLight(0xffe0b0,0.6,20); p.position.set(cx,4,cz); scene.add(p);
-  { const et=makeTag('POTTERY STUDIO',false); et.position.set(cx,3.4,cz); scene.add(et); }
   // potter's wheel
   const wx=cx, wz=cz+1.4;
   cyl(0.45,0.6,1.0,12,M.darkWood,wx,0.5,wz);
@@ -5574,7 +5641,6 @@ function buildAlzaraRoom(cx,cz,abs){
   alzara.cx=cx; alzara.cz=cz-3.6; alzara.plugged=true; alzara.busy=false;
   const mx=alzara.cx, mz=alzara.cz;
   const p=new THREE.PointLight(0xbfa8ff,0.5,18); p.position.set(cx,3.8,cz); scene.add(p);
-  { const t=makeTag('ALZARA',false); t.position.set(cx,3.4,cz); scene.add(t); }
   const wood=lam(0x4a3524,{emissive:0x140e08}), woodDk=lam(0x33241a,{emissive:0x0c0805});
   // 20% smaller overall, with a much shorter base so the top clears the ceiling
   const CAB_H=1.28, CAB_Y=CAB_H/2;                 // squat lower cabinet
