@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="app-repo" content="FennMuseum">
-<meta name="app-version" content="v3.22.1">
+<meta name="app-version" content="v3.22.4">
 <title>The Fenn Job — The Royal Museum</title>
 <style>
   :root{ --ink:#2b2e33; --parchment:#efe9dc; --royal:#a52f2c; --gold:#c2a35a; --slate:#8d9bb0; }
@@ -154,6 +154,29 @@
     border:1px solid rgba(194,163,90,.8);color:#efe9dc;font-size:24px;font-family:Georgia,serif;}
   #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;}
   @media (pointer:coarse){ .desktop{display:none} }
+  /* phones and tablets: the location plate sits bottom-right, clear of the stick, under the ◈
+     button; the action prompt sits above both thumbs' controls */
+  @media (pointer:coarse){
+    #zonePlate{left:auto;right:14px;transform:none;max-width:calc(100vw - 168px);padding:5px 12px 6px;}
+    #zoneName{font-size:13px;letter-spacing:.1em;} #zoneSub{font-size:9px;letter-spacing:.14em;}
+    #prompt{bottom:188px;max-width:calc(100vw - 32px);text-align:center;}
+  }
+  /* a notice that needs the top-centre takes it: the controls hint and intel step aside on narrow
+     screens while it's up, and a toast queues beneath the countdown */
+  @media (max-width:760px){
+    body.toasting #hint, body.toasting #intelPlate, body.timing #hint, body.timing #intelPlate{opacity:0 !important;transition:opacity .2s;}
+    #msgToast{max-width:calc(100vw - 32px);}
+  }
+  body.timing #msgToast{top:132px;}
+  /* tall phone screens: notices sit in the open middle of the view, above the thumb controls,
+     clear of the inventory column on the left and the goggles button on the right */
+  @media (pointer:coarse) and (orientation:portrait){
+    #msgToast, body.timing #msgToast{top:auto;bottom:236px;max-width:calc(100vw - 32px);}
+  }
+  /* short landscape screens: inventory runs across rather than down into the stick */
+  @media (max-height:500px){
+    body #invHud{flex-direction:row;flex-wrap:wrap;max-width:46vw;}
+  }
   @media (pointer:fine){ .touch{display:none} }
   #moraStage{display:flex;justify-content:center;margin-top:14px;}
   #cardBody{margin-top:14px;padding:18px 16px;border:1px solid #c3b491;border-radius:3px;
@@ -164,7 +187,7 @@
   #cardSheet.prophecy #cardBody{background:linear-gradient(180deg,#1b1b2c,#101020);
     border-color:#6a5aa0;box-shadow:inset 0 0 34px rgba(120,100,220,.28),0 0 26px rgba(90,70,180,.2);}
   #cardSheet.prophecy #cardBody .pline{color:#dcd6f4;text-shadow:0 0 12px rgba(150,130,255,.4);}
-  #cine{position:fixed;inset:0;z-index:14;display:none;align-items:center;justify-content:center;
+  #cine{position:fixed;inset:0;z-index:14;display:none;align-items:center;justify-content:flex-start;padding-top:13vh;box-sizing:border-box;
     flex-direction:column;pointer-events:auto;cursor:pointer;background:transparent;}
   #cine::before{content:'';position:absolute;inset:0;pointer-events:none;
     background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 42%, rgba(0,0,0,.62) 100%);}
@@ -173,6 +196,7 @@
     text-shadow:0 3px 18px rgba(0,0,0,.85),0 0 42px rgba(220,190,140,.35);
     opacity:0;transform:translateY(14px);transition:opacity 1.6s ease,transform 1.6s ease;}
   #cineNight.show{opacity:1;transform:translateY(0);}
+  body.cine .hud{visibility:hidden;}
   #cineSkip{position:absolute;bottom:34px;font-family:Georgia,serif;font-size:10px;
     letter-spacing:.32em;text-transform:uppercase;color:rgba(240,232,216,.5);}
   #resBar{position:fixed;z-index:12;top:16px;right:110px;display:none;gap:9px;align-items:center;
@@ -467,7 +491,7 @@
 (function(){
 'use strict';
 
-const VERSION=(document.querySelector('meta[name="app-version"]')||{}).content||'v3.22.1';
+const VERSION=(document.querySelector('meta[name="app-version"]')||{}).content||'v3.22.4';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -907,20 +931,61 @@ const M={
   function apply(mat,map,rx,ry){ const t=map.clone(); t.needsUpdate=true;
     t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry);
     mat.map=t; mat.color.setHex(0xffffff); mat.needsUpdate=true; }
-  function ashlarTex(base,grout,groutW){ return tx(256,256,c=>{
-    // large rectangular blocks over the existing colour, dark-grey grout between
-    const rows=2, bh=256/rows, bw=128;
+  // Dressed stone: each block has a slightly dished face (lit upper-left, shaded lower-right),
+  // a chamfered arris that catches the light on top and falls into shadow underneath, tonal
+  // variation, grain, small chips and rain streaks, then recessed joints. All of it is painted
+  // into the colour map, so Lambert surfaces read as carved without any extra lighting cost.
+  function ashlarTex(base,grout,groutW,opt){ opt=opt||{}; const S=512; return tx(S,S,c=>{
+    const rows=2, bh=S/rows, bw=S/2, bev=opt.bevel||8;
+    const R=()=>Math.random();
+    const wrap=fn=>{ for(const ox of [-S,0,S]) for(const oy of [-S,0,S]) fn(ox,oy); };
     for(let r=0;r<rows;r++){ const off=(r%2)*bw/2;
-      for(let x=-1;x<3;x++){
-        c.fillStyle=jitter(base,14);
-        c.fillRect(x*bw+off, r*bh, bw, bh);
-        c.fillStyle='rgba(255,255,255,0.05)';
-        c.fillRect(x*bw+off, r*bh, bw, 3);
+      for(let x=-1;x<3;x++){ const X=x*bw+off, Y=r*bh;
+        c.fillStyle=jitter(base,opt.jit||22); c.fillRect(X,Y,bw,bh);
+        const g=c.createLinearGradient(X,Y,X+bw*0.55,Y+bh);              // dished face
+        g.addColorStop(0,'rgba(255,255,255,0.12)'); g.addColorStop(0.55,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.16)');
+        c.fillStyle=g; c.fillRect(X,Y,bw,bh);
+        c.fillStyle='rgba(255,255,255,0.26)'; c.fillRect(X,Y,bw,bev*0.7);          // lit top arris
+        c.fillStyle='rgba(255,255,255,0.12)'; c.fillRect(X,Y,bev*0.55,bh);         // lit left arris
+        c.fillStyle='rgba(0,0,0,0.34)';       c.fillRect(X,Y+bh-bev,bw,bev);       // shadowed underside
+        c.fillStyle='rgba(0,0,0,0.18)';       c.fillRect(X+bw-bev*0.8,Y,bev*0.8,bh); // shadowed right
       } }
-    c.strokeStyle=grout; c.lineWidth=groutW;
-    for(let r=0;r<=rows;r++){ c.beginPath(); c.moveTo(0,r*bh); c.lineTo(256,r*bh); c.stroke(); }
+    for(let i=0;i<34;i++){ const x=R()*S, y=R()*S, rr=18+R()*60, lite=R()<0.5;   // mottling
+      wrap((ox,oy)=>{ const g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rr);
+        g.addColorStop(0,lite?'rgba(255,252,240,0.10)':'rgba(60,58,52,0.10)'); g.addColorStop(1,'rgba(0,0,0,0)');
+        c.fillStyle=g; c.fillRect(x+ox-rr,y+oy-rr,rr*2,rr*2); }); }
+    for(let i=0;i<5200;i++){ const lite=R()<0.45;                                  // grain
+      c.fillStyle=lite?'rgba(255,255,255,'+(0.05+R()*0.10).toFixed(3)+')':'rgba(0,0,0,'+(0.05+R()*0.12).toFixed(3)+')';
+      const z=R()<0.9?1.5:2.5; c.fillRect(R()*S,R()*S,z,z); }
+    if(opt.veins){ c.lineWidth=1.2;                                              // faint marble veining
+      for(let i=0;i<9;i++){ let x=R()*S, y=R()*S; c.strokeStyle='rgba(110,112,120,'+(0.10+R()*0.12).toFixed(3)+')';
+        c.beginPath(); c.moveTo(x,y); for(let k=0;k<7;k++){ x+=(R()-0.3)*60; y+=(R()-0.5)*40; c.lineTo(x,y); } c.stroke(); } }
+    for(let r=0;r<rows;r++){ const off=(r%2)*bw/2;                                // rain streaks from the joints
+      for(let x=-1;x<3;x++){ const n=1+Math.floor(R()*4);
+        for(let k=0;k<n;k++){ const sx=x*bw+off+8+R()*(bw-16), sy=r*bh+bev, len=30+R()*(bh*0.7);
+          const g=c.createLinearGradient(0,sy,0,sy+len); g.addColorStop(0,'rgba(30,30,34,0.12)'); g.addColorStop(1,'rgba(30,30,34,0)');
+          c.fillStyle=g; c.fillRect(((sx%S)+S)%S,sy,1.5+R()*2.5,len); } } }
+    for(let i=0;i<26;i++){ const r=Math.floor(R()*rows), off=(r%2)*bw/2;            // chipped arrises
+      const x=((Math.floor(R()*3)-1)*bw+off+R()*bw+S)%S, y=r*bh+(R()<0.5?bev*0.5:bh-bev*1.5);
+      c.fillStyle='rgba(0,0,0,0.28)'; c.beginPath(); c.ellipse(x,y,2+R()*5,1.5+R()*3,R()*3,0,6.28); c.fill(); }
+    c.strokeStyle=grout; c.lineWidth=groutW;                                        // recessed joints
+    for(let r=0;r<=rows;r++){ c.beginPath(); c.moveTo(0,r*bh); c.lineTo(S,r*bh); c.stroke(); }
     for(let r=0;r<rows;r++){ const off=(r%2)*bw/2;
-      for(let x=0;x<3;x++){ c.beginPath(); c.moveTo(x*bw+off,r*bh); c.lineTo(x*bw+off,r*bh+bh); c.stroke(); } } }); }
+      for(let x=0;x<3;x++){ c.beginPath(); c.moveTo(x*bw+off,r*bh); c.lineTo(x*bw+off,r*bh+bh); c.stroke(); } }
+  }); }
+  // Fine-grained stone with no joints, for mouldings, cornices, sills and steps.
+  function grainTex(base){ const S=256; return tx(S,S,c=>{
+    const R=()=>Math.random();
+    c.fillStyle='#'+base.toString(16).padStart(6,'0'); c.fillRect(0,0,S,S);
+    for(let i=0;i<24;i++){ const x=R()*S,y=R()*S,rr=14+R()*40,lite=R()<0.5;
+      for(const ox of [-S,0,S]) for(const oy of [-S,0,S]){ const g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rr);
+        g.addColorStop(0,lite?'rgba(255,252,240,0.12)':'rgba(50,48,44,0.11)'); g.addColorStop(1,'rgba(0,0,0,0)');
+        c.fillStyle=g; c.fillRect(x+ox-rr,y+oy-rr,rr*2,rr*2); } }
+    for(let y=0;y<S;y+=3+Math.floor(R()*6)){ c.fillStyle='rgba(0,0,0,'+(0.02+R()*0.04).toFixed(3)+')'; c.fillRect(0,y,S,1); } // bedding
+    for(let i=0;i<2600;i++){ const lite=R()<0.45;
+      c.fillStyle=lite?'rgba(255,255,255,'+(0.05+R()*0.10).toFixed(3)+')':'rgba(0,0,0,'+(0.05+R()*0.12).toFixed(3)+')';
+      c.fillRect(R()*S,R()*S,1.5,1.5); }
+  }); }
   function grassTex(){ return tx(256,256,c=>{
     c.fillStyle='#9db38e'; c.fillRect(0,0,256,256);
     for(let i=0;i<26;i++){                                            // tonal patches
@@ -936,9 +1001,14 @@ const M={
   // Ashlar is mapped in metres (see worldUV): the tile holds 2 x 2 blocks, so a 2.6 x 1.3 m tile
   // gives blocks 1.3 m long and 0.65 m high on every face — long courses running left to right,
   // whether the face is a narrow gate pillar or the whole front of the museum.
-  apply(M.stone, ashlarTex(0xcfc9bb,'rgba(70,72,76,0.8)',6),1,1);   M.stone.userData.tile=[2.6,1.3];
-  apply(M.stoneDk,ashlarTex(0xb2ab9a,'rgba(66,68,72,0.85)',6),1,1); M.stoneDk.userData.tile=[2.6,1.3];
-  apply(M.marble, ashlarTex(0xece8df,'rgba(120,122,128,0.55)',5),1,1); M.marble.userData.tile=[3.0,1.5];
+  apply(M.stone, ashlarTex(0xcfc9bb,'rgba(52,54,58,0.85)',9),1,1);   M.stone.userData.tile=[2.6,1.3];
+  apply(M.stoneDk,ashlarTex(0xb2ab9a,'rgba(48,50,54,0.9)',9),1,1);   M.stoneDk.userData.tile=[2.6,1.3];
+  apply(M.marble, ashlarTex(0xece8df,'rgba(78,80,88,0.75)',7,{veins:true,jit:16}),1,1); M.marble.userData.tile=[3.0,1.5];
+  apply(M.marbleSh,grainTex(0xd8d3c7),1,1); M.marbleSh.userData.tile=2.0;
+  apply(M.slate,grainTex(0x93a1b4),1,1); M.slate.userData.tile=2.0;
+  // rusticated base course: big chamfered blocks in a darker stone
+  M.plinth=new THREE.MeshLambertMaterial(); apply(M.plinth,ashlarTex(0xb9b2a3,'rgba(30,32,36,0.95)',14,{bevel:22,jit:26}),1,1);
+  M.plinth.userData.tile=[2.4,0.95];
   apply(M.grass,  grassTex(),85,85);
   M.grassPatchDk=new THREE.MeshLambertMaterial({map:grassTex()}); M.grassPatchDk.map.repeat.set(3,3);
   M.grassPatchDk.color.setHex(0x8aa37c);
@@ -1229,6 +1299,15 @@ function makeGravelTexture(base){
   for(let i=0;i<=5;i++){ const x=i*20; wx.beginPath(); wx.moveTo(x,0); wx.lineTo(x,180); wx.stroke(); }
   for(let j=0;j<=9;j++){ const y=j*20; wx.beginPath(); wx.moveTo(0,y); wx.lineTo(100,y); wx.stroke(); }
   wx.strokeStyle='#1c160c'; wx.lineWidth=5; wx.strokeRect(0,0,100,180);
+  // depth: the head and jambs of the opening throw a soft shadow onto the glazing
+  { const t=wx.createLinearGradient(0,0,0,40); t.addColorStop(0,'rgba(40,24,8,0.55)'); t.addColorStop(1,'rgba(40,24,8,0)');
+    wx.fillStyle=t; wx.fillRect(0,0,100,40);
+    const l=wx.createLinearGradient(0,0,16,0); l.addColorStop(0,'rgba(40,24,8,0.4)'); l.addColorStop(1,'rgba(40,24,8,0)');
+    wx.fillStyle=l; wx.fillRect(0,0,16,180);
+    const r=wx.createLinearGradient(100,0,86,0); r.addColorStop(0,'rgba(40,24,8,0.3)'); r.addColorStop(1,'rgba(40,24,8,0)');
+    wx.fillStyle=r; wx.fillRect(84,0,16,180);
+    wx.fillStyle='rgba(120,60,30,0.16)'; wx.fillRect(4,4,10,172); wx.fillRect(86,4,10,172);   // drawn curtains
+  }
   const wtex=new THREE.CanvasTexture(wc);
   M.window.map=wtex; M.window.color.setHex(0xffffff); M.window.emissive.setHex(0x6a4e1e); M.window.needsUpdate=true;
 })();
@@ -1518,6 +1597,122 @@ for(let i=0;i<40;i++){
 // EAST EXTENSION — curved white museum, walk-in Grand Entrance Hall
 // =====================================================================
 const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
+// Collects many small boxes into one mesh per material (one draw call, not hundreds).
+function GeoMerge(){
+  const P=[],N=[],U=[];
+  return {
+    box(w,h,d,matrix,tile){
+      const g=new THREE.BoxGeometry(w,h,d);
+      if(tile) worldUV(g,[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]],tile);
+      const n=g.toNonIndexed(); n.applyMatrix4(matrix);
+      const pa=n.attributes.position.array, na=n.attributes.normal.array, ua=n.attributes.uv.array;
+      for(let i=0;i<pa.length;i++){ P.push(pa[i]); N.push(na[i]); }
+      for(let i=0;i<ua.length;i++) U.push(ua[i]);
+    },
+    quad(w,h,matrix){
+      const g=new THREE.PlaneGeometry(w,h).toNonIndexed(); g.applyMatrix4(matrix);
+      const pa=g.attributes.position.array, na=g.attributes.normal.array, ua=g.attributes.uv.array;
+      for(let i=0;i<pa.length;i++){ P.push(pa[i]); N.push(na[i]); }
+      for(let i=0;i<ua.length;i++) U.push(ua[i]);
+    },
+    mesh(mat,parent,shadows){
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
+      g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));
+      g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));
+      const m=new THREE.Mesh(g,mat); m.castShadow=!!shadows; m.receiveShadow=true;
+      (parent||scene).add(m); return m;
+    }
+  };
+}
+// Architectural relief round the outside of the east extension: a rusticated base, string
+// courses, a frieze, dressed window surrounds, pilaster bases and capitals, and floodlight
+// washes. The walls stop looking like a smooth extrusion and start throwing real shadows.
+const FLOOD_TEX=(function(){
+  const cv=document.createElement('canvas'); cv.width=128; cv.height=256; const c=cv.getContext('2d');
+  // an uplight: a soft broad pool at the foot, fanning out and fading up the wall
+  for(let y=0;y<256;y++){ const k=1-y/256, half=30+(1-k)*34;
+    const a=Math.pow(k,1.25)*0.62;
+    const g=c.createLinearGradient(64-half,0,64+half,0);
+    g.addColorStop(0,'rgba(255,214,160,0)'); g.addColorStop(0.3,'rgba(255,214,160,'+(a*0.45).toFixed(3)+')');
+    g.addColorStop(0.5,'rgba(255,214,160,'+a.toFixed(3)+')');
+    g.addColorStop(0.7,'rgba(255,214,160,'+(a*0.45).toFixed(3)+')'); g.addColorStop(1,'rgba(255,214,160,0)');
+    c.fillStyle=g; c.fillRect(0,255-y,128,1); }
+  // soften the very foot so it doesn't end on a hard line
+  const f=c.createLinearGradient(0,256,0,232); f.addColorStop(0,'rgba(0,0,0,1)'); f.addColorStop(1,'rgba(0,0,0,0)');
+  c.globalCompositeOperation='destination-out'; c.fillStyle=f; c.fillRect(0,232,128,24); c.globalCompositeOperation='source-over';
+  return new THREE.CanvasTexture(cv);
+})();
+// outward normal of the wall at shape point i (museum-local x/z), from its neighbours
+function wallNormal(pts,i){
+  const a=pts[(i-1+pts.length)%pts.length], b=pts[(i+1)%pts.length];
+  const tx=b.x-a.x, tz=-(b.y-a.y), l=Math.hypot(tx,tz)||1;
+  const n=new THREE.Vector3(-tz/l,0,tx/l);
+  if(n.x*pts[i].x+n.z*(-pts[i].y)<0) n.multiplyScalar(-1);
+  return n;
+}
+function pilasterClash(pts,i,isInterior){
+  for(let j=1;j<pts.length;j+=2){ const q=pts[j]; if(isInterior(q)) continue;
+    if(Math.hypot(q.x-pts[i].x,q.y-pts[i].y)<1.3) return true; }
+  return false;
+}
+function dressFacade(pts,isInterior,parent){
+  const stoneM=GeoMerge(), plinthM=GeoMerge(), shadowM=GeoMerge(), washM=GeoMerge();
+  const up=new THREE.Vector3(0,1,0), T=new THREE.Matrix4(), L=new THREE.Matrix4();
+  // a frame at a point on the wall: x along the wall, y up, z out of the wall
+  const frameAt=(x,y,z,out)=>{ const o=out.clone().normalize(), t=new THREE.Vector3().crossVectors(up,o).normalize();
+    return new THREE.Matrix4().makeBasis(t,up,o).setPosition(x,y,z); };
+  const piece=(merge,F,w,h,d,lx,ly,lz,tile)=>{ L.makeTranslation(lx,ly,lz); T.multiplyMatrices(F,L); merge.box(w,h,d,T,tile); };
+  // 1. continuous courses along every exterior wall segment
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1]; if(isInterior(a)||isInterior(b)) continue;
+    const ax=a.x, az=-a.y, bx=b.x, bz=-b.y, len=Math.hypot(bx-ax,bz-az); if(len<0.05) continue;
+    const mx=(ax+bx)/2, mz=(az+bz)/2;
+    let nx=-(bz-az)/len, nz=(bx-ax)/len; if(nx*mx+nz*mz<0){ nx=-nx; nz=-nz; }        // outward
+    const F=frameAt(mx,0,mz,new THREE.Vector3(nx,0,nz)), Lg=len+0.12;
+    piece(plinthM,F,Lg,0.95,0.40,0,0.475,0,M.plinth.userData.tile);          // rusticated base, 0.2 m proud
+    piece(stoneM,F,Lg,0.12,0.50,0,1.01,0,2.0);                                 // its weathered top
+    piece(stoneM,F,Lg,0.22,0.26,0,2.38,0,2.0);                                 // sill course
+    piece(stoneM,F,Lg,0.46,0.16,0,8.48,0,2.0);                                 // frieze
+    piece(stoneM,F,Lg,0.10,0.30,0,8.77,0,2.0);                                 // bed mould under the cornice
+    piece(shadowM,F,Lg,0.10,0.02,0,8.66,0.088,null);                           // shadow line under the mould
+    // dentils under the cornice
+    const nd=Math.max(1,Math.floor(len/0.42));
+    for(let k=0;k<nd;k++){ const lx=-len/2+(k+0.5)*len/nd; piece(stoneM,F,0.18,0.2,0.36,lx,8.92,0,null); }
+  }
+  // 2. pilaster bases and capitals; floodlight washes at their feet
+  for(let i=0;i<pts.length;i+=2){
+    const p=pts[i]; if(isInterior(p)||pilasterClash(pts,i,isInterior)) continue;
+    const x=p.x, z=-p.y;
+    const F=frameAt(x,0,z,wallNormal(pts,i));
+    piece(stoneM,F,0.80,0.36,0.80,0,1.25,0,2.0);         // base
+    piece(stoneM,F,0.66,0.12,0.66,0,1.49,0,2.0);         // torus
+    piece(stoneM,F,0.72,0.16,0.72,0,8.10,0,2.0);         // necking
+    piece(stoneM,F,0.90,0.30,0.90,0,8.33,0,2.0);         // capital
+    L.makeTranslation(0,4.0,0.47); T.multiplyMatrices(F,L); washM.quad(3.6,6.2,T);
+  }
+  // 3. window surrounds: architrave, sill, hood moulding with a keystone, and a shadowed head
+  for(let i=1;i<pts.length;i+=2){
+    const p=pts[i]; if(isInterior(p)) continue;
+    const n=wallNormal(pts,i), x=p.x+n.x*0.10, z=-p.y+n.z*0.10, F=frameAt(x,4.8,z,n);   // glass face at z +0.125
+    piece(stoneM,F,0.20,4.95,0.26,-0.90,0,0.17,2.0);     // jambs
+    piece(stoneM,F,0.20,4.95,0.26, 0.90,0,0.17,2.0);
+    piece(stoneM,F,2.00,0.24,0.26,0,2.42,0.17,2.0);      // head
+    piece(stoneM,F,2.30,0.16,0.42,0,-2.47,0.25,2.0);     // sill
+    piece(stoneM,F,0.30,0.20,0.30,-0.75,-2.64,0.20,2.0); // sill brackets
+    piece(stoneM,F,0.30,0.20,0.30, 0.75,-2.64,0.20,2.0);
+    piece(stoneM,F,2.40,0.16,0.42,0,2.70,0.25,2.0);      // hood moulding
+    piece(stoneM,F,2.20,0.10,0.34,0,2.81,0.21,2.0);
+    piece(stoneM,F,0.36,0.56,0.30,0,2.36,0.23,2.0);      // keystone
+    piece(shadowM,F,1.58,0.22,0.02,0,2.21,0.14,null);    // the head's shadow on the glazing
+  }
+  stoneM.mesh(M.marbleSh,parent,true);
+  plinthM.mesh(M.plinth,parent,true);
+  shadowM.mesh(new THREE.MeshBasicMaterial({color:0x0c0d12,transparent:true,opacity:0.55,fog:true}),parent,false);
+  const wash=washM.mesh(new THREE.MeshBasicMaterial({map:FLOOD_TEX,transparent:true,depthWrite:false,
+    blending:THREE.AdditiveBlending,fog:true,toneMapped:false,opacity:0.55}),parent,false);
+  wash.renderOrder=2; wash.userData.floodWash=true;
+}
 (function buildEastExtension(){
   // (shape y maps to -z after rotateX, so the y-negative side is the SOUTH facade)
   const s=new THREE.Shape();
@@ -1546,17 +1741,22 @@ const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
                       (Math.abs(p.x)<3.6 && p.y>=-20 && p.y<-4);
   const centreW=new THREE.Vector3();
   for(let i=0;i<pts.length;i+=2){
-    const p=pts[i]; if(isInterior(p)) continue;
+    const p=pts[i]; if(isInterior(p)||pilasterClash(pts,i,isInterior)) continue;
+    const n=wallNormal(pts,i);                         // square to its own wall, not to the centre
     const pil=box(0.5,8.4,0.5,M.slate,p.x,4.6,-p.y,museum);
-    museum.getWorldPosition(centreW); centreW.y=pil.getWorldPosition(new THREE.Vector3()).y;
-    pil.lookAt(centreW);
+    pil.rotation.y=Math.atan2(n.x,n.z);
   }
   for(let i=1;i<pts.length;i+=2){
     const p=pts[i]; if(isInterior(p)) continue;
-    const win=box(1.6,4.6,0.25,M.window,p.x*1.012,4.8,-p.y*1.012,museum);
-    museum.getWorldPosition(centreW); centreW.y=win.getWorldPosition(new THREE.Vector3()).y;
-    win.lookAt(centreW); win.castShadow=false;
+    const n=wallNormal(pts,i);
+    const win=box(1.6,4.6,0.25,M.window,p.x+n.x*0.10,4.8,-p.y+n.z*0.10,museum);
+    win.rotation.y=Math.atan2(n.x,n.z); win.castShadow=false;
   }
+
+  // the extruded walls carry metre UVs: scale them to the marble's 3.0 x 1.5 m tile
+  { const uv=baseGeo.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3.0,uv.getY(i)/1.5); uv.needsUpdate=true; }
+  { const g=corn.geometry, uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/2.0,uv.getY(i)/2.0); uv.needsUpdate=true; }
+  dressFacade(pts,isInterior,museum);
 
   const drum=cyl(8.2,8.6,7.5,20,M.marble,0,10.1+3.75,-1,museum);
   for(let i=0;i<14;i++){
@@ -2324,6 +2524,51 @@ treeSpots.forEach(([x,z])=>tree(x,z,0.85+Math.random()*0.7));
   sph(0.7,M.stoneDk,55+sx*8,5,88);
   addColliderBox(55+sx*8,88,1.8,1.8);
 });
+// The location sign, fixed to the right-hand gate pillar where every night begins (and
+// framed by the opening flyover). Same voice as the on-screen location plate.
+const GATE_SIGN={x:63,y:2.55,z:88.9};
+const lampMetalSign=lam(0x22262c);
+(function(){
+  const cv=document.createElement('canvas'); cv.width=640; cv.height=480;
+  const c=cv.getContext('2d');
+  const spaced=(t,y,font,col,sp)=>{ c.font=font; c.fillStyle=col;
+    const w=[...t].reduce((a,ch)=>a+c.measureText(ch).width+sp,0)-sp; let x=320-w/2;
+    for(const ch of t){ c.fillText(ch,x,y); x+=c.measureText(ch).width+sp; } };
+  const g=c.createLinearGradient(0,0,0,480); g.addColorStop(0,'#24272d'); g.addColorStop(1,'#16181c');
+  c.fillStyle=g; c.fillRect(0,0,640,480);
+  c.strokeStyle='#c2a35a'; c.lineWidth=6; c.strokeRect(14,14,612,452);
+  c.strokeStyle='rgba(194,163,90,.55)'; c.lineWidth=2; c.strokeRect(28,28,584,424);
+  c.textBaseline='alphabetic';
+  spaced('ROYAL MUSEUM',104,'26px Georgia','#c2a35a',9);
+  c.font='italic 24px Georgia'; c.fillStyle='#b7ad97'; c.textAlign='center';
+  c.fillText('of the City of Fenn',320,142); c.textAlign='left';
+  c.fillStyle='#c2a35a'; c.fillRect(250,176,140,2);
+  c.beginPath(); c.moveTo(320,170); c.lineTo(327,177); c.lineTo(320,184); c.lineTo(313,177); c.closePath(); c.fill();
+  spaced('MUSEUM',262,'58px Georgia','#f1ebde',10);
+  spaced('GROUNDS',332,'58px Georgia','#f1ebde',10);
+  spaced('OPEN TO THE GENERAL PUBLIC',400,'21px Georgia','#c2a35a',5);
+  const tex=new THREE.CanvasTexture(cv); tex.anisotropy=4;
+  const grp=new THREE.Group(); grp.position.set(GATE_SIGN.x,GATE_SIGN.y,88.8); scene.add(grp);
+  box(1.36,1.06,0.07,lam(0x8a6a2c,{emissive:0x2a1e08}),0,0,0.035,grp);              // brass mount
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(1.24,0.93),
+    new THREE.MeshBasicMaterial({map:tex,toneMapped:false,fog:true,color:0xd8d2c6}));
+  face.position.z=0.075; grp.add(face);
+  // a little brass lantern on a bracket above it, so it reads as lit rather than glowing
+  box(0.05,0.05,0.40,lampMetalSign,0,0.84,0.20,grp);                                // bracket arm
+  box(0.05,0.12,0.05,lampMetalSign,0,0.78,0.40,grp);                                // drop
+  box(0.21,0.05,0.21,lampMetalSign,0,0.715,0.40,grp);                               // cap
+  box(0.14,0.17,0.14,new THREE.MeshBasicMaterial({color:0xffe2a8,fog:true}),0,0.61,0.40,grp);  // glass
+  box(0.17,0.035,0.17,lampMetalSign,0,0.51,0.40,grp);                               // base
+  const wash=new THREE.Mesh(new THREE.PlaneGeometry(1.55,1.7),new THREE.MeshBasicMaterial({map:signWashTex(),
+    transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:true}));
+  wash.position.set(0,0.18,0.012); grp.add(wash);
+})();
+function signWashTex(){
+  const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
+  const c=cv.getContext('2d'); const g=c.createRadialGradient(64,30,0,64,52,70);
+  g.addColorStop(0,'rgba(255,214,150,0.42)'); g.addColorStop(0.6,'rgba(255,196,120,0.10)'); g.addColorStop(1,'rgba(255,196,120,0)');
+  c.fillStyle=g; c.fillRect(0,0,128,128); return new THREE.CanvasTexture(cv);
+}
 
 // =====================================================================
 // STREET LAMPS — warm pools of light across the night grounds
@@ -6197,7 +6442,8 @@ function buildMary(x,z,yaw){
   return g;
 }
 
-const cine={active:false,t:0,mary:null,dur:9.6};
+const cine={active:false,t:0,mary:null,dur:12.6};
+let cineCurve=null;
 // keyframes: [time, x,y,z, yaw, pitch]
 let CINE_KEYS=[];
 function startCinematic(){
@@ -6205,20 +6451,27 @@ function startCinematic(){
   if(!cine.mary) cine.mary=buildMary(sx,sz,0);         // normally pre-built during the title screen
   cine.mary.position.set(sx,0.24,sz);                  // she stands exactly where you spawn
   cine.mary.visible=true;
-  // positions only: the camera itself is always aimed at her head (see updateCinematic),
-  // so she stays centred on a tall phone screen as well as a wide one
+  cine.mary.traverse(o=>{ if(o.material&&o.material.opacity!==undefined) o.material.opacity=1; });
+  // Positions only. The camera is aimed by updateCinematic: first at the sign on the gate
+  // pillar, then at Mary's head, and finally out through her eyes at the museum, so every
+  // subject stays centred on a tall phone screen as well as a wide one.
   CINE_KEYS=[
-    [0.00, sx-0.6, 1.85, sz-8.2],   // ahead of her, looking back at her face
-    [0.30, sx-0.3, 2.00, sz-6.0],   // drifting slowly forward
-    [0.58, sx+0.9, 4.40, sz-2.8],   // rising, arcing over
-    [0.80, sx+0.2, 5.70, sz+0.7],   // directly above her, looking down
-    [1.00, sx,     EYE,  sz]        // settled behind her eyes
+    [0.00, sx-0.6,  1.85, sz-8.2],                    // ahead of her, looking back at her face
+    [0.18, sx-0.3,  2.00, sz-6.0],                    // drifting closer
+    [0.32, sx+0.9,  4.40, sz-2.6],                    // rising, arcing over
+    [0.45, sx+0.6,  5.70, sz+0.8],                    // directly above her, looking down
+    [0.58, GATE_SIGN.x-3.0, 3.30, GATE_SIGN.z+4.6],   // swooping down towards the gate...
+    [0.69, GATE_SIGN.x-1.3, 2.62, GATE_SIGN.z+2.4],   // ...to read the sign on the pillar
+    [0.77, GATE_SIGN.x-1.1, 2.60, GATE_SIGN.z+2.15],  // hovering on it a moment
+    [0.90, sx+1.6,  2.85, sz+3.6],                    // round behind her shoulder
+    [1.00, sx,      EYE,  sz]                         // and into her eyes, looking at the museum
   ];
-  cine.active=true; cine.t=0; cine.startedAt=performance.now();
+  cineCurve=new THREE.CatmullRomCurve3(CINE_KEYS.map(k=>new THREE.Vector3(k[1],k[2],k[3])),false,'centripetal');
+  cine.active=true; cine.t=0; cine.startedAt=performance.now(); cine.titled=false;
+  document.body.classList.add('cine');                  // all HUD text stands aside for the opening
   const el=byId('cine'); el.style.display='flex';
   byId('cineNight').textContent='Night '+nightWord(night+1);   // first night reads "Night One"
-  byId('cineNight').classList.remove('show');
-  requestAnimationFrame(()=>byId('cineNight').classList.add('show'));
+  byId('cineNight').classList.remove('show');       // the title arrives once we're on Mary
 }
 function sstep(u){ return u*u*(3-2*u); }
 const _cineQ=new THREE.Quaternion(), _cineQ2=new THREE.Quaternion(), _cineE=new THREE.Euler();
@@ -6229,28 +6482,34 @@ function updateCinematic(dt){
   for(let i=0;i<CINE_KEYS.length-1;i++){
     if(u>=CINE_KEYS[i][0]&&u<=CINE_KEYS[i+1][0]){ a=CINE_KEYS[i]; b=CINE_KEYS[i+1]; break; }
   }
-  const span=(b[0]-a[0])||1, k=sstep(Math.max(0,Math.min(1,(u-a[0])/span)));
-  const lp=(i)=>a[i]+(b[i]-a[i])*k;
-  camera.position.set(lp(1),lp(2),lp(3));
-  // look at her head the whole way round; over the last stretch, ease from looking at her
-  // into looking where she looks, so the hand-over to the player is seamless
+  // one smooth spline through the keys (no stop at each one), eased in and out overall
+  const ue=sstep(u);
+  let ia=0; for(let i=0;i<CINE_KEYS.length-1;i++){ if(ue>=CINE_KEYS[i][0]) ia=i; }
+  const ka=CINE_KEYS[ia], kb=CINE_KEYS[Math.min(ia+1,CINE_KEYS.length-1)];
+  const loc=Math.max(0,Math.min(1,(ue-ka[0])/((kb[0]-ka[0])||1)));
+  camera.position.copy(cineCurve.getPoint((ia+loc)/(CINE_KEYS.length-1)));
+  // aim: her face; then, from overhead, tilt up and round to the sign on the pillar; then
+  // turn to look where she looks, so the hand-over to the player is seamless
   camera.up.set(0,1,0);
-  camera.lookAt(cine.mary.position.x,2.75,cine.mary.position.z);
-  const HAND=0.78;
-  if(u>HAND){
-    _cineQ.copy(camera.quaternion);
-    _cineE.set(-0.04,0,0,'YXZ'); _cineQ2.setFromEuler(_cineE);
-    camera.quaternion.copy(_cineQ).slerp(_cineQ2,sstep(Math.min(1,(u-HAND)/(1-HAND))));
+  camera.lookAt(GATE_SIGN.x,GATE_SIGN.y,GATE_SIGN.z); _cineQ2.copy(camera.quaternion);       // sign
+  camera.lookAt(cine.mary.position.x,2.75,cine.mary.position.z);                               // her head
+  const cl=(x)=>Math.max(0,Math.min(1,x));
+  if(ue>=0.45 && ue<0.80) camera.quaternion.slerp(_cineQ2,sstep(cl((ue-0.45)/0.16)));
+  else if(ue>=0.80){
+    camera.quaternion.copy(_cineQ2);
+    _cineE.set(-0.04,0,0,'YXZ'); _cineQ.setFromEuler(_cineE);
+    camera.quaternion.slerp(_cineQ,sstep(cl((ue-0.80)/0.14)));
   }
   if(skyMesh) skyMesh.position.copy(camera.position);
   // she fades from view as we arrive behind her eyes
-  if(u>0.88 && cine.mary){
-    const f=Math.max(0,Math.min(1,(u-0.88)/0.10));
+  if(ue>0.91 && cine.mary){
+    const f=Math.max(0,Math.min(1,(ue-0.91)/0.055));
     cine.mary.traverse(o=>{ if(o.material&&o.material.opacity!==undefined){
       o.material.transparent=true; o.material.opacity=1-f; } });
     if(f>=1) cine.mary.visible=false;
   }
-  if(u>0.72) byId('cineNight').classList.remove('show');
+  if(!cine.titled && ue>0.03){ cine.titled=true; byId('cineNight').classList.add('show'); }
+  if(ue>0.40) byId('cineNight').classList.remove('show');   // gone before the sign comes round
   if(cine.t>=cine.dur) endCinematic();
 }
 function endCinematic(){
@@ -6258,6 +6517,8 @@ function endCinematic(){
   cine.active=false;
   if(cine.mary){ cine.mary.visible=false; }
   byId('cine').style.display='none';
+  document.body.classList.remove('cine');
+  curZone='';                                         // the location plate fades up as play begins
   player.yaw=0; player.pitch=-0.04;
   lastPX=player.x; lastPZ=player.z;
   if(!isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
@@ -6282,9 +6543,10 @@ const fadeEl=byId('fade'), interactBtn=byId('interactBtn');
 let uiOpen=false, currentOverlay=null, currentInter=null, bpAutoT=null;
 let toastTimer=null;
 function msg(t){
-  toastEl.textContent=t; toastEl.style.display='block';
+  toastEl.textContent=t; toastEl.style.display='block'; document.body.classList.add('toasting');
   if(toastTimer) clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>{ toastEl.style.display='none'; },2800);
+  toastTimer=setTimeout(()=>{ toastEl.style.display='none'; document.body.classList.remove('toasting'); },
+    Math.max(2800,Math.min(6000,t.length*45)));        // long notices stay long enough to read
 }
 function openOverlay(el){
   uiOpen=true; currentOverlay=el; el.style.display='flex';
@@ -6939,12 +7201,12 @@ function tickBody(){
   // heist window timer
   if(heist.winUntil){
     const rem=heist.winUntil-now;
-    if(rem<=0){ if(!heist.stolen) rearm(); else heist.winUntil=0; timerHud.style.display='none'; }
+    if(rem<=0){ if(!heist.stolen) rearm(); else heist.winUntil=0; timerHud.style.display='none'; document.body.classList.remove('timing'); }
     else{
-      timerHud.style.display='block';
+      timerHud.style.display='block'; document.body.classList.add('timing');
       timerVal.textContent='0:'+String(Math.ceil(rem/1000)).padStart(2,'0');
     }
-  }else timerHud.style.display='none';
+  }else{ timerHud.style.display='none'; document.body.classList.remove('timing'); }
 
   // heist animations
   if(ropeG) ropeG.position.y=lerpTo(ropeG.position.y,ropeG.userData.ty,dt,4);
