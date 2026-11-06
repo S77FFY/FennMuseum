@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="app-repo" content="FennMuseum">
-<meta name="app-version" content="v3.21.2">
+<meta name="app-version" content="v3.22.1">
 <title>The Fenn Job — The Royal Museum</title>
 <style>
   :root{ --ink:#2b2e33; --parchment:#efe9dc; --royal:#a52f2c; --gold:#c2a35a; --slate:#8d9bb0; }
@@ -33,6 +33,12 @@
     background:rgba(21,24,28,.72);border:1px solid rgba(194,163,90,.7);pointer-events:auto;
     font-family:Georgia,serif;line-height:1;}
   #cogBtn:hover{background:rgba(40,44,52,.85);}
+  #mapBtn{position:fixed;z-index:13;top:12px;right:62px;width:40px;height:40px;border-radius:50%;
+    display:none;align-items:center;justify-content:center;cursor:pointer;
+    background:rgba(21,24,28,.72);border:1px solid rgba(194,163,90,.7);pointer-events:auto;}
+  #mapBtn:hover{background:rgba(40,44,52,.85);}
+  #mapBtn svg{width:21px;height:21px;display:block;}
+  body[data-ov="bpOverlay"] #mapBtn, body[data-ov="settingsOverlay"] #cogBtn{z-index:31;}
   #prompt{ bottom:76px;left:50%;transform:translateX(-50%);display:none;
     background:rgba(21,24,28,.78);color:#efe9dc;border:1px solid #c2a35a;border-radius:2px;
     padding:6px 16px;font-size:13px;letter-spacing:.06em;}
@@ -129,7 +135,15 @@
   .dirRow .tog.on{background:#2a2e35;color:#e8dfc9;}
   .dirRow .tog.off{background:transparent;color:#8a8171;}
   .dirRow.special .rn{color:#8a2320;}
-  #bpCanvas{display:block;width:100%;background:#0d2c4d;border:1px solid #b8ab8d;}
+  #bpCanvas{display:block;width:auto;height:auto;max-width:100%;max-height:calc(88vh - 170px);margin:0 auto;
+    background:#0d2c4d;border:1px solid #b8ab8d;}
+  #bpOverlay .sheet{position:relative;}
+  #bpOverlay .bpDrain{position:absolute;left:0;top:0;height:3px;width:100%;background:#c2a35a;transform-origin:left;
+    transform:scaleX(0);pointer-events:none;}
+  #bpOverlay.auto .bpDrain{animation:bpDrain 2.2s linear forwards;}
+  @keyframes bpDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+  #bpOverlay.auto .bpTapHint{display:block;}
+  .bpTapHint{display:none;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#7a715d;margin:-6px 0 8px;}
   #winCard{text-align:center;}
   #winCard h2{color:#8a2320;font-size:26px;}
   .stick{position:fixed;z-index:12;border-radius:50%;display:none;touch-action:none;}
@@ -161,7 +175,7 @@
   #cineNight.show{opacity:1;transform:translateY(0);}
   #cineSkip{position:absolute;bottom:34px;font-family:Georgia,serif;font-size:10px;
     letter-spacing:.32em;text-transform:uppercase;color:rgba(240,232,216,.5);}
-  #resBar{position:fixed;z-index:12;top:16px;right:62px;display:none;gap:9px;align-items:center;
+  #resBar{position:fixed;z-index:12;top:16px;right:110px;display:none;gap:9px;align-items:center;
     background:rgba(21,24,28,.66);border:1px solid rgba(194,163,90,.55);border-radius:3px;
     padding:5px 10px;font-family:Georgia,serif;backdrop-filter:blur(3px);}
   #resBar .r{display:flex;align-items:center;gap:4px;font-size:13px;color:#efe9dc;letter-spacing:.03em;}
@@ -279,7 +293,7 @@
 </div>
 
 <div class="hud" id="hint">
-  <span class="desktop"><b>W A S D</b> move &nbsp;·&nbsp; <b>mouse</b> look &nbsp;·&nbsp; <b>shift</b> run<br><b>E</b> interact &nbsp;·&nbsp; <b>B</b> blueprint &nbsp;·&nbsp; <b>H</b> heist intel</span>
+  <span class="desktop"><b>W A S D</b> move &nbsp;·&nbsp; <b>mouse</b> look &nbsp;·&nbsp; <b>shift</b> run<br><b>E</b> interact &nbsp;·&nbsp; <b>M</b> map &nbsp;·&nbsp; <b>H</b> heist intel</span>
   <span class="touch"><b>left stick</b> move &nbsp;·&nbsp; <b>drag right</b> look<br><b>◈</b> interact &nbsp;·&nbsp; tap the <b>location plate</b> for intel</span>
 </div>
 <div class="hud" id="intelPlate">
@@ -321,28 +335,14 @@
 
     <div class="go">Click / tap to enter the grounds</div>
     <div class="cardBtns">
-      <button class="btn" id="dirBtn">Room Directory</button>
       <a class="btn donate" id="donateBtn" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
     </div>
     <div id="verTag"></div>
   </div>
 </div>
 
-<div class="modal" id="dirOverlay"><div class="sheet">
-  <span class="close" id="dirClose">Close</span>
-  <h2>Room Directory</h2>
-  <div class="sub">curate which rooms can appear in the draft pool</div>
-  <div id="dirBar">
-    <button class="btn" id="dirAllIn">Add All In</button>
-    <button class="btn" id="dirAllOut">Remove All</button>
-    <button class="btn" id="dirOnlyNew">Only New</button>
-    <span id="dirCount"></span>
-  </div>
-  <div id="dirList"></div>
-</div></div>
 
 <div class="modal" id="draftOverlay"><div class="sheet">
-  <span class="close" id="draftClose">Step back</span>
   <h2>Draft a Room</h2>
   <div class="sub" id="draftSub">choose what lies beyond this door</div>
   <div class="cards" id="draftCards"></div>
@@ -380,20 +380,21 @@
 </div></div>
 
 <div class="modal" id="bpOverlay"><div class="sheet">
+  <div class="bpDrain"></div>
   <span class="close" id="bpClose">Close</span>
   <h2>The Blueprint</h2>
   <div class="sub" id="bpSub">east extension — drafted layout</div>
+  <div class="bpTapHint">closing in a moment &middot; tap the map to keep it open</div>
   <canvas id="bpCanvas" width="640" height="740"></canvas>
   <div style="margin-top:12px;text-align:right;">
-    <button class="btn" id="reorderBtn" style="display:none;margin-right:8px;">Reorder Pool</button>
     <button class="btn red" id="endNightBtn">End the Night</button>
   </div>
 </div></div>
 
 <div class="modal" id="winOverlay"><div class="sheet" id="winCard">
-  <h2>Crown Secured</h2>
+  <h2 id="winTitle">Crown Secured</h2>
   <div class="sub" id="winSub">night complete</div>
-  <p style="font-size:13px;line-height:1.7;">The red crown of Fenn is in the bag. The getaway car is waiting.</p>
+  <p id="winBody" style="font-size:13px;line-height:1.7;">The red crown of Fenn is in the bag. The getaway car is waiting.</p>
   <div style="margin-top:16px;"><button class="btn" id="nextNightBtn">Begin the Next Night</button></div>
 </div></div>
 
@@ -403,7 +404,6 @@
   <div class="sub">the night&rsquo;s tools</div>
   <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
     <button class="btn" id="setMap">Room Map</button>
-    <button class="btn" id="setDir">Room Directory</button>
     <button class="btn red" id="setEndNight">End the Night</button>
     <a class="btn donate" id="setDonate" href="https://buymeacoffee.com/benstiffi" target="_blank" rel="noopener">Donate ☕️</a>
   </div>
@@ -413,6 +413,7 @@
 <div class="stick" id="stickKnob"></div>
 <div id="interactBtn">◈</div>
 <div id="cogBtn">⚙</div>
+<div id="mapBtn" title="Map (M)" aria-label="Map"><svg viewBox="0 0 24 24" fill="none" stroke="#e8dfc9" stroke-width="1.6" stroke-linejoin="round"><path d="M3 6.2l5.6-2.2 6.8 2.4L21 4.2v13.6l-5.6 2.2-6.8-2.4L3 19.8z"/><path d="M8.6 4v13.6M15.4 6.4V20"/></svg></div>
 <div id="resBar"></div>
 <div id="stepsBox"><span id="stepsNum">40</span><span class="lbl">🐾</span></div>
 <div id="invHud"></div>
@@ -466,7 +467,7 @@
 (function(){
 'use strict';
 
-const VERSION=(document.querySelector('meta[name="app-version"]')||{}).content||'v3.21.2';
+const VERSION=(document.querySelector('meta[name="app-version"]')||{}).content||'v3.22.1';
 
 // ---------- persistence (localStorage on GitHub Pages; in-memory fallback) ----------
 const store={
@@ -478,7 +479,9 @@ const store={
 };
 let night=store.get('fenn_night',0);
 let crowns=store.get('fenn_crowns',0);
-const dirOff=new Set(store.get('fenn_dir_off',[]));
+// the Room Directory is gone: the draft pool is decided by progress alone. Any rooms a
+// player switched off in older builds come back in.
+const dirOff=new Set(); try{ localStorage.removeItem('fenn_dir_off'); }catch(e){}
 // permanent progress
 const unlocks=new Set(store.get('fenn_unlocks',[]));
 let playMs=store.get('fenn_playms',0);
@@ -502,12 +505,20 @@ const UNLOCK_SLOTS=[
 unlocks.add('floor0'); // ground floor is always available
 
 // ---------- resources (coins / ivory dice / keys / gems) ----------
-const res={
-  coins: store.get('fenn_coins',0),
-  dice:  store.get('fenn_dice',0),
-  keys:  store.get('fenn_keys',0),
-  gems:  store.get('fenn_gems',null)===null?100:store.get('fenn_gems',100)   // 100 to start while building
-};
+// Gems, coins, dice and keys are tonight's alone: every night starts with two gems in
+// your pocket and nothing else. Progress (items, cards, solved locks, unlocks) persists.
+const START_GEMS=2;
+const res={ coins:0, dice:0, keys:0, gems:START_GEMS };
+// every load of the grounds is a fresh run of the night; per-night once-only offers
+// (allowance, payroll, tea, experiment reward) are keyed to this run, not the night number
+const RUN=store.get('fenn_run',0)+1; store.set('fenn_run',RUN);
+// a spade that was dropped into a room but never picked up goes back into the deck,
+// so a missed card can turn up again on a later night instead of being lost for good
+for(let i=0;i<6;i++){ if(store.get('fenn_spOut'+i,0) && !store.get('fenn_sp'+i,0)) store.set('fenn_spOut'+i,0); }
+// older builds counted a crown the moment it was touched; carry those over as escapes
+// so a returning player keeps the floors they had already opened
+if(store.get('fenn_escapes',null)===null) store.set('fenn_escapes',store.get('fenn_crowns',0));
+function upperOpen(){ return store.get('fenn_escapes',0)>0; }
 function saveRes(){ store.set('fenn_coins',res.coins); store.set('fenn_dice',res.dice);
   store.set('fenn_keys',res.keys); store.set('fenn_gems',res.gems); }
 saveRes();
@@ -634,7 +645,7 @@ function renderSteps(){
 function spendStep(n){
   if(steps<=0) return;
   steps=Math.max(0,steps-(n||1)); renderSteps();
-  if(steps===0) msg('You are out of steps \u2014 the night is nearly spent. End it from the \u2699 menu.');
+  if(steps===0){ msg('Your last step. The night is over.'); setTimeout(()=>{ if(steps<=0) outOfSteps(); },1600); }
   else if(steps===8) msg('Only 8 steps remain.');
 }
 
@@ -646,11 +657,11 @@ function roomRarity(r){
   if(r.d>=3) return 'Standard';
   return 'Commonplace';
 }
-const RARITY_BASE={Rare:6,Unusual:4,Standard:2,Commonplace:0};
+const RARITY_BASE={Rare:3,Unusual:2,Standard:1,Commonplace:0};
 function roomCost(r){
-  let c=RARITY_BASE[roomRarity(r)]+r.d;
-  if(store.get('fenn_payNight',-1)===night && c>1) c-=1;   // curator's payroll: staff look the other way
-  return Math.max(1,c);
+  let c=RARITY_BASE[roomRarity(r)];
+  if(store.get('fenn_payNight',-1)===RUN && c>0) c-=1;   // curator's payroll: staff look the other way
+  return Math.max(0,c);
 }
 // the allowance itself is collected from the brown envelope on the entrance table
 
@@ -694,7 +705,13 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding;
+// Colours are shown exactly as authored (the model viewer works the same way). The sRGB
+// output used before brightened every colour: blacks came out grey, the deep red damask
+// came out pink and the red-brown bronze came out salmon.
+renderer.outputEncoding=THREE.LinearEncoding;
+// an overall exposure lifts the scene without greying blacks or washing out colour;
+// it eases between the night outside and the lamplit rooms (see applyIndoorLight)
+renderer.toneMapping=THREE.LinearToneMapping; renderer.toneMappingExposure=2.0;
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x080b16);
@@ -705,6 +722,25 @@ const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,1600);
 const hemi=new THREE.HemisphereLight(0x2b3757,0x0a0d16,0.42); scene.add(hemi);
 const amb=new THREE.AmbientLight(0x141a2c,0.35); scene.add(amb);
 const sun=new THREE.DirectionalLight(0xaebfe4,0.55);       // the moon
+const LIGHT_OUT={sun:0.55,fill:0.18,hemi:0.42,amb:0.35,sky:0x2b3757,gnd:0x0a0d16,ac:0x141a2c,exp:2.0};
+const LIGHT_IN ={sun:0.0, fill:0.0, hemi:0.34,amb:0.30,sky:0x6a5a48,gnd:0x1c1610,ac:0x2a241c,exp:1.55};
+let indoorMix=0;
+const _cA=new THREE.Color(), _cB=new THREE.Color();
+function applyIndoorLight(k){
+  const L=(a,b)=>a+(b-a)*k;
+  sun.intensity=L(LIGHT_OUT.sun,LIGHT_IN.sun);
+  if(typeof moonFill!=='undefined') moonFill.intensity=L(LIGHT_OUT.fill,LIGHT_IN.fill);
+  hemi.intensity=L(LIGHT_OUT.hemi,LIGHT_IN.hemi); amb.intensity=L(LIGHT_OUT.amb,LIGHT_IN.amb);
+  renderer.toneMappingExposure=L(LIGHT_OUT.exp,LIGHT_IN.exp);
+  hemi.color.copy(_cA.setHex(LIGHT_OUT.sky)).lerp(_cB.setHex(LIGHT_IN.sky),k);
+  hemi.groundColor.copy(_cA.setHex(LIGHT_OUT.gnd)).lerp(_cB.setHex(LIGHT_IN.gnd),k);
+  amb.color.copy(_cA.setHex(LIGHT_OUT.ac)).lerp(_cB.setHex(LIGHT_IN.ac),k);
+}
+function isIndoors(x,z){
+  if(Math.abs(x)>200||Math.abs(z)>200) return true;          // every interior pocket
+  return (x>42&&x<68&&z>5&&z<23.5) ||                       // the Grand Entrance Hall
+         (x>51.5&&x<58.5&&z>21&&z<38);                       // and its vestibule
+}
 sun.position.set(-140,180,70); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-190; sun.shadow.camera.right=190;
@@ -806,7 +842,7 @@ const M={
   glass:pho(COL.glass,{transparent:true,opacity:0.42,shininess:90,specular:0xffffff,side:THREE.DoubleSide}),
   leaf:lam(COL.leaf), leafDk:lam(COL.leafDk), trunk:lam(COL.trunk),
   water:pho(COL.water,{transparent:true,opacity:0.8,shininess:80,specular:0xffffff}),
-  mountain:lam(COL.mountain), statue:pho(COL.statue,{shininess:26,specular:0x63382a,emissive:0x2e150c}),
+  mountain:lam(COL.mountain), statue:pho(COL.statue,{shininess:26,specular:0x3a2018,emissive:0x1a0c07}),
   rock:lam(COL.rock), dark:lam(0x3a4048), window:lam(0x2a2415,{emissive:0xdca24a}),
   darkWood:lam(0x4a3626), metal:lam(0x6a7076), laser:new THREE.MeshBasicMaterial({color:0xff2a1a}),
   velvet:lam(0x8e1f1c), concrete:lam(0x4b4f54),
@@ -835,9 +871,13 @@ const M={
       } } }); }
   function paintTex(){ return tx(256,256,c=>{
     c.fillStyle='#e6e1d4'; c.fillRect(0,0,256,256);
-    for(let i=0;i<70;i++){                                           // roller mottle
-      c.fillStyle='rgba('+(Math.random()<0.5?'255,252,242':'150,140,120')+','+(0.03+Math.random()*0.05)+')';
-      c.beginPath(); c.arc(Math.random()*256,Math.random()*256,14+Math.random()*36,0,6.28); c.fill(); }
+    for(let i=0;i<90;i++){                                           // painterly plaster mottle
+      const x=Math.random()*256, y=Math.random()*256, r=14+Math.random()*40, lite=Math.random()<0.45;
+      for(const ox of [-256,0,256]) for(const oy of [-256,0,256]){   // wrapped: no seams
+        const g=c.createRadialGradient(x+ox,y+oy,r*0.2,x+ox,y+oy,r);
+        const col=lite?'255,250,238':'128,118,100', a=lite?(0.10+Math.random()*0.12):(0.08+Math.random()*0.12);
+        g.addColorStop(0,'rgba('+col+','+a.toFixed(3)+')'); g.addColorStop(1,'rgba('+col+',0)');
+        c.fillStyle=g; c.fillRect(x+ox-r,y+oy-r,r*2,r*2); } }
     c.globalAlpha=0.05; c.strokeStyle='#8a8272'; c.lineWidth=1;      // faint brush drag
     for(let x=0;x<256;x+=7){ c.beginPath(); c.moveTo(x,0);
       c.bezierCurveTo(x+3,80,x-3,170,x+2,256); c.stroke(); }
@@ -893,16 +933,18 @@ const M={
       c.beginPath(); c.moveTo(x,y); c.lineTo(x+(Math.random()*2-1)*2,y-h); c.stroke(); } }); }
   const bT=brickTex(0x9a5f48);
   M.brickWall=new THREE.MeshLambertMaterial({map:bT}); M.brickWall.map.repeat.set(2,2);
-  apply(M.stone, ashlarTex(0xcfc9bb,'rgba(70,72,76,0.8)',6),1,1.5);   // grey ashlar: statues, plinths, pillars
-  // horizontal coursing: blocks run left-to-right, joints stacked up the height
-  apply(M.stoneDk,ashlarTex(0xb2ab9a,'rgba(66,68,72,0.85)',6),1.4,1);   // grey ashlar, dark grout
-  apply(M.marble, ashlarTex(0xece8df,'rgba(120,122,128,0.55)',5),1.6,1); // the museum: pale ashlar
+  // Ashlar is mapped in metres (see worldUV): the tile holds 2 x 2 blocks, so a 2.6 x 1.3 m tile
+  // gives blocks 1.3 m long and 0.65 m high on every face — long courses running left to right,
+  // whether the face is a narrow gate pillar or the whole front of the museum.
+  apply(M.stone, ashlarTex(0xcfc9bb,'rgba(70,72,76,0.8)',6),1,1);   M.stone.userData.tile=[2.6,1.3];
+  apply(M.stoneDk,ashlarTex(0xb2ab9a,'rgba(66,68,72,0.85)',6),1,1); M.stoneDk.userData.tile=[2.6,1.3];
+  apply(M.marble, ashlarTex(0xece8df,'rgba(120,122,128,0.55)',5),1,1); M.marble.userData.tile=[3.0,1.5];
   apply(M.grass,  grassTex(),85,85);
   M.grassPatchDk=new THREE.MeshLambertMaterial({map:grassTex()}); M.grassPatchDk.map.repeat.set(3,3);
   M.grassPatchDk.color.setHex(0x8aa37c);
   M.grassPatchHi=new THREE.MeshLambertMaterial({map:grassTex()}); M.grassPatchHi.map.repeat.set(3,3);
   M.grassPatchHi.color.setHex(0xa8bc98);
-  apply(M.wallIn, paintTex(),2,1.4);
+  apply(M.wallIn, paintTex(),1,1); M.wallIn.userData.tile=3.2;    // plaster, 3.2 m a tile
   apply(M.trunk,  barkTex(),1,1);
   apply(M.leaf,   leafTex('#7e9a6d','#5c7a50','#9db487'),1.6,1.6);
   apply(M.leafDk, leafTex('#6a8a5c','#4c6a44','#88a276'),1.6,1.6);
@@ -933,13 +975,30 @@ const interactables=[];   // {x,z,r,label,fn,dead}
 const teleports=[];       // {x,z,r,tx,tz,yaw}
 
 // ---------- small builders ----------
+// world-scaled UVs: one texture tile spans T metres whatever the size of the face,
+// so wallpaper is never stretched and adjacent wall segments line up in scale
+function worldUV(geo,dims,T){
+  const uv=geo.attributes.uv, tu=T.length?T[0]:T, tv=T.length?T[1]:T;
+  for(let f=0;f<dims.length;f++){ const du=dims[f][0]/tu, dv=dims[f][1]/tv;
+    for(let k=0;k<4;k++){ const i=f*4+k; uv.setXY(i,uv.getX(i)*du,uv.getY(i)*dv); } }
+  uv.needsUpdate=true;
+}
 function box(w,h,d,mat,x,y,z,parent){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  const g=new THREE.BoxGeometry(w,h,d);
+  if(mat&&mat.userData&&mat.userData.tile) worldUV(g,[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]],mat.userData.tile);
+  const m=new THREE.Mesh(g,mat);
   m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
   (parent||scene).add(m); return m;
 }
 function cyl(rt,rb,h,seg,mat,x,y,z,parent){
-  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);
+  const g=new THREE.CylinderGeometry(rt,rb,h,seg);
+  if(mat&&mat.userData&&mat.userData.tile){             // wrap the side in metres, like box()
+    const T=mat.userData.tile, tu=T.length?T[0]:T, tv=T.length?T[1]:T;
+    const circ=Math.PI*(rt+rb), uv=g.attributes.uv, side=(seg+1)*2;
+    for(let i=0;i<side;i++) uv.setXY(i,uv.getX(i)*circ/tu,uv.getY(i)*h/tv);
+    uv.needsUpdate=true;
+  }
+  const m=new THREE.Mesh(g,mat);
   m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
   (parent||scene).add(m); return m;
 }
@@ -1050,7 +1109,7 @@ function tagCanvas(text,dark){
 }
 function makeTag(text,dark){
   const tex=new THREE.CanvasTexture(tagCanvas(text,dark));
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,toneMapped:false}));
   sp.scale.set(6,1.5,1); return sp;
 }
 // the gallery name sign: a real two-sided panel slung under the ceiling on a
@@ -1065,12 +1124,12 @@ function makeRoomSign(text,cx,cz,abs){
   const steel=new THREE.MeshLambertMaterial({color:0x3c4046,emissive:0x121315,emissiveIntensity:0.6});
   // the board itself, with real thickness so its edges catch the light
   const body=new THREE.Mesh(new THREE.BoxGeometry(W,H,0.1),
-    new THREE.MeshLambertMaterial({color:0xcbc3b0,emissive:0x35322c,emissiveIntensity:0.55}));
+    new THREE.MeshLambertMaterial({color:0x3a2c20,emissive:0x120c08,emissiveIntensity:0.6}));   // dark wood edge: end-on it reads as a thin line
   body.position.y=yc; g.add(body);
   // printed face on each side, so the lettering reads the right way round from both
   const faceGeo=new THREE.PlaneGeometry(W,H);
   [1,-1].forEach(sd=>{
-    const m=new THREE.Mesh(faceGeo,new THREE.MeshBasicMaterial({map:tex,transparent:true}));
+    const m=new THREE.Mesh(faceGeo,new THREE.MeshBasicMaterial({map:tex,transparent:true,toneMapped:false}));
     m.position.set(0,yc,sd*0.056); if(sd<0) m.rotation.y=Math.PI; g.add(m);
   });
   [TOP,TOP-H].forEach(ry=>{                                 // brass rail along top and bottom
@@ -1192,6 +1251,7 @@ function makeTileTexture(light,dark){
                          c.beginPath();c.moveTo(0,i*s);c.lineTo(256,i*s);c.stroke(); }
   const tex=new THREE.CanvasTexture(cv);
   tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(3,3);
+  tex.anisotropy=4;
   return tex;
 }
 let _tileMat=null;
@@ -1294,9 +1354,11 @@ function makeWallpaperTexture(bgHex,motifHex){
     sprig(x+STEP/2,y+STEP/2,SC,MO);
   }
   const tex=new THREE.CanvasTexture(cv);
-  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(1.6,1.6);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+  tex.anisotropy=4;
   return tex;
 }
+const WP_TILE=2.4;                            // one 512px repeat = 2.4 m of wall
 function mix(a,b,t){
   const ar=(a>>16)&255, ag=(a>>8)&255, ab=a&255;
   const br=(b>>16)&255, bg=(b>>8)&255, bb=b&255;
@@ -1319,7 +1381,8 @@ function wallpaperById(id){
     const tex=makeWallpaperTexture(w.bg,w.mo);
     // emissive is modulated by the texture itself, so black stays truly black
     _wpCache[id]=new THREE.MeshLambertMaterial({map:tex,
-      emissive:0xffffff,emissiveMap:tex,emissiveIntensity:0.34});
+      emissive:0xffffff,emissiveMap:tex,emissiveIntensity:0.30});
+    _wpCache[id].userData.tile=WP_TILE;
   }
   return _wpCache[id];
 }
@@ -1550,18 +1613,26 @@ const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
   function makeCloudyMarbleTex(){
     const cv=document.createElement('canvas'); cv.width=512; cv.height=512;
     const c=cv.getContext('2d');
-    c.fillStyle='#e8e7e0'; c.fillRect(0,0,512,512);
+    // matched to the reference floor (IMG_5189): warm pale grey ground, cool green-grey
+    // watercolour stains with soft but visible edges, and lighter washes between them
+    c.fillStyle='#d8d6cd'; c.fillRect(0,0,512,512);
     function blob(x,y,r,col,a){
-      const g=c.createRadialGradient(x,y,r*0.15,x,y,r);
-      g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A','0'));
-      c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill();
+      // drawn wrapped, so the stains run across the tile seams without a visible join
+      for(const ox of [-512,0,512]) for(const oy of [-512,0,512]){
+        const g=c.createRadialGradient(x+ox,y+oy,r*0.25,x+ox,y+oy,r);
+        g.addColorStop(0,col.replace('A',a)); g.addColorStop(0.7,col.replace('A',(a*0.55).toFixed(3))); g.addColorStop(1,col.replace('A','0'));
+        c.fillStyle=g; c.beginPath();
+        // a lumpy outline rather than a perfect circle, so it reads as a stain
+        for(let k=0;k<=18;k++){ const t=k/18*Math.PI*2, rr=r*(0.78+0.22*Math.sin(t*3+x)*Math.cos(t*2+y));
+          const px=x+ox+Math.cos(t)*rr, py=y+oy+Math.sin(t)*rr*0.8; k?c.lineTo(px,py):c.moveTo(px,py); }
+        c.fill(); }
     }
-    for(let i=0;i<26;i++)                                     // grey-green clouds
-      blob(Math.random()*512,Math.random()*512,60+Math.random()*130,'rgba(168,175,166,A)',(0.10+Math.random()*0.16).toFixed(2));
-    for(let i=0;i<14;i++)                                     // cooler grey drifts
-      blob(Math.random()*512,Math.random()*512,50+Math.random()*110,'rgba(148,156,164,A)',(0.08+Math.random()*0.12).toFixed(2));
-    for(let i=0;i<16;i++)                                     // bright breaks
-      blob(Math.random()*512,Math.random()*512,40+Math.random()*90,'rgba(250,250,246,A)',(0.14+Math.random()*0.18).toFixed(2));
+    for(let i=0;i<22;i++)                                     // cool green-grey stains
+      blob(Math.random()*512,Math.random()*512,50+Math.random()*120,'rgba(158,168,166,A)',(0.30+Math.random()*0.25).toFixed(2));
+    for(let i=0;i<12;i++)                                     // deeper blue-grey pools
+      blob(Math.random()*512,Math.random()*512,30+Math.random()*70,'rgba(132,142,150,A)',(0.22+Math.random()*0.2).toFixed(2));
+    for(let i=0;i<16;i++)                                     // pale washes between
+      blob(Math.random()*512,Math.random()*512,40+Math.random()*90,'rgba(236,234,226,A)',(0.30+Math.random()*0.25).toFixed(2));
     c.globalAlpha=0.045; c.strokeStyle='#6a716c'; c.lineWidth=1;   // faint diagonal grain
     for(let d=-512;d<512;d+=9){ c.beginPath(); c.moveTo(d,0); c.lineTo(d+512,512); c.stroke(); }
     c.globalAlpha=1;
@@ -1599,6 +1670,15 @@ const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
     }
     inset(256,150,120,240);
     c.fillStyle='rgba(90,70,50,0.14)'; c.fillRect(0,470,512,42);   // skirting shade
+    // the same painterly wash as the floor, laid over the existing wall colour
+    for(let i=0;i<26;i++){
+      const x=Math.random()*512, y=Math.random()*512, r=30+Math.random()*90, dark=Math.random()<0.6;
+      for(const ox of [-512,0,512]){
+        const g=c.createRadialGradient(x+ox,y,r*0.2,x+ox,y,r);
+        const col=dark?'110,92,72':'238,226,206', a=dark?(0.10+Math.random()*0.12):(0.10+Math.random()*0.14);
+        g.addColorStop(0,'rgba('+col+','+a.toFixed(3)+')'); g.addColorStop(1,'rgba('+col+',0)');
+        c.fillStyle=g; c.fillRect(x+ox-r,y-r,r*2,r*2); }
+    }
     const tex=new THREE.CanvasTexture(cv);
     tex.wrapS=tex.wrapT=THREE.RepeatWrapping; return tex;
   }
@@ -1616,32 +1696,62 @@ const museum=new THREE.Group(); museum.position.set(55,0,18); scene.add(museum);
   });
 
   // --- gold oval framed paintings, flanking the north door ---
-  function makeOvalPaintingTex(){
+  function makeOvalPaintingTex(seed){
+    // after the reference (IMG_3587): a muted landscape in an oval, in a heavy gilt frame
+    // with C-scroll flourishes above and below
     const cv=document.createElement('canvas'); cv.width=512; cv.height=384;
-    const c=cv.getContext('2d');
-    c.clearRect(0,0,512,384);
-    // scrollwork frame
-    c.fillStyle='#c8a23c';
-    c.beginPath(); c.ellipse(256,192,236,168,0,0,Math.PI*2); c.fill();
-    [[256,36],[256,348],[60,120],[452,120],[60,264],[452,264]].forEach(([x,y])=>{
-      c.beginPath(); c.arc(x,y,26,0,Math.PI*2); c.fill(); });
-    c.fillStyle='#e2c060';
-    c.beginPath(); c.ellipse(256,192,212,146,0,0,Math.PI*2); c.fill();
-    // faint pink landscape
-    c.fillStyle='#eed6c8';
-    c.beginPath(); c.ellipse(256,192,192,128,0,0,Math.PI*2); c.fill();
-    c.strokeStyle='#c9968a'; c.lineWidth=3; c.globalAlpha=0.75;
-    c.beginPath(); c.moveTo(90,220); c.quadraticCurveTo(190,140,300,200); c.quadraticCurveTo(380,240,420,190); c.stroke();
-    c.beginPath(); c.moveTo(120,250); c.quadraticCurveTo(250,210,400,255); c.stroke();
-    for(let i=0;i<7;i++){ const x=120+i*42;
-      c.beginPath(); c.moveTo(x,236); c.lineTo(x,208); c.stroke();
-      c.beginPath(); c.arc(x,200,10,0,Math.PI*2); c.stroke(); }
-    c.globalAlpha=1;
+    const c=cv.getContext('2d'); c.clearRect(0,0,512,384);
+    let r=(seed||1)*977; const rnd=()=>{ r=(r*16807)%2147483647; return r/2147483647; };
+    const GOLD='#b8902e', GOLD_HI='#e8c868', GOLD_DK='#7a5a18';
+    // scroll flourishes (drawn first, the oval frame sits over their roots)
+    function scroll(cx,cy,dir){
+      c.save(); c.translate(cx,cy); c.scale(1,dir);
+      c.lineCap='round';
+      [[GOLD_DK,15],[GOLD,10],[GOLD_HI,3]].forEach(([col,w])=>{
+        c.strokeStyle=col; c.lineWidth=w;
+        [-1,1].forEach(sd=>{ c.beginPath(); c.moveTo(0,0);
+          c.bezierCurveTo(sd*40,-30,sd*95,-6,sd*110,-34);
+          c.bezierCurveTo(sd*122,-56,sd*96,-66,sd*86,-50); c.stroke();
+          c.beginPath(); c.moveTo(sd*30,-8); c.bezierCurveTo(sd*55,-40,sd*20,-58,sd*8,-44); c.stroke(); });
+      });
+      c.fillStyle=GOLD; c.beginPath(); c.ellipse(0,-6,16,12,0,0,6.283); c.fill();
+      c.fillStyle=GOLD_HI; c.beginPath(); c.ellipse(-4,-9,6,4,0,0,6.283); c.fill();
+      c.restore();
+    }
+    scroll(256,40,1); scroll(256,344,-1);
+    // the oval frame: dark rim, gold, highlight, inner bead
+    const ring=(rx,ry,col)=>{ c.fillStyle=col; c.beginPath(); c.ellipse(256,192,rx,ry,0,0,6.283); c.fill(); };
+    ring(216,150,GOLD_DK); ring(210,144,GOLD); ring(200,135,GOLD_HI); ring(194,130,GOLD); ring(184,121,GOLD_DK);
+    // the landscape, clipped to the oval
+    c.save(); c.beginPath(); c.ellipse(256,192,180,117,0,0,6.283); c.clip();
+    const sky=c.createLinearGradient(0,75,0,230); sky.addColorStop(0,'#c9b6c4'); sky.addColorStop(0.6,'#e6d2cc'); sky.addColorStop(1,'#efe0d2');
+    c.fillStyle=sky; c.fillRect(0,0,512,384);
+    function ridge(base,amp,col,step){ c.fillStyle=col; c.beginPath(); c.moveTo(60,384);
+      for(let x=60;x<=460;x+=step) c.lineTo(x,base-amp*(0.35+0.65*Math.abs(Math.sin(x*0.021+rnd()*0.6))));
+      c.lineTo(460,384); c.fill(); }
+    ridge(205,70,'#9a8ea6',14);            // far mountains, mauve
+    ridge(235,40,'#7e7a8c',18);            // nearer range
+    ridge(262,22,'#8c8a76',22);            // hills
+    c.fillStyle='#6f7564'; c.fillRect(60,268,400,120);   // meadow
+    // a river winding to the foreground
+    c.fillStyle='#d9d4d6'; c.beginPath(); c.moveTo(250,262);
+    c.bezierCurveTo(300,282,200,300,260,330); c.lineTo(310,330); c.bezierCurveTo(250,300,345,284,272,262); c.fill();
+    // a cottage on the right bank
+    c.fillStyle='#d8c4b0'; c.fillRect(330,262,30,18); c.fillStyle='#6a4a44';
+    c.beginPath(); c.moveTo(326,263); c.lineTo(345,248); c.lineTo(364,263); c.fill();
+    // trees
+    for(let i=0;i<9;i++){ const x=95+rnd()*320, y=262+rnd()*40, h=18+rnd()*22;
+      c.fillStyle='#4a4f44'; c.fillRect(x-1.5,y,3,10);
+      c.fillStyle=i%2?'#535b4a':'#454c40'; c.beginPath(); c.ellipse(x,y-h*0.4,h*0.34,h*0.62,0,0,6.283); c.fill(); }
+    // faint varnish glow in the middle, darker at the edge
+    const v=c.createRadialGradient(256,192,40,256,192,190); v.addColorStop(0,'rgba(255,240,215,0.18)'); v.addColorStop(1,'rgba(40,30,20,0.35)');
+    c.fillStyle=v; c.fillRect(0,0,512,384);
+    c.restore();
     const t=new THREE.CanvasTexture(cv); return t;
   }
   [-1,1].forEach(sx=>{
     const pt=new THREE.Mesh(new THREE.PlaneGeometry(3.7,2.78),
-      new THREE.MeshLambertMaterial({map:makeOvalPaintingTex(),transparent:true,emissive:0x453422}));
+      new THREE.MeshLambertMaterial({map:makeOvalPaintingTex(sx>0?7:3),transparent:true,emissive:0x2a2016}));
     pt.position.set(sx*7.7,5.1,-11.28); pt.castShadow=false; pt.receiveShadow=true; museum.add(pt);
   });
 
@@ -2107,10 +2217,10 @@ function buildStatueFigure(host,S){
     cyl(0.30,0.36,0.30,8,M.stoneDk,lx,1.25,lz,g);                  // fitting
     const lens=cyl(0.22,0.22,0.06,8,new THREE.MeshBasicMaterial({color:0xffd9a8}),lx,1.42,lz,g);
     lens.castShadow=false;
-    const fl=new THREE.PointLight(0xffb070,0.85,26,2);
+    const fl=new THREE.PointLight(0xffe2c4,0.16,26,2);    // a gentle wash: the bronze keeps the red-brown of the viewer
     fl.position.set(PARK.x+lx,3.0,PARK.z+lz); scene.add(fl);
   }
-  const crownGlow=new THREE.PointLight(0xffc890,0.5,22,2);
+  const crownGlow=new THREE.PointLight(0xffe0bc,0.12,22,2);
   crownGlow.position.set(PARK.x,13.5,PARK.z); scene.add(crownGlow);
   fig.rotation.y=Math.PI*1.9;      // turned right around
 })();
@@ -2253,7 +2363,7 @@ function streetLamp(x,z,realLight){
   return g;
 }
 [[40,60],[70,60],[30,40],[16,10],[-6,-6],[-30,-30],[-40,10],[-66,30],
- [-40,-58],[24,-40],[46,-52],[58,-60],[6,-96],[-6,-120],[80,-40],[96,20],[96,-14]
+ [-40,-58],[24,-40],[46,-52],[66,-58],[6,-96],[-6,-120],[80,-40],[96,20],[96,-14]
 ].forEach(([x,z])=>streetLamp(x,z,false));
 // a few lamps with genuine cast light (entrance + main approach)
 streetLamp(47,60,true); streetLamp(63,60,true); streetLamp(24,50,true);
@@ -2412,7 +2522,9 @@ CUPOLA.forEach(id=>{ const r=roomById(id); if(r) r.fl=[2]; });
 // shared across floors
 ['brickedwing','sealedvault'].forEach(id=>{ const r=roomById(id); if(r) r.fl=[0,1,2]; });
 ['lift','grandstair'].forEach(id=>{ const r=roomById(id); if(r) r.fl=[0,1]; }); // no lift needed on top
-function poolFor(f){ return ROOMS.filter(r=>r.fl.indexOf(f.idx)>=0 && !dirOff.has(r.id) && !f.placed.has(r.id)); }
+const FLOOR_LINKS=new Set(['lift','grandstair']);
+function poolFor(f){ return ROOMS.filter(r=>r.fl.indexOf(f.idx)>=0 && !f.placed.has(r.id) &&
+  (upperOpen() || !FLOOR_LINKS.has(r.id))); }
 const ORD=['N','E','S','W'];
 function rotSide(s,k){ return ORD[(ORD.indexOf(s)+k)%4]; }
 function oppSide(s){ return {N:'S',S:'N',E:'W',W:'E'}[s]; }
@@ -2495,6 +2607,29 @@ function addDoorPanel(f,rec,info,target){
   rec.inter={x:info.x,z:info.z,r:1.8,label:'open the door \u2014 draft a room',
              fn:()=>openDraft(target),dead:false};
   interactables.push(rec.inter);
+  if(target && target.lockable) lockDoor(rec,target,HW);
+}
+// Blue Prince rules: some doors further into the house arrive locked, and a key opens one
+function lockDoor(rec,target,HW){
+  const chance=[0.14,0.2,0.25][target.f.idx]||0.15;
+  if(Math.random()>=chance) return;
+  rec.locked=true; rec.lockParts=[];
+  [0.16,-0.16].forEach(off=>{                     // a brass padlock on both faces of the leaf
+    const body=rec.horiz? box(0.28,0.26,0.1,M.gold,HW*1.72,1.32,off,rec.hinge)
+                        : box(0.1,0.26,0.28,M.gold,off,1.32,HW*1.72,rec.hinge);
+    const sh=new THREE.Mesh(new THREE.TorusGeometry(0.085,0.022,6,12,Math.PI),M.metal);
+    if(rec.horiz) sh.position.set(HW*1.72,1.45,off); else { sh.position.set(off,1.45,HW*1.72); sh.rotation.y=Math.PI/2; }
+    rec.hinge.add(sh); body.castShadow=false; rec.lockParts.push(body,sh);
+  });
+  rec.inter.label=()=>res.keys>0?('unlock the door \u2014 use a key ('+res.keys+' held)'):'locked \u2014 it needs a key';
+  rec.inter.fn=()=>{
+    if(res.keys<1){ msg('Locked. A brass padlock \u2014 you will need a key.'); return; }
+    addRes('keys',-1,true);
+    rec.lockParts.forEach(m=>rec.hinge&&rec.hinge.remove(m)); rec.lockParts=[]; rec.locked=false;
+    rec.inter.label='open the door \u2014 draft a room';
+    rec.inter.fn=()=>openDraft(target);
+    msg('The padlock springs open.');
+  };
 }
 // swing the leaf open (used the moment a room is drafted)
 function openDoorPanel(rec){
@@ -2518,6 +2653,34 @@ function sealEdgeGap(rec,info){
   if(info.horiz){ box(2.7,4.6,0.55,M.stoneDk,info.x,2.3,info.z); rec.cols.push(addColliderBox(info.x,info.z,2.7,0.55,0.2)); }
   else{ box(0.55,4.6,2.7,M.stoneDk,info.x,2.3,info.z); rec.cols.push(addColliderBox(info.x,info.z,0.55,2.7,0.2)); }
   rec.sealed=true; rec.gap=false;
+}
+// Shared walls between rooms are built once, by whichever room came first, so on its own a
+// room would show its neighbour's paper on that wall. Each room therefore lines its own four
+// walls with a thin skin of its own paper, leaving a gap only where it has a doorway.
+function roomSkins(cx,cz,abs,mat){
+  const T=(mat.userData&&mat.userData.tile)||WP_TILE, IN=5.73, Y0=0.1, Y1=4.6, H=Y1-Y0;
+  function panel(w,h,x,y,z,ry){
+    const g=new THREE.PlaneGeometry(w,h);
+    const uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*w/T,uv.getY(i)*h/T);
+    const m=new THREE.Mesh(g,mat); m.position.set(x,y,z); m.rotation.y=ry;
+    m.receiveShadow=true; m.castShadow=false; scene.add(m); return m;
+  }
+  const SIDES={N:[0,-1,0],S:[0,1,Math.PI],W:[-1,0,Math.PI/2],E:[1,0,-Math.PI/2]};
+  ORD.forEach(sd=>{
+    const [ox,oz,ry]=SIDES[sd];
+    const px=cx+ox*IN, pz=cz+oz*IN;
+    const along=(ox===0)?[1,0]:[0,1];               // direction running along this wall
+    if(!abs.has(sd)){ panel(11.5,H,px,Y0+H/2,pz,ry); return; }
+    [-1,1].forEach(k=>{                              // two jambs either side of the 2.6m doorway
+      const c=k*3.525; panel(4.45,H,px+along[0]*c,Y0+H/2,pz+along[1]*c,ry); });
+    panel(2.6,Y1-3.55,px,(3.55+Y1)/2,pz,ry);         // over the door
+  });
+}
+let _vaultSteel=null;
+function vaultSteelMat(){
+  if(!_vaultSteel){ const t=makeRivetTex(); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+    _vaultSteel=new THREE.MeshLambertMaterial({map:t,emissive:0x1e2126}); _vaultSteel.userData.tile=2.6; }
+  return _vaultSteel;
 }
 function buildRoomGeom(f,c,r,room,abs){
   const cx=cellX(f,c),cz=cellZ(f,r);
@@ -2545,10 +2708,11 @@ function buildRoomGeom(f,c,r,room,abs){
         const nc=c+dc,nr=r+dr;
         if(nc<0||nc>=f.gw||nr<0||nr>=f.gh){ sealEdgeGap(rec,info); }
         else if(f.grid[nr][nc] && f.grid[nr][nc].entrance){ /* open passage back to the Grand Entrance */ }
-        else{ addDoorPanel(f,rec,info,{f:f,tc:nc,tr:nr,entry:oppSide(side)}); }
+        else{ addDoorPanel(f,rec,info,{f:f,tc:nc,tr:nr,entry:oppSide(side),lockable:true}); }
       }
     }
   });
+  roomSkins(cx,cz,abs,room.sp==='crypto'?vaultSteelMat():wallpaperById(paper));
   if(room.sp==='tunnel'){
     box(1.5,0.22,1.5,M.metal,cx+2,0.16,cz+2);
     const ring=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.05,6,14),M.gold);
@@ -2944,8 +3108,17 @@ function wallRun(x1,z1,x2,z2,gaps){
   box(1.6,0.22,0.6,plankMatDk(),W(2.9),1.42,Z(11.35));            // phantom steps into the dark
   box(1.6,0.22,0.6,plankMatDk(),W(2.9),1.66,Z(10.95));
   addColliderBox(W(2.9),Z(14.2),1.8,4.2,0.1);
-  interactables.push({x:W(2.9),z:Z(13.6),r:3.4,dead:false,prio:1,label:'climb to the upper floor',
-    fn:()=>fadeTeleport(TOP_X-36.5,TOP_Z,-Math.PI/2)});
+  // a velvet rope across the foot of the stair until the upper floors are open
+  if(!upperOpen()){
+    [-1,1].forEach(sd=>{ cyl(0.07,0.1,1.05,8,M.gold,W(2.9)+sd*0.85,0.52,Z(15.0));
+      sph(0.1,M.gold,W(2.9)+sd*0.85,1.1,Z(15.0),undefined,8,6); });
+    const rope=cyl(0.045,0.045,1.7,6,lam(0x8a1c1c,{emissive:0x2a0606}),W(2.9),0.95,Z(15.0));
+    rope.rotation.z=Math.PI/2;
+  }
+  interactables.push({x:W(2.9),z:Z(13.6),r:3.4,dead:false,prio:1,
+    label:()=>upperOpen()?'climb to the upper floor':'the staircase is roped off',
+    fn:()=>{ if(!upperOpen()){ msg('A velvet rope and a brass sign: UPPER FLOORS CLOSED. Nobody goes up there until the crown has gone missing.'); return; }
+      fadeTeleport(TOP_X-36.5,TOP_Z,-Math.PI/2); }});
   // gallery benches — same build as the Portrait Room bench
   [[-5,3],[5,3]].forEach(([bx,bz])=>dcBench(W(bx),Z(bz),Math.PI/2));
   // lights
@@ -3179,14 +3352,12 @@ function tryTakeCrown(){
   if(windowActive()){
     heist.stolen=true;
     crownG.visible=false;
-    crowns+=1; store.set('fenn_crowns',crowns);
     heist.winUntil=0;
     crownStolenTonight=true;
     const first=!hasUnlock('staff');
     grantUnlock('staff','Staff Access \u2014 alarms direct'); // first steal unlocks staff route
     if(staffDoorOpen) staffDoorOpen();
-    updatePowerUI();
-    msg('THE CROWN OF FENN IS OURS! With it in hand you can now reorder the draft pool \u2014 '+(isTouch?'open the blueprint and tap Reorder Pool.':'press R (or use the blueprint).'));
+    msg('THE CROWN OF FENN IS OURS! Now get it out \u2014 the getaway car is waiting south of King\u2019s Grotto.');
     if(first) setTimeout(()=>msg('Staff access unlocked \u2014 the alarm room stays open on future nights.'),3200);
     return;
   }
@@ -3196,14 +3367,7 @@ function tryTakeCrown(){
   }
   dropCage('You touch the crown \u2014 a cage slams down. Disarm all three systems from the controls behind the exhibit to release it.');
 }
-// once the crown is taken, its authority lets you re-curate the collection mid-night
-function openPoolReorder(){
-  if(!crownStolenTonight){ msg('Only with the Crown of Fenn in hand can you reorder the collection.'); return; }
-  renderDir(); openOverlay(byId('dirOverlay'));
-}
-function updatePowerUI(){
-  const b=byId('reorderBtn'); if(b) b.style.display=crownStolenTonight?'inline-block':'none';
-}
+
 
 // =====================================================================
 // EXHIBITS, TOOLS & COLLECTIBLES  (RLCF crown-job prequel content)
@@ -3882,7 +4046,7 @@ function exitKeypad(n,code,title,hint){
   // EXIT 1: an unmarked keypad and nothing else. Only someone who has understood
   // 'seven hands' would think to go and count the hands in the Portrait Room.
   doorKeypad(1,-1,'use the unmarked keypad',
-    ()=>exitKeypad(1,'0705','UNMARKED KEYPAD','No label. No instructions. Four digits.'));
+    ()=>exitKeypad(1,['0705','0507'],'UNMARKED KEYPAD','No label. No instructions. Four digits.'));
   doorKeypad(3,1,'use the measuring machine',
     ()=>exitKeypad(3,'162','MEASURING MACHINE','A champion\u2019s height, in hands \u2014 hung in the Long Gallery.'));
   doorKeypad(4,-1,'use the book lock',
@@ -4383,7 +4547,7 @@ function openLabTerminal(remote){
     ],closeLabel:'> ABORT'});
 }
 function runExperiment(trig,eff){
-  const rewarded=(store.get('fenn_expNight',-1)===night);
+  const rewarded=(store.get('fenn_expNight',-1)===RUN);
   const OUT={
     'HEAT+VAPOUR':      {txt:'The still hisses \u2014 a restorative tonic condenses. You drink it.', gain:()=>gainSteps(5)},
     'VOLTAGE+LUMINESCENCE':{txt:'The residue glows steady and bright \u2014 a dealer would pay for this.', gain:()=>addRes('coins',2)},
@@ -4392,7 +4556,7 @@ function runExperiment(trig,eff){
   const key=trig+'+'+eff, hit=OUT[key];
   let lines;
   if(hit && !rewarded){
-    store.set('fenn_expNight',night); hit.gain();
+    store.set('fenn_expNight',RUN); hit.gain();
     lines=['TRIGGER: '+trig,'EFFECT: '+eff,'','RESULT \u2014 SUCCESS','',hit.txt];
   } else if(hit){
     lines=['TRIGGER: '+trig,'EFFECT: '+eff,'','RESULT \u2014 apparatus still cooling.','','One rewarded experiment per night.'];
@@ -4416,7 +4580,7 @@ function buildOfficeRoom(cx,cz){
     fn:()=>openOfficeTerminal(false)});
 }
 function openOfficeTerminal(remote){
-  const paid=(store.get('fenn_payNight',-1)===night);
+  const paid=(store.get('fenn_payNight',-1)===RUN);
   openTerminal({title:'CURATOR\u2019S OFFICE \u2014 PAYROLL'+(remote?' (REMOTE)':''),
     lines:['Museum staff ledger, Night '+night+'.',
       paid?'STATUS: payments distributed \u2014 staff are looking the other way.':'STATUS: wages outstanding.',
@@ -4425,7 +4589,7 @@ function openOfficeTerminal(remote){
       {t:'> DISTRIBUTE PAYMENTS TO ALL ROOMS \u2014 2 coins',fn:()=>{
         if(res.coins<2){ openTerminal({title:'PAYROLL',lines:['INSUFFICIENT FUNDS \u2014 2 coins required.'],
           buttons:[{t:'> BACK',fn:()=>openOfficeTerminal(remote)}]}); return; }
-        addRes('coins',-2,true); store.set('fenn_payNight',night);
+        addRes('coins',-2,true); store.set('fenn_payNight',RUN);
         openTerminal({title:'PAYROLL \u2014 CONFIRMED',
           lines:['Envelopes dispatched to every room.','','Drafts cost 1 gem less for the rest of the night.'],
           buttons:[]});
@@ -4463,7 +4627,11 @@ function openGiftShop(){
         msg('Fresh cell fitted \u2014 the survey goggles are ready to scan again.');}},
       {t:'> LUCKY RABBIT\u2019S PAW \u2014 '+p3+' coins',fn:()=>{
         if(res.coins<p3) return msg('Not enough coins.');
-        addRes('coins',-p3,true); closeTerminal(); gainSteps(4);}}
+        addRes('coins',-p3,true); closeTerminal(); gainSteps(4);}},
+      {t:'> SOUVENIR BRASS KEY \u2014 '+p3+' coins',fn:()=>{
+        if(res.coins<p3) return msg('Not enough coins.');
+        addRes('coins',-p3,true); closeTerminal(); addRes('keys',1,true);
+        msg('A souvenir key. It turns out to be a real one.');}}
     ],closeLabel:'> LEAVE'});
 }
 function buildCanteenRoom(cx,cz){
@@ -4484,13 +4652,13 @@ function buildCanteenRoom(cx,cz){
 }
 function openCanteen(){
   const p1=secPrice(1),p3=secPrice(3);
-  const tea=(store.get('fenn_teaNight',-1)===night);
+  const tea=(store.get('fenn_teaNight',-1)===RUN);
   openTerminal({title:'CANTEEN \u2014 SERVERY',
     lines:['\u201cSit anywhere, love.\u201d','Coins: '+res.coins+'   Steps: '+steps],
     buttons:[
       {t:tea?'> CUP OF TEA \u2014 (one free cup a night, already had)':'> CUP OF TEA \u2014 free, +1 step',fn:()=>{
         if(tea) return msg('One free cuppa a night. House rules.');
-        store.set('fenn_teaNight',night); closeTerminal(); gainSteps(1);}},
+        store.set('fenn_teaNight',RUN); closeTerminal(); gainSteps(1);}},
       {t:'> CHEESE SANDWICH \u2014 '+p1+' coin'+(p1>1?'s':'')+', +3 steps',fn:()=>{
         if(res.coins<p1) return msg('Not enough coins.');
         addRes('coins',-p1,true); closeTerminal(); gainSteps(3);}},
@@ -5526,7 +5694,7 @@ function spawnRoomLoot(f,cx,cz,room){
   if(furn && Math.random()<0.20) addPickup('keys',furn.x+(Math.random()-0.5)*1.1,furn.y+0.06,furn.z);
   else if(Math.random()<0.07) addPickup('keys',cx+rnd(),0.1,cz+rnd());
   // GEMS — in the richer rooms
-  const gemChance=rar==='Rare'?0.55:(rar==='Unusual'?0.3:0.12);
+  const gemChance=rar==='Rare'?0.55:(rar==='Unusual'?0.35:(rar==='Standard'?0.2:0.15));
   if(Math.random()<gemChance) addPickup('gems',cx+rnd(),0.18,cz+rnd());
 }
 
@@ -5552,14 +5720,14 @@ function spawnRoomLoot(f,cx,cz,room){
     new THREE.MeshLambertMaterial({color:0x8a6540,emissive:0x241a0e,side:THREE.DoubleSide}));
   flap.rotation.x=-Math.PI/2; flap.position.set(0,0.018,0.21); env.add(flap);
   box(0.16,0.032,0.16,lam(0x7a2018),0.0,0.02,0.02,env);   // wax seal over the flap tip
-  let taken=(store.get('fenn_allowNight',-1)===night);
+  let taken=(store.get('fenn_allowNight',-1)===RUN);
   if(taken) env.visible=false;
   interactables.push({x:ex,z:14.55,r:2.1,dead:false,prio:1,
     cond:()=>!taken,
     label:()=>'open the brown envelope',
     fn:()=>{
       taken=true; env.visible=false;
-      store.set('fenn_allowNight',night);
+      store.set('fenn_allowNight',RUN);
       if(allowance>0){ addRes('coins',allowance,true);
         msg('Your allowance: '+allowance+' coin'+(allowance>1?'s':'')+' from the Mora Jai boxes.'); }
       else msg('The envelope is empty \u2014 solve a Mora Jai box to earn an allowance.');
@@ -5638,7 +5806,9 @@ function rebuildCable(){
   }
 }
 function buildAlzaraRoom(cx,cz,abs){
-  alzara.cx=cx; alzara.cz=cz-3.6; alzara.plugged=true; alzara.busy=false;
+  // he stands against the north wall; if that wall has a doorway he moves along it, clear of the door
+  const shift=(abs&&abs.has('N'))?((abs.has('W'))?3.45:-3.45):0;
+  alzara.cx=cx+shift; alzara.cz=cz-3.6; alzara.plugged=true; alzara.busy=false;
   const mx=alzara.cx, mz=alzara.cz;
   const p=new THREE.PointLight(0xbfa8ff,0.5,18); p.position.set(cx,3.8,cz); scene.add(p);
   const wood=lam(0x4a3524,{emissive:0x140e08}), woodDk=lam(0x33241a,{emissive:0x0c0805});
@@ -5653,11 +5823,28 @@ function buildAlzaraRoom(cx,cz,abs){
   addColliderBox(mx,mz,1.7,1.46,0.1);
   // coin slot + card mouth on the front panel
   box(1.02,0.62,0.05,lam(0x6a5236,{emissive:0x1a1208}),mx,0.80,mz+0.67);
+  const trimW=lam(0xc9b48c,{emissive:0x2a2414});                                // gilt frame round the panel
+  box(1.10,0.035,0.04,trimW,mx,1.12,mz+0.69); box(1.10,0.035,0.04,trimW,mx,0.48,mz+0.69);
+  box(0.035,0.66,0.04,trimW,mx-0.535,0.80,mz+0.69); box(0.035,0.66,0.04,trimW,mx+0.535,0.80,mz+0.69);
   box(0.07,0.17,0.04,lam(0x14141a),mx+0.34,0.98,mz+0.70);        // coin slot
   box(0.44,0.06,0.04,lam(0x14141a),mx,0.60,mz+0.70);             // card mouth
   // ---- glass case, in the same glass as the museum domes ----
-  [-1,1].forEach(sx=>[-1,1].forEach(sz=>
-    cyl(0.06,0.06,CASE_H,8,lam(0xd8d2c4,{emissive:0x2a2820}),mx+sx*0.65,CASE_Y,mz+sz*0.56)));
+  const colW=lam(0xf3efe4,{emissive:0x3a3830}), groove=lam(0xb8b2a4,{emissive:0x24221c});
+  const plinthR=lam(0xa8323a,{emissive:0x2a0c0e});
+  [-1,1].forEach(sx=>[-1,1].forEach(sz=>{
+    const x=mx+sx*0.65, z=mz+sz*0.56;
+    cyl(0.085,0.085,CASE_H-0.16,14,colW,x,CASE_Y+0.02,z);                      // shaft
+    for(let k=0;k<8;k++){ const a=k/8*Math.PI*2;                               // flutes
+      box(0.016,CASE_H-0.30,0.016,groove,x+Math.cos(a)*0.082,CASE_Y+0.02,z+Math.sin(a)*0.082).castShadow=false; }
+    box(0.21,0.13,0.21,plinthR,x,CAB_H+0.065,z);                               // red base block
+    box(0.20,0.06,0.20,colW,x,CASE_TOP-0.05,z);                                // capital
+  }));
+  // the floor of the case: broad red and white stripes, as in the photograph
+  (function(){ const cv=document.createElement('canvas'); cv.width=128; cv.height=64;
+    const c=cv.getContext('2d'); for(let i=0;i<8;i++){ c.fillStyle=i%2?'#f1ece2':'#b3262c'; c.fillRect(i*16,0,16,64); }
+    const st=new THREE.Mesh(new THREE.PlaneGeometry(1.26,1.10),
+      new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv),emissive:0x2a1a1a}));
+    st.rotation.x=-Math.PI/2; st.position.set(mx,CAB_H+0.012,mz); st.receiveShadow=true; scene.add(st); })();
   const caseGlass=M.glass.clone();
   caseGlass.depthWrite=false;                       // never depth-occlude what's inside
   const glass=new THREE.Mesh(new THREE.BoxGeometry(1.34,CASE_H-0.04,1.18),caseGlass);
@@ -5670,8 +5857,20 @@ function buildAlzaraRoom(cx,cz,abs){
   box(1.52,0.50,0.14,woodDk,mx,HEAD_Y,mz-0.16);
   const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.36,0.42),makeAlzaraSign());
   sign.position.set(mx,HEAD_Y,mz-0.08); scene.add(sign);
-  const arch=new THREE.Mesh(new THREE.TorusGeometry(0.68,0.06,6,16,Math.PI),woodDk);
-  arch.position.set(mx,HEAD_Y+0.22,mz-0.16); scene.add(arch);
+  // curved pediment: a shallow segmental arch of moulded wood capping the header
+  const ped=new THREE.Mesh(new THREE.CylinderGeometry(0.80,0.80,0.16,28,1,false,-Math.PI/2,Math.PI),woodDk);
+  ped.rotation.x=Math.PI/2; ped.scale.set(1,1,0.26);           // squash the half-disc into a low arc
+  ped.position.set(mx,HEAD_Y+0.24,mz-0.16); ped.castShadow=true; scene.add(ped);
+  box(1.66,0.06,0.22,woodDk,mx,HEAD_Y+0.255,mz-0.15);           // cornice under it
+  // red diamond boards either side of the header, cream-edged
+  const dCv=document.createElement('canvas'); dCv.width=64; dCv.height=64;
+  (function(c){ c.fillStyle='#efe6d2'; c.fillRect(0,0,64,64); c.fillStyle='#7c1d22'; c.fillRect(5,5,54,54); })(dCv.getContext('2d'));
+  const dMat=new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(dCv),emissive:0x1a0606,side:THREE.DoubleSide});
+  [-1,1].forEach(sx=>{
+    const d=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.46),dMat);
+    d.rotation.z=Math.PI/4; d.position.set(mx+sx*1.05,HEAD_Y-0.06,mz-0.1); d.castShadow=false; scene.add(d);
+    box(0.24,0.03,0.03,woodDk,mx+sx*0.86,HEAD_Y-0.06,mz-0.12);   // little bracket to the case
+  });
   // ---- Alzara himself ----
   const A=new THREE.Group(); A.position.set(mx,CAB_H+0.10,mz-0.04); scene.add(A);
   // per the reference photo: red robe, blue V-lapels with grey trim, blue turban
@@ -5752,7 +5951,7 @@ function buildAlzaraRoom(cx,cz,abs){
   alzara.ballLight=bl;
   // ---- wall socket + cable ----
   const wallZ=cz-5.72;
-  alzara.socket={x:cx-2.9,y:0.55,z:wallZ+0.14};
+  alzara.socket={x:shift?alzara.cx+(shift<0?-1.55:1.55):cx-2.9,y:0.55,z:wallZ+0.14};
   box(0.42,0.5,0.1,lam(0xe4dccb,{emissive:0x2a2620}),alzara.socket.x,alzara.socket.y,wallZ+0.08);
   box(0.1,0.13,0.05,lam(0x2a2a32),alzara.socket.x,alzara.socket.y,wallZ+0.14);
   rebuildCable();
@@ -6003,23 +6202,26 @@ const cine={active:false,t:0,mary:null,dur:9.6};
 let CINE_KEYS=[];
 function startCinematic(){
   const sx=player.x, sz=player.z;
-  if(!cine.mary){ cine.mary=buildMary(sx,sz,0);      // she stands exactly where you spawn
-    cine.mary.position.y=0.24; }                       // clearly proud of the pavement
+  if(!cine.mary) cine.mary=buildMary(sx,sz,0);         // normally pre-built during the title screen
+  cine.mary.position.set(sx,0.24,sz);                  // she stands exactly where you spawn
   cine.mary.visible=true;
+  // positions only: the camera itself is always aimed at her head (see updateCinematic),
+  // so she stays centred on a tall phone screen as well as a wide one
   CINE_KEYS=[
-    [0.00, sx, 1.72, sz-13.0, Math.PI,       0.04],   // ahead of her, looking back at her face
-    [0.34, sx, 1.86, sz-9.2,  Math.PI,      -0.02],   // drifting slowly forward
-    [0.62, sx, 4.60, sz-4.0,  Math.PI*0.72, -0.50],   // rising, arcing over
-    [0.84, sx, 5.20, sz+0.6,  Math.PI*0.20, -0.86],   // directly above her, looking down
-    [1.00, sx, EYE,  sz,      0,            -0.04]    // settled behind her eyes
+    [0.00, sx-0.6, 1.85, sz-8.2],   // ahead of her, looking back at her face
+    [0.30, sx-0.3, 2.00, sz-6.0],   // drifting slowly forward
+    [0.58, sx+0.9, 4.40, sz-2.8],   // rising, arcing over
+    [0.80, sx+0.2, 5.70, sz+0.7],   // directly above her, looking down
+    [1.00, sx,     EYE,  sz]        // settled behind her eyes
   ];
-  cine.active=true; cine.t=0;
+  cine.active=true; cine.t=0; cine.startedAt=performance.now();
   const el=byId('cine'); el.style.display='flex';
   byId('cineNight').textContent='Night '+nightWord(night+1);   // first night reads "Night One"
   byId('cineNight').classList.remove('show');
   requestAnimationFrame(()=>byId('cineNight').classList.add('show'));
 }
 function sstep(u){ return u*u*(3-2*u); }
+const _cineQ=new THREE.Quaternion(), _cineQ2=new THREE.Quaternion(), _cineE=new THREE.Euler();
 function updateCinematic(dt){
   cine.t=Math.min(cine.dur,cine.t+dt);
   const u=cine.t/cine.dur;
@@ -6030,9 +6232,16 @@ function updateCinematic(dt){
   const span=(b[0]-a[0])||1, k=sstep(Math.max(0,Math.min(1,(u-a[0])/span)));
   const lp=(i)=>a[i]+(b[i]-a[i])*k;
   camera.position.set(lp(1),lp(2),lp(3));
-  camera.rotation.order='YXZ';
-  camera.rotation.y=lp(4);
-  camera.rotation.x=lp(5);
+  // look at her head the whole way round; over the last stretch, ease from looking at her
+  // into looking where she looks, so the hand-over to the player is seamless
+  camera.up.set(0,1,0);
+  camera.lookAt(cine.mary.position.x,2.75,cine.mary.position.z);
+  const HAND=0.78;
+  if(u>HAND){
+    _cineQ.copy(camera.quaternion);
+    _cineE.set(-0.04,0,0,'YXZ'); _cineQ2.setFromEuler(_cineE);
+    camera.quaternion.copy(_cineQ).slerp(_cineQ2,sstep(Math.min(1,(u-HAND)/(1-HAND))));
+  }
   if(skyMesh) skyMesh.position.copy(camera.position);
   // she fades from view as we arrive behind her eyes
   if(u>0.88 && cine.mary){
@@ -6053,13 +6262,14 @@ function endCinematic(){
   lastPX=player.x; lastPZ=player.z;
   if(!isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
   else initTouch();
-  byId('cogBtn').style.display='flex';
+  byId('cogBtn').style.display='flex'; byId('mapBtn').style.display='flex';
   const tp=byId('titlePlate'); if(tp) tp.style.display='none';   // title screen only
   renderInv(); renderRes(); renderSteps(); applyGoggles();
   byId('gogBtn').addEventListener('pointerdown',e=>{e.preventDefault();activateGoggles();});
 
   setTimeout(()=>{ const h=byId('hint'); if(h && !intel.visible) h.style.opacity='0'; },9000);
   setTimeout(()=>{ const tp=byId('titlePlate'); if(tp) tp.style.opacity='0'; },7000);
+  if(!upperOpen()) setTimeout(()=>msg('Tonight\u2019s job: lift the Crown of Fenn from Leerson Hall and get it to the getaway car past King\u2019s Grotto.'),1400);
 }
 
 // =====================================================================
@@ -6069,7 +6279,7 @@ const byId=id=>document.getElementById(id);
 const promptEl=byId('prompt'), toastEl=byId('msgToast');
 const timerHud=byId('timerHud'), timerVal=byId('timerVal');
 const fadeEl=byId('fade'), interactBtn=byId('interactBtn');
-let uiOpen=false, currentOverlay=null, currentInter=null;
+let uiOpen=false, currentOverlay=null, currentInter=null, bpAutoT=null;
 let toastTimer=null;
 function msg(t){
   toastEl.textContent=t; toastEl.style.display='block';
@@ -6078,22 +6288,17 @@ function msg(t){
 }
 function openOverlay(el){
   uiOpen=true; currentOverlay=el; el.style.display='flex';
+  document.body.setAttribute('data-ov',el.id||'');
   if(document.exitPointerLock) document.exitPointerLock();
 }
 function closeOverlay(){
   if(!currentOverlay) return;
+  if(bpAutoT){ clearTimeout(bpAutoT); bpAutoT=null; }
+  byId('bpOverlay').classList.remove('auto');
   currentOverlay.style.display='none'; currentOverlay=null; uiOpen=false;
+  document.body.removeAttribute('data-ov');
   if(started && !isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
-byId('dirClose').onclick=function(){ markDirSeen(); closeOverlay(); };
-byId('dirAllIn').onclick=function(){ dirOff.clear(); store.set('fenn_dir_off',[]); renderDir(); };
-byId('dirAllOut').onclick=function(){ ROOMS.forEach(r=>dirOff.add(r.id)); store.set('fenn_dir_off',[...dirOff]); renderDir(); };
-byId('dirOnlyNew').onclick=function(){
-  if(!dirNew.size){ msg('No rooms have changed since you last curated the pool.'); return; }
-  ROOMS.forEach(r=>{ if(dirNew.has(r.id)) dirOff.delete(r.id); else dirOff.add(r.id); });
-  store.set('fenn_dir_off',[...dirOff]); renderDir();
-};
-byId('draftClose').onclick=closeOverlay;
 byId('bpClose').onclick=closeOverlay;
 byId('cardClose').onclick=closeOverlay;
 function showCard(title,sub,html,isProphecy){
@@ -6115,39 +6320,6 @@ byId('potteryClose').onclick=closeOverlay;
   cvp.addEventListener('pointerdown',down); cvp.addEventListener('pointermove',move);
   addEventListener('pointerup',up); cvp.addEventListener('pointerleave',up);
 })();
-
-// ---- room directory (title screen curation) ----
-function renderDir(){
-  const list=byId('dirList');
-  let html='';
-  ROOMS.forEach(r=>{
-    let pips='';
-    for(let i=0;i<4;i++) pips+='<span class="pip'+(i<r.d?'':' off')+'"></span>';
-    const on=!dirOff.has(r.id);
-    const badge=dirNew.has(r.id)
-      ? '<span class="dirBadge">'+(revOf(r.id)>1&&r.sp?'NEW':'NEW')+'</span>' : '';
-    html+='<div class="dirRow'+(r.sp?' special':'')+(dirNew.has(r.id)?' fresh':'')+'">'+
-          '<span class="rn">'+r.n+badge+
-          '<span class="dirMeta">'+roomRarity(r)+' \u00b7 <span class="c">\u25C7'+roomCost(r)+'</span></span></span>'+
-          '<span>'+pips+'</span>'+
-          '<span class="tog '+(on?'on':'off')+'" data-id="'+r.id+'">'+(on?'In pool':'Out')+'</span></div>';
-  });
-  list.innerHTML=html;
-  const inCount=ROOMS.length-dirOff.size;
-  byId('dirCount').textContent=inCount+' of '+ROOMS.length+' in pool';
-}
-byId('dirList').onclick=function(e){
-  let el=e.target;
-  while(el && el!==this){ if(el.dataset && el.dataset.id) break; el=el.parentNode; }
-  if(!el || el===this || !el.dataset || !el.dataset.id) return;
-  const id=el.dataset.id;
-  if(dirOff.has(id)) dirOff.delete(id); else dirOff.add(id);
-  store.set('fenn_dir_off',[...dirOff]);
-  renderDir();
-};
-byId('dirBtn').addEventListener('click',function(e){
-  e.stopPropagation(); renderDir(); openOverlay(byId('dirOverlay'));
-});
 
 // ---- draft overlay ----
 let draftCtx=null;
@@ -6176,7 +6348,7 @@ function openDraft(target){
   const choices=pool.slice(0,Math.min(3,pool.length));
   draftCtx=target; draftChoices=choices;
   renderDraftCards();
-  byId('draftSub').textContent=f.name+' \u00b7 draw a room \u00b7 you hold '+res.gems+' gems';
+  byId('draftSub').textContent=f.name+' \u00b7 the door is open \u2014 choose one \u00b7 you hold '+res.gems+' gems';
   openOverlay(byId('draftOverlay'));
 }
 let draftChoices=[];
@@ -6234,8 +6406,12 @@ byId('draftCards').onclick=function(e){
   const rm=roomById(id), cost=rm?costFor(rm):0;
   if(res.gems<cost){ msg('Not enough gems \u2014 '+rm.n+' costs '+cost+'.'); return; }
   addRes('gems',-cost,true);
-  closeOverlay();
+  // swap straight from the draft to the map (no pointer-lock churn in between)
+  byId('draftOverlay').style.display='none'; currentOverlay=null; uiOpen=false;
+  document.body.removeAttribute('data-ov');
   if(ctx) placeRoom(id,ctx);
+  if(ctx) popMap(ctx.f,ctx.tc,ctx.tr,rm?rm.n:'');
+  if(!uiOpen && started && !isTouch && canvas.requestPointerLock) canvas.requestPointerLock();
   // drafted from the Grand Entrance: walk straight in (unless the room sealed itself)
   if(ctx && ctx.auto){
     const rm2=roomById(id);
@@ -6246,7 +6422,8 @@ byId('draftCards').onclick=function(e){
 byId('draftReroll').onclick=draftReroll;
 
 // ---- blueprint ----
-function drawBP(){
+function drawBP(opt){
+  opt=opt||{};
   const cv=byId('bpCanvas'), c=cv.getContext('2d');
   const INK='#dfeaf6', DIM='rgba(200,220,240,0.55)', FAINT='rgba(150,180,215,0.28)';
   // blueprint ground
@@ -6257,7 +6434,7 @@ function drawBP(){
   for(let x=0;x<640;x+=20){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,740); c.stroke(); }
   for(let y=0;y<740;y+=20){ c.beginPath(); c.moveTo(0,y); c.lineTo(640,y); c.stroke(); }
   c.strokeStyle=INK; c.lineWidth=2; c.strokeRect(10,10,620,720);
-  const f=(typeof player!=='undefined' ? activeFloor(player.x) : null)||FLOORS[0];
+  const f=opt.f||(typeof player!=='undefined' ? activeFloor(player.x) : null)||FLOORS[0];
   c.fillStyle=INK; c.textAlign='left';
   c.font='bold 22px Georgia'; c.fillText('EAST EXTENSION \u2014 '+f.name.toUpperCase(),24,42);
   c.font='13px Georgia'; c.fillStyle=DIM; c.fillText('Night '+night+'   \u00b7   floor '+(f.idx+1)+' of '+FLOORS.length+'   \u00b7   work in progress',24,62);
@@ -6300,6 +6477,14 @@ function drawBP(){
         if(s==='W') c.fillRect(x,y+cell/2-7,4,14);
       });
     }
+  }
+  // the room just drafted: a gold outline and a NEW tag
+  if(opt.hl){
+    const x=ox+opt.hl.c*cell, y=oy+(f.gh-1-opt.hl.r)*cell;
+    c.save(); c.shadowColor='#ffd36a'; c.shadowBlur=16; c.strokeStyle='#ffd36a'; c.lineWidth=3.5;
+    c.strokeRect(x+1.5,y+1.5,cell-3,cell-3); c.restore();
+    c.fillStyle='#ffd36a'; c.fillRect(x+cell/2-17,y-9,34,15);
+    c.fillStyle='#0d2c4d'; c.font='bold 10px Georgia'; c.textAlign='center'; c.fillText('NEW',x+cell/2,y+2);
   }
   // dimension arrows measuring a box (blueprint-in-progress feel)
   c.strokeStyle=DIM; c.fillStyle=DIM; c.lineWidth=1; c.setLineDash([4,3]);
@@ -6347,17 +6532,88 @@ function drawBP(){
   }
   if(!hasItem('goggles')&&!hasItem('geiger')){ c.fillStyle=DIM; c.font='italic 10px Georgia'; c.fillText('empty',436,636); }
 }
-function openBP(){ drawBP(); updatePowerUI(); openOverlay(byId('bpOverlay')); }
-byId('reorderBtn').onclick=function(){ closeOverlay(); openPoolReorder(); };
-function endTheNight(){ store.set('fenn_night',night+1); location.reload(); }
+function openBP(){
+  bpAutoStop(); byId('bpSub').textContent='east extension \u2014 drafted layout';
+  drawBP(); openOverlay(byId('bpOverlay'));
+}
+// after a pick: the map shows where the new room went, then closes by itself
+const BP_AUTO_MS=2200;
+function popMap(f,tc,tr,name){
+  if(uiOpen || nightClosing) return;
+  drawBP({f:f,hl:{c:tc,r:tr}});
+  byId('bpSub').textContent='just drafted \u00b7 '+name;
+  const bp=byId('bpOverlay');
+  openOverlay(bp);
+  bp.classList.remove('auto'); void bp.offsetWidth; bp.classList.add('auto');   // restart the drain bar
+  bpAutoStop(true);
+  try{ bp.querySelector('.sheet').scrollTop=0; }catch(e){}
+  bpAutoT=setTimeout(()=>{ bpAutoT=null; if(currentOverlay===bp && bp.classList.contains('auto')) closeOverlay(); },BP_AUTO_MS);
+}
+function bpAutoStop(keepClass){
+  if(bpAutoT){ clearTimeout(bpAutoT); bpAutoT=null; }
+  if(!keepClass) byId('bpOverlay').classList.remove('auto');
+}
+// a tap on the map while it's counting down keeps it open
+byId('bpCanvas').addEventListener('pointerdown',()=>{
+  if(byId('bpOverlay').classList.contains('auto')){ bpAutoStop(); byId('bpSub').textContent+=' \u00b7 kept open'; }
+});
+function toggleMap(){
+  if(currentOverlay===byId('bpOverlay')){ closeOverlay(); return; }
+  if(uiOpen || !started || cine.active || nightClosing) return;
+  if(byId('term').style.display==='block') return;
+  openBP();
+}
+// ---- the end of a night: one card, three ways to reach it ----
+let nightClosing=false;
+function closeNight(title,sub,body){
+  if(nightClosing) return;
+  nightClosing=true;
+  store.set('fenn_night',night+1);
+  store.set('fenn_playms',Math.round(playMs));
+  if(currentOverlay) closeOverlay();
+  closeTerminal();
+  try{ if(document.exitPointerLock) document.exitPointerLock(); }catch(e){}
+  byId('winTitle').textContent=title;
+  byId('winSub').textContent=sub;
+  byId('winBody').innerHTML=body;
+  openOverlay(byId('winOverlay'));
+}
+function endTheNight(){
+  closeNight('The Night Is Called Off','night '+night+' — abandoned',
+    'You slip out before the guards change. Everything you drafted tonight is boarded up again by morning; '+
+    'what you learned, and what you carry, comes with you.');
+}
+function outOfSteps(){
+  closeNight('The Night Is Spent','night '+night+' — out of steps',
+    'Your legs give out somewhere between the galleries. The crew pulls you out before the morning shift. '+
+    'Every room resets tomorrow — but what you have found and solved stays found and solved.');
+}
+const CAR={x:6,z:-128};                       // the getaway car, south past King’s Grotto
+let escaped=false;
+function crownEscape(){
+  if(escaped) return;
+  escaped=true;
+  const first=!upperOpen();
+  const n=store.get('fenn_escapes',0)+1; store.set('fenn_escapes',n);
+  crowns=n; store.set('fenn_crowns',n);
+  if(first){ grantUnlock('floor1','Upper Gallery'); }
+  closeNight('Crown Secured','night '+night+' complete',
+    'The red crown of Fenn is in the bag and the car is already rolling.'+
+    (first?'<br><br><b>The upper floors are open.</b> From tomorrow night the Lift and the Grand Staircase can be drafted, '+
+           'and the staircase above Leerson Hall’s portico is no longer roped off.'
+          :'<br><br>That makes '+n+'. The museum will have it back on its cushion by tomorrow night.'));
+}
 byId('endNightBtn').onclick=endTheNight;
 byId('nextNightBtn').onclick=function(){ location.reload(); };
 // settings cog menu
 function openSettings(){ renderInv&&renderInv(); openOverlay(byId('settingsOverlay')); }
 byId('setClose').onclick=closeOverlay;
 byId('setMap').onclick=function(){ closeOverlay(); openBP(); };
-byId('setDir').onclick=function(){ closeOverlay(); openPoolReorder(); };
 byId('setEndNight').onclick=endTheNight;
+(function(){ const mb=byId('mapBtn');
+  mb.addEventListener('click',toggleMap);
+  mb.addEventListener('touchstart',function(e){ e.preventDefault(); e.stopPropagation(); toggleMap(); },{passive:false});
+})();
 (function(){ const cb=byId('cogBtn');
   cb.addEventListener('click',()=>{ if(uiOpen){ if(currentOverlay===byId('settingsOverlay')) closeOverlay(); } else openSettings(); });
   cb.addEventListener('touchstart',function(e){ e.preventDefault(); e.stopPropagation();
@@ -6451,13 +6707,15 @@ function fadeTeleport(tx,tz,yaw){
   },260);
 }
 addEventListener('keydown',e=>{
+  const tg=e.target&&e.target.tagName;
+  if(tg==='INPUT'||tg==='TEXTAREA') return;                 // typing in a field isn't walking
+  if((e.code==='KeyM'||e.code==='KeyB') && !e.repeat){ toggleMap(); return; }
   keys[e.code]=true;
-  if(e.code==='Escape' && currentOverlay && currentOverlay!==byId('winOverlay')){ closeOverlay(); return; }
+  // the night's-end card and an open draft can't be dismissed: a door once opened must be filled
+  if(e.code==='Escape' && currentOverlay && currentOverlay!==byId('winOverlay') && currentOverlay!==byId('draftOverlay')){ closeOverlay(); return; }
   if(e.code==='Escape' && !currentOverlay && started){ openSettings(); return; }
   if(uiOpen) return;
   if(e.code==='KeyH') toggleIntel();
-  if(e.code==='KeyR') openPoolReorder();
-  if(e.code==='KeyB') openBP();
   if(e.code==='KeyE' && currentInter) currentInter.fn();
 });
 addEventListener('keyup',e=>keys[e.code]=false);
@@ -6477,10 +6735,15 @@ overlay.addEventListener('click',()=>{
 });
 // tap or any key skips the opening
 (function(){ const c=byId('cine');
-  const skip=e=>{ if(cine.active){ e.preventDefault(); e.stopPropagation(); cine.t=cine.dur; endCinematic(); } };
+  // A tap that arrives in the first moment is almost always a second tap on the start
+  // screen while the phone catches up, not a request to skip: ignore it.
+  const early=()=>performance.now()-(cine.startedAt||0)<1800;
+  const skip=e=>{ if(!cine.active) return; e.preventDefault(); e.stopPropagation();
+    if(early()) return; cine.t=cine.dur; endCinematic(); };
   c.addEventListener('click',skip);
-  c.addEventListener('touchstart',skip,{passive:false});
-  addEventListener('keydown',e=>{ if(cine.active){ cine.t=cine.dur; endCinematic(); } });
+  c.addEventListener('touchend',skip,{passive:false});          // a full tap, not the first touch
+  c.addEventListener('touchstart',e=>{ if(cine.active) e.preventDefault(); },{passive:false});
+  addEventListener('keydown',e=>{ if(cine.active && !early()){ cine.t=cine.dur; endCinematic(); } });
 })();
 canvas.addEventListener('click',()=>{
   if(started && !isTouch && !uiOpen && document.pointerLockElement!==canvas)
@@ -6741,21 +7004,30 @@ function tickBody(){
     for(const p of intelPins){ p.rotation.y=t*1.6; }
   }
   updateZone(player.x,player.z);
+  { const want=isIndoors(player.x,player.z)?1:0; const k=Math.min(1,dt*5);
+    const nm=indoorMix+(want-indoorMix)*k; if(Math.abs(nm-indoorMix)>1e-4||want!==indoorMix){ indoorMix=Math.abs(nm-want)<0.002?want:nm; applyIndoorLight(indoorMix); } }
+  if(heist.stolen && !escaped && !nightClosing && Math.hypot(player.x-CAR.x,player.z-CAR.z)<7.5) crownEscape();
   updateTools(dt,t);
   for(let i=0;i<pickupSpin.length;i++){ const g=pickupSpin[i];
     g.rotation.y+=dt*1.1; g.position.y+=Math.sin(t*2+i)*0.0012; }
   // outdoors, every 20 paces costs a step
-  if(started){
+  // Only real walking counts: a jump of more than a few metres in one frame is a teleport
+  // (a door, a hatch, the lift), and the opening cinematic doesn't walk anywhere at all.
+  // Without this, coming out of Leerson Hall or the East Extension billed ~27 steps.
+  { const d=Math.hypot(player.x-lastPX,player.z-lastPZ);
     const outdoors=Math.abs(player.x)<200 && Math.abs(player.z)<200;
-    if(outdoors){ outDist+=Math.hypot(player.x-lastPX,player.z-lastPZ);
+    if(started && !cine.active && outdoors && d<4){ outDist+=d;
       while(outDist>=20){ outDist-=20; spendStep(1); } }
-    lastPX=player.x; lastPZ=player.z;
-  }
+    lastPX=player.x; lastPZ=player.z; }
   if(started){ playMs+=dt*1000; playSaveAcc+=dt;
     if(playSaveAcc>10){ playSaveAcc=0; store.set('fenn_playms',Math.round(playMs)); } }
   renderMirrors();
   renderer.render(scene,camera);
 }
+// Build Mary and compile her materials while the title screen is up, so the opening's first
+// frame doesn't stall (on a phone that stall used to invite a second tap, which skipped it).
+try{ cine.mary=buildMary(player.x,player.z,0); cine.mary.position.y=0.24;
+     renderer.compile(scene,camera); cine.mary.visible=false; }catch(e){ cine.mary=null; }
 tick();
 
 addEventListener('resize',()=>{
